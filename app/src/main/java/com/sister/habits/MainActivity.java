@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 
 import com.sister.habits.child.ChildActivity;
 import com.sister.habits.parent.ParentActivity;
+import com.sister.habits.utils.ProfileManager;
 
 import java.util.concurrent.Executor;
 
@@ -141,7 +142,12 @@ public class MainActivity extends AppCompatActivity {
     private void showModeSelection() {
         setContentView(R.layout.activity_main);
 
+        ProfileManager profile = ProfileManager.getInstance(this);
+        android.widget.TextView tvTitle = findViewById(R.id.tv_app_title);
+        tvTitle.setText("🌟 " + profile.getAppTitle());
+
         Button btnChild = findViewById(R.id.btn_child_mode);
+        btnChild.setText("🎀 " + profile.getNickname() + "的乐园");
         Button btnParent = findViewById(R.id.btn_parent_mode);
 
         btnChild.setOnClickListener(v -> {
