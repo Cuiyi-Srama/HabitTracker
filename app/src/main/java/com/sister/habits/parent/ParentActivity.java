@@ -131,7 +131,35 @@ public class ParentActivity extends AppCompatActivity {
                         words.add(v);
                     }
 
-                    // 先清空旧词库再插入（替换模式）
+                    // === 词库存档系统：替换前先保存旧词库 ===
+                    java.util.List<com.sister.habits.data.models.Vocabulary> oldVocab = db.vocabularyDao().getAll();
+                    java.util.List<com.sister.habits.data.models.WordReview> oldReviews = db.wordReviewDao().getAll();
+                    if (!oldVocab.isEmpty()) {
+                        java.util.Map<String, Object> archive = new java.util.HashMap<>();
+                        archive.put("archivedAt", System.currentTimeMillis());
+                        archive.put("originalVersion", prefs.getInt("grade_version", 0));
+                        archive.put("vocabCount", oldVocab.size());
+                        archive.put("reviewCount", oldReviews.size());
+                        archive.put("vocabulary", oldVocab);
+                        archive.put("wordReviews", oldReviews);
+                        String archiveJson = new Gson().toJson(archive);
+                        java.io.File archiveDir = new java.io.File(getFilesDir(), "wordbank_archives");
+                        archiveDir.mkdirs();
+                        String archiveName = "archive_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.CHINA).format(new java.util.Date()) + ".json";
+                        java.io.File archiveFile = new java.io.File(archiveDir, archiveName);
+                        java.io.FileOutputStream fos = new java.io.FileOutputStream(archiveFile);
+                        fos.write(archiveJson.getBytes("UTF-8"));
+                        fos.close();
+                        // 记录存档列表
+                        String archiveListStr = prefs.getString("archive_list", "[]");
+                        java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<String>>(){}.getType();
+                        java.util.List<String> archiveList = new Gson().fromJson(archiveListStr, listType);
+                        if (archiveList == null) archiveList = new java.util.ArrayList<>();
+                        archiveList.add(archiveName);
+                        prefs.edit().putString("archive_list", new Gson().toJson(archiveList)).apply();
+                        android.util.Log.d("ParentActivity", "📦 词库已存档: " + archiveName + " (" + oldVocab.size() + "词)");
+                    }
+                    // 清空旧词库
                     db.vocabularyDao().deleteAll();
                     db.wordReviewDao().deleteAll();
 
@@ -160,7 +188,7 @@ public class ParentActivity extends AppCompatActivity {
 
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
-        soundHelper = new SoundHelper(this);
+        soundHelper = SoundHelper.getInstance(this);
 
         tvStats = findViewById(R.id.tv_parent_stats);
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
@@ -190,7 +218,7 @@ public class ParentActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (soundHelper != null) soundHelper.shutdown();
+        SoundHelper.releaseInstance();
     }
 
     private void refreshAll() {
@@ -355,6 +383,63 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * 显示存档恢复对话框
+     */
+    private void showRestoreArchiveDialog(java.util.List<String> archiveList) {
+        final String[] items = archiveList.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("📦 恢复旧词库")
+                .setMessage("选择一个存档恢复（当前词库和学习进度将被替换）")
+                .setItems(items, (d, which) -> {
+                    String archiveName = items[which];
+                    try {
+                        java.io.File archiveFile = new java.io.File(getFilesDir(), "wordbank_archives/" + archiveName);
+                        if (!archiveFile.exists()) {
+                            Toast.makeText(this, "❌ 存档文件不存在", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        java.io.FileInputStream fis = new java.io.FileInputStream(archiveFile);
+                        byte[] buffer = new byte[(int) archiveFile.length()];
+                        fis.read(buffer);
+                        fis.close();
+                        String json = new String(buffer, "UTF-8");
+                        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, Object>>(){}.getType();
+                        java.util.Map<String, Object> archive = new Gson().fromJson(json, type);
+
+                        // 清空当前词库
+                        db.vocabularyDao().deleteAll();
+                        db.wordReviewDao().deleteAll();
+
+                        // 恢复词库
+                        java.util.List<com.sister.habits.data.models.Vocabulary> restoredVocab = new Gson().fromJson(
+                                new Gson().toJson(archive.get("vocabulary")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.Vocabulary>>(){}.getType());
+                        if (restoredVocab != null && !restoredVocab.isEmpty()) {
+                            db.vocabularyDao().insertAll(restoredVocab);
+                        }
+
+                        // 恢复学习进度
+                        java.util.List<com.sister.habits.data.models.WordReview> restoredReviews = new Gson().fromJson(
+                                new Gson().toJson(archive.get("wordReviews")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.WordReview>>(){}.getType());
+                        if (restoredReviews != null && !restoredReviews.isEmpty()) {
+                            for (com.sister.habits.data.models.WordReview wr : restoredReviews) {
+                                db.wordReviewDao().insert(wr);
+                            }
+                        }
+
+                        Toast.makeText(this, "✅ 词库已恢复！", Toast.LENGTH_LONG).show();
+                        refreshAll();
+                    } catch (Exception e) {
+                        android.util.Log.e("ParentActivity", "恢复存档失败", e);
+                        Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
     private void showAddShopItemDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
         android.widget.EditText etName = view.findViewById(R.id.et_item_name);
@@ -390,6 +475,63 @@ public class ParentActivity extends AppCompatActivity {
                     selectedShopImagePath = null;
                     currentShopDialogView = null;
                     Toast.makeText(this, "商品已上架 🏪", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /**
+     * 显示存档恢复对话框
+     */
+    private void showRestoreArchiveDialog(java.util.List<String> archiveList) {
+        final String[] items = archiveList.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("📦 恢复旧词库")
+                .setMessage("选择一个存档恢复（当前词库和学习进度将被替换）")
+                .setItems(items, (d, which) -> {
+                    String archiveName = items[which];
+                    try {
+                        java.io.File archiveFile = new java.io.File(getFilesDir(), "wordbank_archives/" + archiveName);
+                        if (!archiveFile.exists()) {
+                            Toast.makeText(this, "❌ 存档文件不存在", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        java.io.FileInputStream fis = new java.io.FileInputStream(archiveFile);
+                        byte[] buffer = new byte[(int) archiveFile.length()];
+                        fis.read(buffer);
+                        fis.close();
+                        String json = new String(buffer, "UTF-8");
+                        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, Object>>(){}.getType();
+                        java.util.Map<String, Object> archive = new Gson().fromJson(json, type);
+
+                        // 清空当前词库
+                        db.vocabularyDao().deleteAll();
+                        db.wordReviewDao().deleteAll();
+
+                        // 恢复词库
+                        java.util.List<com.sister.habits.data.models.Vocabulary> restoredVocab = new Gson().fromJson(
+                                new Gson().toJson(archive.get("vocabulary")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.Vocabulary>>(){}.getType());
+                        if (restoredVocab != null && !restoredVocab.isEmpty()) {
+                            db.vocabularyDao().insertAll(restoredVocab);
+                        }
+
+                        // 恢复学习进度
+                        java.util.List<com.sister.habits.data.models.WordReview> restoredReviews = new Gson().fromJson(
+                                new Gson().toJson(archive.get("wordReviews")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.WordReview>>(){}.getType());
+                        if (restoredReviews != null && !restoredReviews.isEmpty()) {
+                            for (com.sister.habits.data.models.WordReview wr : restoredReviews) {
+                                db.wordReviewDao().insert(wr);
+                            }
+                        }
+
+                        Toast.makeText(this, "✅ 词库已恢复！", Toast.LENGTH_LONG).show();
+                        refreshAll();
+                    } catch (Exception e) {
+                        android.util.Log.e("ParentActivity", "恢复存档失败", e);
+                        Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -474,6 +616,63 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * 显示存档恢复对话框
+     */
+    private void showRestoreArchiveDialog(java.util.List<String> archiveList) {
+        final String[] items = archiveList.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("📦 恢复旧词库")
+                .setMessage("选择一个存档恢复（当前词库和学习进度将被替换）")
+                .setItems(items, (d, which) -> {
+                    String archiveName = items[which];
+                    try {
+                        java.io.File archiveFile = new java.io.File(getFilesDir(), "wordbank_archives/" + archiveName);
+                        if (!archiveFile.exists()) {
+                            Toast.makeText(this, "❌ 存档文件不存在", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        java.io.FileInputStream fis = new java.io.FileInputStream(archiveFile);
+                        byte[] buffer = new byte[(int) archiveFile.length()];
+                        fis.read(buffer);
+                        fis.close();
+                        String json = new String(buffer, "UTF-8");
+                        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, Object>>(){}.getType();
+                        java.util.Map<String, Object> archive = new Gson().fromJson(json, type);
+
+                        // 清空当前词库
+                        db.vocabularyDao().deleteAll();
+                        db.wordReviewDao().deleteAll();
+
+                        // 恢复词库
+                        java.util.List<com.sister.habits.data.models.Vocabulary> restoredVocab = new Gson().fromJson(
+                                new Gson().toJson(archive.get("vocabulary")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.Vocabulary>>(){}.getType());
+                        if (restoredVocab != null && !restoredVocab.isEmpty()) {
+                            db.vocabularyDao().insertAll(restoredVocab);
+                        }
+
+                        // 恢复学习进度
+                        java.util.List<com.sister.habits.data.models.WordReview> restoredReviews = new Gson().fromJson(
+                                new Gson().toJson(archive.get("wordReviews")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.WordReview>>(){}.getType());
+                        if (restoredReviews != null && !restoredReviews.isEmpty()) {
+                            for (com.sister.habits.data.models.WordReview wr : restoredReviews) {
+                                db.wordReviewDao().insert(wr);
+                            }
+                        }
+
+                        Toast.makeText(this, "✅ 词库已恢复！", Toast.LENGTH_LONG).show();
+                        refreshAll();
+                    } catch (Exception e) {
+                        android.util.Log.e("ParentActivity", "恢复存档失败", e);
+                        Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
     private int parseInt(android.widget.EditText et, int def) {
         try { return Integer.parseInt(et.getText().toString()); } catch (Exception e) { return def; }
     }
@@ -504,6 +703,22 @@ public class ParentActivity extends AppCompatActivity {
             soundHelper.playClickSound();
             wordbankImportLauncher.launch(new String[]{"application/json", "*/*"});
         });
+
+        // 恢复旧词库按钮
+        Button btnRestore = view.findViewById(R.id.btn_restore_wordbank);
+        String archiveListStr = prefs.getString("archive_list", "[]");
+        java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<String>>(){}.getType();
+        java.util.List<String> archiveList = new Gson().fromJson(archiveListStr, listType);
+        if (archiveList != null && !archiveList.isEmpty()) {
+            btnRestore.setVisibility(android.view.View.VISIBLE);
+            btnRestore.setText("🔄 恢复旧词库 (" + archiveList.size() + "个存档)");
+            btnRestore.setOnClickListener(v -> {
+                soundHelper.playClickSound();
+                showRestoreArchiveDialog(archiveList);
+            });
+        } else {
+            btnRestore.setVisibility(android.view.View.GONE);
+        }
 
         new AlertDialog.Builder(this)
                 .setTitle("📚 词库管理")
@@ -536,6 +751,63 @@ public class ParentActivity extends AppCompatActivity {
                     } catch (Exception ignored) {}
 
                     Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /**
+     * 显示存档恢复对话框
+     */
+    private void showRestoreArchiveDialog(java.util.List<String> archiveList) {
+        final String[] items = archiveList.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("📦 恢复旧词库")
+                .setMessage("选择一个存档恢复（当前词库和学习进度将被替换）")
+                .setItems(items, (d, which) -> {
+                    String archiveName = items[which];
+                    try {
+                        java.io.File archiveFile = new java.io.File(getFilesDir(), "wordbank_archives/" + archiveName);
+                        if (!archiveFile.exists()) {
+                            Toast.makeText(this, "❌ 存档文件不存在", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        java.io.FileInputStream fis = new java.io.FileInputStream(archiveFile);
+                        byte[] buffer = new byte[(int) archiveFile.length()];
+                        fis.read(buffer);
+                        fis.close();
+                        String json = new String(buffer, "UTF-8");
+                        java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.Map<String, Object>>(){}.getType();
+                        java.util.Map<String, Object> archive = new Gson().fromJson(json, type);
+
+                        // 清空当前词库
+                        db.vocabularyDao().deleteAll();
+                        db.wordReviewDao().deleteAll();
+
+                        // 恢复词库
+                        java.util.List<com.sister.habits.data.models.Vocabulary> restoredVocab = new Gson().fromJson(
+                                new Gson().toJson(archive.get("vocabulary")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.Vocabulary>>(){}.getType());
+                        if (restoredVocab != null && !restoredVocab.isEmpty()) {
+                            db.vocabularyDao().insertAll(restoredVocab);
+                        }
+
+                        // 恢复学习进度
+                        java.util.List<com.sister.habits.data.models.WordReview> restoredReviews = new Gson().fromJson(
+                                new Gson().toJson(archive.get("wordReviews")),
+                                new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.data.models.WordReview>>(){}.getType());
+                        if (restoredReviews != null && !restoredReviews.isEmpty()) {
+                            for (com.sister.habits.data.models.WordReview wr : restoredReviews) {
+                                db.wordReviewDao().insert(wr);
+                            }
+                        }
+
+                        Toast.makeText(this, "✅ 词库已恢复！", Toast.LENGTH_LONG).show();
+                        refreshAll();
+                    } catch (Exception e) {
+                        android.util.Log.e("ParentActivity", "恢复存档失败", e);
+                        Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
