@@ -38,7 +38,7 @@ public class WordFragment extends Fragment {
     private SyncManager syncManager;
     private SoundHelper soundHelper;
 
-    private TextView tvStats, tvWord, tvPhonetic, tvPrompt, tvStreak;
+    private TextView tvStats, tvWord, tvPhonetic, tvPrompt, tvStreak, btnSpeak;
     private Button btnOption1, btnOption2, btnOption3, btnOption4;
     private Button btnNewWords, btnReview;
 
@@ -68,7 +68,13 @@ public class WordFragment extends Fragment {
         tvWord = view.findViewById(R.id.tv_word_display);
         tvPhonetic = view.findViewById(R.id.tv_phonetic);
         tvPrompt = view.findViewById(R.id.tv_prompt);
-        tvStreak = view.findViewById(R.id.tv_streak);
+                tvStreak = view.findViewById(R.id.tv_streak);
+        btnSpeak = view.findViewById(R.id.btn_speak);
+        btnSpeak.setOnClickListener(v -> {
+            if (currentWord != null) {
+                soundHelper.speakWord(currentWord.word);
+            }
+        });
 
         btnOption1 = view.findViewById(R.id.btn_option_1);
         btnOption2 = view.findViewById(R.id.btn_option_2);
@@ -176,6 +182,8 @@ public class WordFragment extends Fragment {
         tvWord.setText(currentWord.word);
         tvPhonetic.setText(currentWord.phonetic != null ? currentWord.phonetic : "");
         tvPrompt.setText("选出正确的中文意思 👇");
+        // 自动朗读单词
+        soundHelper.speakWord(currentWord.word);
 
         // 生成选项：1正确 + 3干扰
         List<String> options = new ArrayList<>();
@@ -262,9 +270,6 @@ public class WordFragment extends Fragment {
 
             // 艾宾浩斯复习：推进 WordReview 阶段
             updateWordReview(currentWord.id, true);
-
-            // TTS朗读单词
-            soundHelper.speakWord(currentWord.word);
 
             // 音效 + 震动
             if (streakCount >= 5) {
