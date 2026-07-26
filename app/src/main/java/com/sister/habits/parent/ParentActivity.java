@@ -1,14 +1,15 @@
 package com.sister.habits.parent;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -177,6 +178,14 @@ public class ParentActivity extends AppCompatActivity {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
 
+        // 初始化默认模式选择
+        SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
+        String currentMode = prefs.getString("default_mode", "child");
+        RadioGroup rgMode = view.findViewById(R.id.rg_default_mode);
+        if ("child".equals(currentMode)) rgMode.check(R.id.rb_mode_child);
+        else if ("parent".equals(currentMode)) rgMode.check(R.id.rb_mode_parent);
+        else rgMode.check(R.id.rb_mode_ask);
+
         // 初始化Hub模式开关状态
         androidx.appcompat.widget.SwitchCompat switchHub = view.findViewById(R.id.switch_hub_mode);
         switchHub.setChecked(syncManager.isHubModeEnabled());
@@ -192,6 +201,15 @@ public class ParentActivity extends AppCompatActivity {
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
                     try {
+                        // 保存默认模式
+                        int checkedId = rgMode.getCheckedRadioButtonId();
+                        String mode = "child";
+                        if (checkedId == R.id.rb_mode_child) mode = "child";
+                        else if (checkedId == R.id.rb_mode_parent) mode = "parent";
+                        else if (checkedId == R.id.rb_mode_ask) mode = "ask";
+                        prefs.edit().putString("default_mode", mode).apply();
+
+                        // 保存经济参数
                         android.widget.EditText etBaseReward = view.findViewById(R.id.et_base_reward);
                         android.widget.EditText etStreak7 = view.findViewById(R.id.et_streak7);
                         android.widget.EditText etMaxDaily = view.findViewById(R.id.et_max_daily);
