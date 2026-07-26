@@ -51,8 +51,22 @@ public class TaskFragment extends Fragment {
         autoResetRecurringTasks(allTasks);
         List<Task> active = db.taskDao().getByStatus("active");
         List<Task> pending = db.taskDao().getByStatus("pending");
+
+        // 过滤已过期的限时任务
+        long now = System.currentTimeMillis();
+        List<Task> filteredActive = new ArrayList<>();
+        for (Task t : active) {
+            if ("timed".equals(t.recurrenceType) && t.deadline > 0 && t.deadline < now) {
+                // 已过期，自动标记为expired
+                t.status = "expired";
+                db.taskDao().update(t);
+                continue;
+            }
+            filteredActive.add(t);
+        }
+
         List<Task> all = new ArrayList<>();
-        all.addAll(active);
+        all.addAll(filteredActive);
         all.addAll(pending);
         recyclerView.setAdapter(new TaskAdapter(all, this::markTaskDone));
     }
@@ -132,10 +146,18 @@ public class TaskFragment extends Fragment {
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             Task task = tasks.get(position);
-            String prefix, actionHint;
+            String prefix, actionHint, extraInfo = "";
             if ("active".equals(task.status)) {
-                prefix = "📋";
-                actionHint = "点我完成任务";
+                if ("timed".equals(task.recurrenceType) && task.deadline > 0) {
+                    prefix = "⏰";
+                    long remaining = task.deadline - System.currentTimeMillis();
+                    long days = remaining / (24L * 3600 * 1000);
+                    extraInfo = " 剩余" + (days > 0 ? days + "天" : "今天截止");
+                    actionHint = "点我完成任务";
+                } else {
+                    prefix = "📋";
+                    actionHint = "点我完成任务";
+                }
             } else if ("pending".equals(task.status)) {
                 prefix = "⏳";
                 actionHint = "待家长确认";
@@ -144,7 +166,7 @@ public class TaskFragment extends Fragment {
                 actionHint = "已完成";
             }
             holder.text1.setText(prefix + " " + task.title + "  🪙+" + task.rewardCoins);
-            holder.text2.setText(task.description + "  |  " + actionHint);
+            holder.text2.setText(task.description + "  |  " + actionHint + extraInfo);
             holder.itemView.setOnClickListener(v -> listener.onAction(task));
         }
 
