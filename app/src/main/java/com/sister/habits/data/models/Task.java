@@ -19,7 +19,8 @@ public class Task {
     public String description;     // 任务描述
     public int rewardCoins;        // 奖励金币
     public String type;            // "daily" | "challenge" | "custom"
-    public String status;          // "active" | "completed" | "expired"
+    public String recurrenceType;  // "once" | "weekly" | "monthly" | "permanent"
+    public String status;          // "active" | "pending" | "confirmed" | "expired"
     public long deadline;          // 截止时间（0=无期限）
     public long createdAt;
     public long completedAt;
@@ -33,6 +34,7 @@ public class Task {
     public Task() {
         this.id = UUID.randomUUID().toString();
         this.status = "active";
+        this.recurrenceType = "once";
         this.createdAt = System.currentTimeMillis();
         this.synced = false;
         this.syncTimestamp = System.currentTimeMillis();
