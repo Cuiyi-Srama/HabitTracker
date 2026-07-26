@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.RadioGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,6 +50,48 @@ public class ParentActivity extends AppCompatActivity {
     private TextView tvStats;
     private RecyclerView rvPendingApprovals;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
+
+    // 相册选图 — 当前选中的商品图片路径
+    private String selectedShopImagePath;
+    // 当前打开的商品对话框View（用于图片预览更新）
+    private View currentShopDialogView;
+
+    // 相册选图启动器
+    private final ActivityResultLauncher<String> pickShopImageLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri == null) return;
+                try {
+                    // 复制到App内部存储
+                    java.io.InputStream is = getContentResolver().openInputStream(uri);
+                    String fileName = "shop_" + System.currentTimeMillis() + ".jpg";
+                    java.io.File outFile = new java.io.File(getFilesDir(), "shop_images/" + fileName);
+                    outFile.getParentFile().mkdirs();
+                    java.io.OutputStream os = new java.io.FileOutputStream(outFile);
+                    byte[] buffer = new byte[4096];
+                    int len;
+                    while ((len = is.read(buffer)) > 0) {
+                        os.write(buffer, 0, len);
+                    }
+                    os.close();
+                    is.close();
+                    selectedShopImagePath = outFile.getAbsolutePath();
+
+                    // 通知对话框中的预览控件更新（如果有打开的对话框）
+                    if (currentShopDialogView != null) {
+                        ImageView preview = currentShopDialogView.findViewById(R.id.iv_image_preview);
+                        TextView tvName = currentShopDialogView.findViewById(R.id.tv_image_name);
+                        if (preview != null && tvName != null) {
+                            preview.setVisibility(View.VISIBLE);
+                            tvName.setVisibility(View.VISIBLE);
+                            tvName.setText("已选择: " + fileName);
+                            Glide.with(this).load(outFile).into(preview);
+                        }
+                    }
+                } catch (Exception e) {
+                    android.util.Log.e("ParentActivity", "图片选择失败", e);
+                    Toast.makeText(this, "❌ 图片加载失败", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     // 词库JSON导入的文件选择器
     private final ActivityResultLauncher<String[]> wordbankImportLauncher =
@@ -231,7 +274,19 @@ public class ParentActivity extends AppCompatActivity {
         android.widget.EditText etDesc = view.findViewById(R.id.et_item_desc);
         android.widget.EditText etPrice = view.findViewById(R.id.et_item_price);
         android.widget.EditText etCategory = view.findViewById(R.id.et_item_category);
-        android.widget.EditText etImageUrl = view.findViewById(R.id.et_item_image_url);
+        Button btnPickImage = view.findViewById(R.id.btn_pick_image);
+        ImageView ivPreview = view.findViewById(R.id.iv_image_preview);
+        TextView tvImageName = view.findViewById(R.id.tv_image_name);
+
+        // 重置之前选中的图片
+        selectedShopImagePath = null;
+
+        // 从相册选图按钮
+        btnPickImage.setOnClickListener(v -> {
+            soundHelper.playClickSound();
+            currentShopDialogView = view;  // 保存引用，图片选择后更新预览
+            pickShopImageLauncher.launch("image/*");
+        });
 
         new AlertDialog.Builder(this)
                 .setTitle("添加上架商品")
@@ -243,8 +298,10 @@ public class ParentActivity extends AppCompatActivity {
                     try { item.priceCoins = Integer.parseInt(etPrice.getText().toString()); }
                     catch (Exception e) { item.priceCoins = 50; }
                     item.category = etCategory.getText().toString();
-                    item.iconUrl = etImageUrl.getText().toString().trim();
+                    item.iconUrl = selectedShopImagePath != null ? selectedShopImagePath : "";
                     db.shopItemDao().insert(item);
+                    selectedShopImagePath = null;
+                    currentShopDialogView = null;
                     Toast.makeText(this, "商品已上架 🏪", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("取消", null)
