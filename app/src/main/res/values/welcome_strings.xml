@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version=1.0 encoding=utf-8?>
 <resources>
-    <string name="welcome_title_1">🌟 欢迎来到好习惯！</string>
-    <string name="welcome_desc_1">每天完成小任务，
+    <string name=welcome_title_1>🌟 欢迎来到好习惯！</string>
+    <string name=welcome_desc_1>每天完成小任务，
 就能获得金币奖励哦！</string>
-    <string name="welcome_title_2">📖 背单词学英语</string>
-    <string name="welcome_desc_2">看图学单词、听发音，
+    <string name=welcome_title_2>📖 背单词学英语</string>
+    <string name=welcome_desc_2>看图学单词、听发音，
 每天进步一点点！</string>
-    <string name="welcome_title_3">🏪 用金币换奖励</string>
-    <string name="welcome_desc_3">攒够金币就能找爸爸妈妈
+    <string name=welcome_title_3>🏪 用金币换奖励</string>
+    <string name=welcome_desc_3>攒够金币就能找爸爸妈妈
 兑换喜欢的礼物啦！</string>
 </resources>
