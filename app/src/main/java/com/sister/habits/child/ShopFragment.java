@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -12,6 +13,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.Redemption;
@@ -98,15 +102,30 @@ public class ShopFragment extends Fragment {
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
-                    .inflate(android.R.layout.simple_list_item_2, parent, false);
+                    .inflate(R.layout.item_shop, parent, false);
             return new ViewHolder(v);
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             ShopItem item = items.get(position);
-            holder.text1.setText(item.name + "  🪙" + item.priceCoins);
-            holder.text2.setText(item.description);
+            holder.tvName.setText(item.name);
+            holder.tvDesc.setText(item.description);
+            holder.tvPrice.setText("🪙 " + item.priceCoins);
+
+            // 加载商品图片（如果有URL）
+            if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
+                Glide.with(holder.itemView.getContext())
+                        .load(item.iconUrl)
+                        .apply(new RequestOptions()
+                                .placeholder(com.sister.habits.R.drawable.ic_launcher)
+                                .error(com.sister.habits.R.drawable.ic_launcher)
+                                .transform(new RoundedCorners(12)))
+                        .into(holder.ivIcon);
+            } else {
+                holder.ivIcon.setImageResource(com.sister.habits.R.drawable.ic_launcher);
+            }
+
             holder.itemView.setOnClickListener(v -> listener.onRedeem(item));
         }
 
@@ -114,8 +133,15 @@ public class ShopFragment extends Fragment {
         public int getItemCount() { return items.size(); }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView text1, text2;
-            ViewHolder(View v) { super(v); text1 = v.findViewById(android.R.id.text1); text2 = v.findViewById(android.R.id.text2); }
+            ImageView ivIcon;
+            TextView tvName, tvDesc, tvPrice;
+            ViewHolder(View v) {
+                super(v);
+                ivIcon = v.findViewById(R.id.iv_shop_icon);
+                tvName = v.findViewById(R.id.tv_shop_name);
+                tvDesc = v.findViewById(R.id.tv_shop_desc);
+                tvPrice = v.findViewById(R.id.tv_shop_price);
+            }
         }
     }
 }
