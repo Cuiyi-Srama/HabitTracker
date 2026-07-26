@@ -58,4 +58,19 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- 图片URL输入 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="商品图片URL（可选）"
+        android:helperText="输入图片链接，商品展示时会显示该图片">
+
+        <android.widget.EditText
+            android:id="@+id/et_item_image_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
 </LinearLayout>
