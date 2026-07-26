@@ -11,7 +11,8 @@ import java.util.UUID;
 @Entity(tableName = "shop_items")
 public class ShopItem {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String name;            // 商品名
     public String description;     // 描述
