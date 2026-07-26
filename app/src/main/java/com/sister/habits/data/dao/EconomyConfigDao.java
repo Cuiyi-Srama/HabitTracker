@@ -11,6 +11,9 @@ public interface EconomyConfigDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void setConfig(EconomyConfig config);
 
+    @Query("UPDATE economy_config SET maxDailyWords = :maxDailyWords WHERE id = 1")
+    void updateMaxDailyWords(int maxDailyWords);
+
     @Query("UPDATE economy_config SET " +
             "checkInBaseReward = :checkInBaseReward, " +
             "streak3Bonus = :streak3Bonus, " +
