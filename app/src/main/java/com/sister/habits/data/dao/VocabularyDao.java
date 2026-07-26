@@ -68,4 +68,7 @@ public interface VocabularyDao {
 
     @Delete
     void delete(Vocabulary word);
+
+    @Query("DELETE FROM vocabulary")
+    void deleteAll();
 }
