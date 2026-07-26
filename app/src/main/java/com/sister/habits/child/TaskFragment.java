@@ -4,7 +4,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -14,10 +16,12 @@ import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.Task;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 任务Fragment——孩子查看任务列表，完成任务
+ * 工作流：完成任务 → 家长确认 → 获得积分
  */
 public class TaskFragment extends Fragment {
 
@@ -43,33 +47,36 @@ public class TaskFragment extends Fragment {
     }
 
     private void loadTasks() {
-        List<Task> tasks = db.taskDao().getByStatus("active");
-        recyclerView.setAdapter(new TaskAdapter(tasks, this::completeTask));
+        List<Task> active = db.taskDao().getByStatus("active");
+        List<Task> pending = db.taskDao().getByStatus("pending");
+        List<Task> all = new ArrayList<>();
+        all.addAll(active);
+        all.addAll(pending);
+        recyclerView.setAdapter(new TaskAdapter(all, this::markTaskDone));
     }
 
-    private void completeTask(Task task) {
-        db.taskDao().complete(task.id, System.currentTimeMillis());
-
-        // 发放金币奖励
-        Integer balance = db.coinTransactionDao().getBalance("sister");
-        int newBalance = (balance != null ? balance : 0) + task.rewardCoins;
-        com.sister.habits.data.models.CoinTransaction ct =
-                new com.sister.habits.data.models.CoinTransaction(
-                        "sister", task.rewardCoins, newBalance,
-                        "task_reward", "完成任务: " + task.title,
-                        "");
-        db.coinTransactionDao().insert(ct);
-
+    private void markTaskDone(Task task) {
+        if ("pending".equals(task.status)) {
+            Toast.makeText(getContext(), "⏳ 任务已完成，等家长确认后获得金币～", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if ("confirmed".equals(task.status)) {
+            Toast.makeText(getContext(), "✅ 任务已完成并获得奖励！", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // 标记为"待家长确认"
+        db.taskDao().markPending(task.id, System.currentTimeMillis());
+        Toast.makeText(getContext(), "✅ 任务已完成！等待家长确认中～", Toast.LENGTH_SHORT).show();
         loadTasks();
     }
 
     private static class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.ViewHolder> {
         private final List<Task> tasks;
-        private final OnTaskCompleteListener listener;
+        private final OnTaskActionListener listener;
 
-        interface OnTaskCompleteListener { void onComplete(Task task); }
+        interface OnTaskActionListener { void onAction(Task task); }
 
-        TaskAdapter(List<Task> tasks, OnTaskCompleteListener listener) {
+        TaskAdapter(List<Task> tasks, OnTaskActionListener listener) {
             this.tasks = tasks;
             this.listener = listener;
         }
@@ -84,9 +91,20 @@ public class TaskFragment extends Fragment {
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             Task task = tasks.get(position);
-            holder.text1.setText("📋 " + task.title + "  🪙+" + task.rewardCoins);
-            holder.text2.setText(task.description);
-            holder.itemView.setOnClickListener(v -> listener.onComplete(task));
+            String prefix, actionHint;
+            if ("active".equals(task.status)) {
+                prefix = "📋";
+                actionHint = "点我完成任务";
+            } else if ("pending".equals(task.status)) {
+                prefix = "⏳";
+                actionHint = "待家长确认";
+            } else {
+                prefix = "✅";
+                actionHint = "已完成";
+            }
+            holder.text1.setText(prefix + " " + task.title + "  🪙+" + task.rewardCoins);
+            holder.text2.setText(task.description + "  |  " + actionHint);
+            holder.itemView.setOnClickListener(v -> listener.onAction(task));
         }
 
         @Override
