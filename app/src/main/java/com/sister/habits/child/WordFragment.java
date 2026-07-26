@@ -328,7 +328,17 @@ public class WordFragment extends Fragment {
         int total = db.vocabularyDao().getActiveCount();
         int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis());
         String mode = isReviewMode ? "🔄 复习" : "📚 学习";
-        tvStats.setText(mode + "  |  ✅ " + mastered + "/" + total + "  |  ⏰ " + dueCount + " 待复习");
+
+        // 今日进度：已学新词 / 每日上限
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        int todayNew = db.wordReviewDao().getTodayCount(cal.getTimeInMillis());
+        String todayProgress = "  📝 " + Math.min(todayNew, dailyWordLimit) + "/" + dailyWordLimit;
+
+        tvStats.setText(mode + todayProgress + "  |  ✅ " + mastered + "/" + total + "  |  ⏰ " + dueCount + " 待复习");
     }
 
     private void updateStreakDisplay() {
