@@ -71,9 +71,8 @@ public class SoundHelper {
     public void speakWord(String word, float speed) {
         if (!ttsEnabled || !ttsReady || tts == null) return;
         try {
-            Bundle params = new Bundle();
-            params.putFloat(TextToSpeech.Engine.KEY_PARAM_RATE, speed);
-            tts.speak(word, TextToSpeech.QUEUE_FLUSH, params, null);
+            tts.setSpeechRate(speed);
+            tts.speak(word, TextToSpeech.QUEUE_FLUSH, null, null);
         } catch (Exception e) {
             Log.e(TAG, "TTS朗读失败: " + word, e);
         }
