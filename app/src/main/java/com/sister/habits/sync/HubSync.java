@@ -145,7 +145,7 @@ public class HubSync {
 
             // 返回Hub上积累的所有未同步数据给请求方
             String responseData = buildAccumulatedPayload();
-            return NanoHTTPD.NanoHTTPD.newFixedLengthResponse(
+            return NanoHTTPD.newFixedLengthResponse(
                     Response.Status.OK, "application/json", responseData);
 
         } catch (Exception e) {
