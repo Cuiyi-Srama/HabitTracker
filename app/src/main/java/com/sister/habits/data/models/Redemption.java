@@ -12,7 +12,8 @@ import java.util.UUID;
 @Entity(tableName = "redemptions")
 public class Redemption {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String shopItemId;      // 商品ID
     public String itemName;        // 商品名（冗余，防止商品信息变更后历史记录丢失）
