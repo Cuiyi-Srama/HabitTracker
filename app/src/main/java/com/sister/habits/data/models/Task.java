@@ -23,6 +23,7 @@ public class Task {
     public long deadline;          // 截止时间（0=无期限）
     public long createdAt;
     public long completedAt;
+    public long confirmedAt;       // 家长确认时间（0=未确认）
 
     // 同步
     public String deviceId;
