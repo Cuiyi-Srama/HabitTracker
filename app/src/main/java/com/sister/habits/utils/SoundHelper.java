@@ -22,18 +22,40 @@ public class SoundHelper {
 
     private static final String TAG = "SoundHelper";
 
+    private static SoundHelper instance;
+    private static int refCount = 0;
+    private static Context appContext;
+
     private TextToSpeech tts;
     private SoundPool soundPool;
     private Vibrator vibrator;
     private boolean ttsReady = false;
     private boolean soundEnabled = true;
     private boolean ttsEnabled = true;
-    private float ttsSpeed = 1.0f; // 1.0=正常, 0.5=慢速
+    private float ttsSpeed = 1.0f;
 
-    // 预加载音效ID（用 ToneGenerator 替代 SoundPool 的加载声音，避免依赖音频文件）
+    // 预加载音效ID
     private final ToneGenerator toneGenerator;
 
-    public SoundHelper(Context context) {
+    public static synchronized SoundHelper getInstance(Context context) {
+        if (instance == null) {
+            appContext = context.getApplicationContext();
+            instance = new SoundHelper(appContext);
+        }
+        refCount++;
+        return instance;
+    }
+
+    public static synchronized void releaseInstance() {
+        refCount--;
+        if (refCount <= 0 && instance != null) {
+            instance.shutdown();
+            instance = null;
+            appContext = null;
+        }
+    }
+
+    private SoundHelper(Context context) {
         // TTS 朗读
         tts = new TextToSpeech(context, status -> {
             if (status == TextToSpeech.SUCCESS) {
