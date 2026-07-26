@@ -81,7 +81,7 @@
             android:layout_height="64dp"
             android:scaleType="centerCrop"
             android:visibility="gone"
-            android:background="@drawable/ic_launcher_background" />
+            android:background="@drawable/ic_launcher" />
 
         <TextView
             android:id="@+id/tv_image_name"
