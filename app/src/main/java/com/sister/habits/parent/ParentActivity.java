@@ -24,6 +24,7 @@ import com.sister.habits.data.models.Redemption;
 import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.data.models.Task;
 import com.sister.habits.sync.SyncManager;
+import com.sister.habits.utils.SoundHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,6 +39,7 @@ public class ParentActivity extends AppCompatActivity {
 
     private AppDatabase db;
     private SyncManager syncManager;
+    private SoundHelper soundHelper;
 
     private TextView tvStats;
     private RecyclerView rvPendingApprovals;
@@ -50,6 +52,7 @@ public class ParentActivity extends AppCompatActivity {
 
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
+        soundHelper = new SoundHelper(this);
 
         tvStats = findViewById(R.id.tv_parent_stats);
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
@@ -61,17 +64,23 @@ public class ParentActivity extends AppCompatActivity {
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
 
-        btnAddTask.setOnClickListener(v -> showAddTaskDialog());
-        btnAddShopItem.setOnClickListener(v -> showAddShopItemDialog());
-        btnSettings.setOnClickListener(v -> showSettingsDialog());
-        btnSync.setOnClickListener(v -> { syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); });
-        btnRefresh.setOnClickListener(v -> refreshAll());
+        btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
+        btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
+        btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
+        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); });
+        btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshAll();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (soundHelper != null) soundHelper.shutdown();
     }
 
     private void refreshAll() {
