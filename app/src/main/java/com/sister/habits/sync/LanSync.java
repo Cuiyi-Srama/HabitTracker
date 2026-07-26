@@ -45,7 +45,7 @@ public class LanSync {
         try {
             server = new NanoHTTPD(PORT) {
                 @Override
-                public Response serve(IHTTPSession session) {
+                public NanoHTTPD.Response serve(NanoHTTPD.IHTTPSession session) {
                     String uri = session.getUri();
                     switch (uri) {
                         case "/peek":
@@ -53,7 +53,7 @@ public class LanSync {
                         case "/sync":
                             return serveSync(session);
                         default:
-                            return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found");
                     }
                 }
             };
@@ -154,13 +154,13 @@ public class LanSync {
             for (CoinTransaction t : payload.coins) db.coinTransactionDao().markSynced(t.id);
     }
 
-    private Response servePeek() {
+    private NanoHTTPD.Response servePeek() {
         String json = "{\"status\":\"online\",\"device\":\"" +
                 SyncManager.getInstance(context).getDeviceId() + "\"}";
-        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
+        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", json);
     }
 
-    private Response serveSync(IHTTPSession session) {
+    private NanoHTTPD.Response serveSync(NanoHTTPD.IHTTPSession session) {
         try {
             Map<String, String> bodyMap = new HashMap<>();
             session.parseBody(bodyMap);
@@ -176,9 +176,9 @@ public class LanSync {
                 payload = sb.toString();
             }
             mergeRemoteData(payload != null ? payload : "");
-            return newFixedLengthResponse(Response.Status.OK, "application/json", buildSyncPayload());
+            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", buildSyncPayload());
         } catch (Exception e) {
-            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 
