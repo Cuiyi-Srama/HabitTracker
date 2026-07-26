@@ -41,6 +41,8 @@ public class SoundHelper {
                 ttsReady = (result != TextToSpeech.LANG_MISSING_DATA
                         && result != TextToSpeech.LANG_NOT_SUPPORTED);
                 Log.d(TAG, "TTS " + (ttsReady ? "就绪" : "不支持"));
+            } else {
+                Log.w(TAG, "TTS 初始化失败, status=" + status);
             }
         });
 
@@ -56,9 +58,25 @@ public class SoundHelper {
 
         // ToneGenerator 用于简单提示音
         toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85);
+        Log.d(TAG, "ToneGenerator 创建完成, stream=NOTIFICATION, volume=85");
 
         // 震动服务
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        Log.d(TAG, "Vibrator 获取状态: " + (vibrator != null ? "非空" : "NULL"));
+        if (vibrator != null) {
+            Log.d(TAG, "hasVibrator: " + vibrator.hasVibrator());
+            // 测试震动——启动时震一下确认系统功能正常
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vibrator.vibrate(100);
+                }
+                Log.d(TAG, "启动测试震动已发送");
+            } catch (Exception e) {
+                Log.e(TAG, "启动测试震动失败", e);
+            }
+        }
     }
 
     /**
