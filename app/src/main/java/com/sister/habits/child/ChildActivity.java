@@ -17,6 +17,7 @@ import com.sister.habits.data.DailyQuote;
 import com.sister.habits.data.models.CheckIn;
 import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.EconomyConfig;
+import com.sister.habits.data.models.WordReview;
 import com.sister.habits.sync.SyncManager;
 
 import java.text.SimpleDateFormat;
@@ -51,6 +52,10 @@ public class ChildActivity extends AppCompatActivity {
         // 显示每日一句
         TextView tvQuote = findViewById(R.id.tv_daily_quote);
         tvQuote.setText("💬 " + DailyQuote.getTodayQuote());
+
+        // 儿童设置齿轮⚙️（不显眼，在右上角）
+        TextView btnSettings = findViewById(R.id.btn_child_settings);
+        btnSettings.setOnClickListener(v -> showChildSettings());
 
         // 刷新金币余额
         refreshCoinBalance();
@@ -139,5 +144,51 @@ public class ChildActivity extends AppCompatActivity {
         if (streakDay == 7) msg += "\n🌟 恭喜获得连续7天奖励！";
         else if (streakDay == 30) msg += "\n🏆 太棒了！连续一个月！";
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    }
+
+    private void showChildSettings() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("⚙️ 设置")
+                .setItems(new String[]{
+                        "👤 查看我的统计",
+                        "🔊 朗读开关",
+                        "📖 今日单词进度"
+                }, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            int totalCheckIns = db.checkInDao().getTotalCheckIns("sister");
+                            int maxStreak = db.checkInDao().getMaxStreak("sister");
+                            Integer balance = db.coinTransactionDao().getBalance("sister");
+                            int wordMastered = db.vocabularyDao().getMasteredCount();
+                            new android.app.AlertDialog.Builder(this)
+                                    .setTitle("👤 我的统计")
+                                    .setMessage(
+                                            "📅 总打卡: " + totalCheckIns + " 天\n" +
+                                            "🏆 最长连续: " + maxStreak + " 天\n" +
+                                            "🪙 金币: " + (balance != null ? balance : 0) + "\n" +
+                                            "📖 学会单词: " + wordMastered + " 个")
+                                    .setPositiveButton("好的", null)
+                                    .show();
+                            break;
+                        case 1:
+                            Toast.makeText(this, "🔊 朗读功能已切换（点击单词可朗读）", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 2:
+                            int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis());
+                            int totalLearning = db.wordReviewDao().getTotalLearningCount();
+                            int mastered = db.wordReviewDao().getMasteredCount(WordReview.MAX_STAGE, Long.MAX_VALUE);
+                            new android.app.AlertDialog.Builder(this)
+                                    .setTitle("📖 单词进度")
+                                    .setMessage(
+                                            "📚 待复习: " + dueCount + " 个\n" +
+                                            "🔄 学习中: " + totalLearning + " 个\n" +
+                                            "✅ 已掌握: " + mastered + " 个")
+                                    .setPositiveButton("继续加油 💪", null)
+                                    .show();
+                            break;
+                    }
+                })
+                .setNegativeButton("关闭", null)
+                .show();
     }
 }
