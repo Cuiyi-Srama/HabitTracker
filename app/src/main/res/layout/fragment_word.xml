@@ -3,43 +3,155 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="12dp"
+    android:background="#FFF8F0">
 
     <TextView
         android:id="@+id/tv_word_stats"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="📖 加载中..."
-        android:textSize="16sp"
-        android:layout_marginBottom="8dp" />
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tv_streak"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔥 "
+        android:textSize="13sp"
+        android:textColor="#FF6B35"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 单词展示区 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@drawable/card_background"
+        android:padding="20dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tv_word_display"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="apple"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tv_phonetic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="/ˈæp.əl/"
+            android:textSize="16sp"
+            android:textColor="#999999"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tv_prompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="选出正确的中文意思 👇"
+            android:textSize="15sp"
+            android:textColor="#666666"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
+
+    <!-- 选项按钮 2x2 网格 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/btn_option_1"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:backgroundTint="#F5F5F5"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btn_option_2"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:backgroundTint="#F5F5F5"
+            android:textAllCaps="false" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/btn_option_3"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:backgroundTint="#F5F5F5"
+            android:textAllCaps="false" />
+
+        <Button
+            android:id="@+id/btn_option_4"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:backgroundTint="#F5F5F5"
+            android:textAllCaps="false" />
+    </LinearLayout>
+
+    <!-- 底部操作栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
 
         <Button
             android:id="@+id/btn_new_words"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
             android:text="📚 新词"
-            android:layout_marginEnd="4dp" />
+            android:textSize="15sp"
+            android:layout_marginEnd="4dp"
+            android:textAllCaps="false" />
 
         <Button
             android:id="@+id/btn_review"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
             android:text="🔄 复习"
-            android:layout_marginStart="4dp" />
+            android:textSize="15sp"
+            android:layout_marginStart="4dp"
+            android:textAllCaps="false" />
     </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_words"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="8dp" />
 
 </LinearLayout>
