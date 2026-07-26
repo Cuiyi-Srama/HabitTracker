@@ -28,12 +28,13 @@ public interface EconomyConfigDao {
             "taskChallengeMin = :taskChallengeMin, " +
             "taskChallengeMax = :taskChallengeMax, " +
             "maxDailyCoins = :maxDailyCoins, " +
-            "maxDailyWords = :maxDailyWords " +
+            "maxDailyWords = :maxDailyWords, " +
+            "maxDailyReview = :maxDailyReview " +
             "WHERE id = 1")
     void updateAll(int checkInBaseReward, int streak3Bonus, int streak7Bonus,
                    int streak14Bonus, int streak30Bonus, int wordLearnReward,
                    int wordBatchBonus10, int wordBatchBonus20,
                    int taskDailyMin, int taskDailyMax,
                    int taskChallengeMin, int taskChallengeMax,
-                   int maxDailyCoins, int maxDailyWords);
+                   int maxDailyCoins, int maxDailyWords, int maxDailyReview);
 }
