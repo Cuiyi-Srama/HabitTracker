@@ -9,6 +9,71 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- 个人信息 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👤 个人信息"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="设置孩子的昵称和App内显示的名称。开源后可自定义。"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="孩子昵称"
+            app:helperText="例如：小宝、乐乐、Alice（默认：妹妹）"
+            android:layout_marginBottom="8dp">
+
+            <android.widget.EditText
+                android:id="@+id/et_nickname"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:text="妹妹" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="App内标题"
+            app:helperText="显示在App主页顶部的标题"
+            android:layout_marginBottom="8dp">
+
+            <android.widget.EditText
+                android:id="@+id/et_app_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:text="好习惯养成" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btn_pick_avatar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="📷 选择头像图片"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- 分隔线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="16dp" />
+
         <!-- 启动模式 -->
         <TextView
             android:layout_width="match_parent"
