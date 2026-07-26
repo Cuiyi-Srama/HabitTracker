@@ -275,6 +275,14 @@ public class ParentActivity extends AppCompatActivity {
 
         EconomyConfig finalConfig = config;
 
+        // 初始化单词参数输入框
+        android.widget.EditText etWordReward = view.findViewById(R.id.et_word_reward);
+        android.widget.EditText etMaxWords = view.findViewById(R.id.et_max_words);
+        android.widget.EditText etMaxReview = view.findViewById(R.id.et_max_review);
+        etWordReward.setText(String.valueOf(finalConfig.wordLearnReward));
+        etMaxWords.setText(String.valueOf(finalConfig.maxDailyWords));
+        etMaxReview.setText(String.valueOf(finalConfig.maxDailyReview));
+
         // 词库管理按钮
         Button btnWordbank = view.findViewById(R.id.btn_wordbank_mgr);
         btnWordbank.setOnClickListener(v -> showWordbankDialog());
@@ -302,7 +310,7 @@ public class ParentActivity extends AppCompatActivity {
                                 parseInt(etStreak7, 50),
                                 finalConfig.streak14Bonus,
                                 finalConfig.streak30Bonus,
-                                finalConfig.wordLearnReward,
+                                parseInt(etWordReward, 2),
                                 finalConfig.wordBatchBonus10,
                                 finalConfig.wordBatchBonus20,
                                 finalConfig.taskDailyMin,
@@ -310,7 +318,8 @@ public class ParentActivity extends AppCompatActivity {
                                 finalConfig.taskChallengeMin,
                                 finalConfig.taskChallengeMax,
                                 parseInt(etMaxDaily, 500),
-                                finalConfig.maxDailyWords
+                                parseInt(etMaxWords, 10),
+                                parseInt(etMaxReview, 30)
                         );
                         Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
