@@ -177,5 +177,21 @@
 
         </LinearLayout>
 
+        <!-- 分隔线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="16dp" />
+
+        <!-- 词库管理入口 -->
+        <Button
+            android:id="@+id/btn_wordbank_mgr"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="📚 词库管理（年级/每日量/导入）"
+            android:textSize="14sp" />
+
     </LinearLayout>
 </ScrollView>
