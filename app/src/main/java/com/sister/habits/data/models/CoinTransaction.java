@@ -1,5 +1,6 @@
 package com.sister.habits.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.Index;
@@ -13,8 +14,8 @@ import java.util.UUID;
         indices = {@Index(value = "createdAt")})
 public class CoinTransaction {
     @PrimaryKey
-@androidx.annotation.NonNull
-        public String id;
+    @NonNull
+    public String id;
 
     public String userId;        // 默认 "sister"
     public int amount;           // 正=获得，负=消费

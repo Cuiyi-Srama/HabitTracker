@@ -83,7 +83,7 @@ public class HubSync {
         try {
             server = new NanoHTTPD(HUB_PORT) {
                 @Override
-                public NanoHTTPD.Response serve(NanoHTTPD.IHTTPSession session) {
+                public Response serve(IHTTPSession session) {
                     String uri = session.getUri();
                     String method = session.getMethod().name();
 
@@ -99,8 +99,8 @@ public class HubSync {
                         case "/hub/discover":
                             return handleDiscover();
                     }
-                    return NanoHTTPD.newFixedLengthResponse(
-                            NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                    return newFixedLengthResponse(
+                            Response.Status.NOT_FOUND, "text/plain", "Not Found");
                 }
             };
             server.start();
@@ -122,7 +122,7 @@ public class HubSync {
     // ==================== Hub端：HTTP处理 ====================
 
     /** POST /hub/sync — 接收设备上报的数据 */
-    private NanoHTTPD.Response handleSync(NanoHTTPD.IHTTPSession session) {
+    private Response handleSync(IHTTPSession session) {
         try {
             String body = readBody(session);
             SyncPayload payload = gson.fromJson(body, SyncPayload.class);
@@ -143,23 +143,25 @@ public class HubSync {
 
             // 返回Hub上积累的所有未同步数据给请求方
             String responseData = buildAccumulatedPayload();
-            return NanoHTTPD.newFixedLengthResponse(
-                    NanoHTTPD.Response.Status.OK, "application/json", responseData);
+            return newFixedLengthResponse(
+                    Response.Status.OK, "application/json", responseData);
 
         } catch (Exception e) {
             Log.e(TAG, "处理同步请求失败", e);
-            return NanoHTTPD.newFixedLengthResponse(
-                    NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+            return newFixedLengthResponse(
+                    Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 
     /** GET /hub/pull?since=timestamp — 拉取自某个时间点后的增量数据 */
-    private NanoHTTPD.Response handlePull(NanoHTTPD.IHTTPSession session) {
+    private Response handlePull(IHTTPSession session) {
         try {
             long since = 0;
             String sinceParam = session.getParms().get("since");
             if (sinceParam != null) {
-                try { since = Long.parseLong(sinceParam); } catch (Exception ignored) {}
+                try { since = Long.parseLong(sinceParam); } catch (Exception e) {
+                    Log.d(TAG, "解析since参数失败: " + sinceParam);
+                }
             }
 
             // 构建拉取响应
@@ -168,27 +170,27 @@ public class HubSync {
             response.hubDeviceId = SyncManager.getInstance(context).getDeviceId();
 
             String result = gson.toJson(response);
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", result);
+            return newFixedLengthResponse(Response.Status.OK, "application/json", result);
 
         } catch (Exception e) {
-            return NanoHTTPD.newFixedLengthResponse(
-                    NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+            return newFixedLengthResponse(
+                    Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 
     /** GET /hub/peek — 健康检查 */
-    private NanoHTTPD.Response handlePeek() {
+    private Response handlePeek() {
         String json = "{\"status\":\"hub_online\",\"device\":\""
                 + SyncManager.getInstance(context).getDeviceId()
                 + "\",\"uptime\":\"active\"}";
-        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", json);
+        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
     /** GET /hub/discover — Hub发现接口（用于设备扫描） */
-    private NanoHTTPD.Response handleDiscover() {
+    private Response handleDiscover() {
         String json = "{\"type\":\"habit_hub\",\"version\":1,\"device\":\""
                 + SyncManager.getInstance(context).getDeviceId() + "\"}";
-        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", json);
+        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
     // ==================== 客户端：设备端调用 ====================
@@ -294,7 +296,9 @@ public class HubSync {
                         Log.d(TAG, "🔍 发现Hub: " + targetIp);
                         return targetIp;
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                        Log.d(TAG, "Hub扫描跳过: " + targetIp);
+                    }
             }
         } catch (Exception e) {
             Log.e(TAG, "Hub发现失败", e);
@@ -333,7 +337,7 @@ public class HubSync {
 
     // ==================== 工具方法 ====================
 
-    private String readBody(NanoHTTPD.IHTTPSession session) throws IOException {
+    private String readBody(IHTTPSession session) throws IOException {
         int contentLength = Integer.parseInt(
                 session.getHeaders().getOrDefault("content-length", "0"));
         if (contentLength > 0) {
@@ -343,7 +347,9 @@ public class HubSync {
         }
         // 尝试从body map读取
         Map<String, String> bodyMap = new HashMap<>();
-        try { session.parseBody(bodyMap); } catch (Exception ignored) {}
+        try { session.parseBody(bodyMap); } catch (Exception e) {
+            Log.d(TAG, "解析请求体失败", e);
+        }
         return bodyMap.get("postData");
     }
 

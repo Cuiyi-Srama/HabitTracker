@@ -230,7 +230,7 @@ public class SyncManager {
                 return wifiInfo != null && wifiInfo.getNetworkId() != -1;
             }
         } catch (Exception e) {
-            // ignore
+            Log.d(TAG, "Wifi状态检测失败", e);
         }
         return false;
     }
@@ -243,7 +243,7 @@ public class SyncManager {
                 return active != null && active.isConnected();
             }
         } catch (Exception e) {
-            // ignore
+            Log.d(TAG, "网络状态检测失败", e);
         }
         return false;
     }

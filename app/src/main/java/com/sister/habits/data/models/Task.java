@@ -1,5 +1,6 @@
 package com.sister.habits.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -11,8 +12,8 @@ import java.util.UUID;
 @Entity(tableName = "tasks")
 public class Task {
     @PrimaryKey
-@androidx.annotation.NonNull
-        public String id;
+    @NonNull
+    public String id;
 
     public String title;           // 任务标题
     public String description;     // 任务描述

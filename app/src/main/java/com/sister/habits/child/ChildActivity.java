@@ -111,7 +111,9 @@ public class ChildActivity extends AppCompatActivity {
                 if (sdf.format(latestDate).equals(sdf.format(yesterday))) {
                     streakDay = latest.streakDay + 1;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Log.e("ChildActivity", "解析日期失败", e);
+            }
         }
 
         // 计算金币奖励

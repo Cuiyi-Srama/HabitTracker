@@ -1,5 +1,6 @@
 package com.sister.habits.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -11,8 +12,8 @@ import java.util.UUID;
 @Entity(tableName = "shop_items")
 public class ShopItem {
     @PrimaryKey
-@androidx.annotation.NonNull
-        public String id;
+    @NonNull
+    public String id;
 
     public String name;            // 商品名
     public String description;     // 描述

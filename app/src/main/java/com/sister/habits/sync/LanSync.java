@@ -45,7 +45,7 @@ public class LanSync {
         try {
             server = new NanoHTTPD(PORT) {
                 @Override
-                public NanoHTTPD.Response serve(NanoHTTPD.IHTTPSession session) {
+                public Response serve(IHTTPSession session) {
                     String uri = session.getUri();
                     switch (uri) {
                         case "/peek":
@@ -53,7 +53,7 @@ public class LanSync {
                         case "/sync":
                             return serveSync(session);
                         default:
-                            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                            return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found");
                     }
                 }
             };
@@ -95,10 +95,9 @@ public class LanSync {
                         socket.connect(new InetSocketAddress(targetIp, PORT), 200);
                         socket.close();
                         syncWithDevice(targetIp);
-                    } catch (Exception ignored) {}
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "局域网同步扫描失败", e);
+                    } catch (Exception e) {
+                        Log.d(TAG, "设备 " + targetIp + " 不可达");
+                    }
             }
         }).start();
     }
@@ -154,13 +153,13 @@ public class LanSync {
             for (CoinTransaction t : payload.coins) db.coinTransactionDao().markSynced(t.id);
     }
 
-    private NanoHTTPD.Response servePeek() {
+    private Response servePeek() {
         String json = "{\"status\":\"online\",\"device\":\"" +
                 SyncManager.getInstance(context).getDeviceId() + "\"}";
-        return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", json);
+        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
-    private NanoHTTPD.Response serveSync(NanoHTTPD.IHTTPSession session) {
+    private Response serveSync(IHTTPSession session) {
         try {
             Map<String, String> bodyMap = new HashMap<>();
             session.parseBody(bodyMap);
@@ -176,9 +175,9 @@ public class LanSync {
                 payload = sb.toString();
             }
             mergeRemoteData(payload != null ? payload : "");
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", buildSyncPayload());
+            return newFixedLengthResponse(Response.Status.OK, "application/json", buildSyncPayload());
         } catch (Exception e) {
-            return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 

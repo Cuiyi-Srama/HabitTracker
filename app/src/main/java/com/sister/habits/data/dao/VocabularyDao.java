@@ -60,6 +60,9 @@ public interface VocabularyDao {
     @Query("UPDATE vocabulary SET mastered = 1, masteredAt = :now WHERE id = :id")
     void markMastered(String id, long now);
 
+    @Query("SELECT * FROM vocabulary WHERE id = :id LIMIT 1")
+    Vocabulary getById(String id);
+
     @Query("SELECT * FROM vocabulary ORDER BY RANDOM() LIMIT :count")
     List<Vocabulary> getRandom(int count);
 

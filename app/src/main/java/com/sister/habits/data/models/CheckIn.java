@@ -1,5 +1,6 @@
 package com.sister.habits.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.Index;
@@ -14,8 +15,8 @@ import java.util.UUID;
         indices = {@Index(value = {"userId", "date"}, unique = true)})
 public class CheckIn {
     @PrimaryKey
-@androidx.annotation.NonNull
-        public String id;
+    @NonNull
+    public String id;
 
     public String userId;      // 默认 "sister"
     public String date;        // 格式 "yyyy-MM-dd"
