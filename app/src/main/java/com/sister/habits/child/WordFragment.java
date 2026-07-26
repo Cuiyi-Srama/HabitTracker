@@ -1,6 +1,5 @@
 package com.sister.habits.child;
 
-import android.media.MediaActionSound;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -44,15 +43,11 @@ public class WordFragment extends Fragment {
     private boolean isAnswering = false;
     private boolean isReviewMode = false;
 
-    private MediaActionSound soundPlayer;
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_word, container, false);
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
-
-        soundPlayer = new MediaActionSound();
 
         tvStats = view.findViewById(R.id.tv_word_stats);
         tvWord = view.findViewById(R.id.tv_word_display);
@@ -80,12 +75,6 @@ public class WordFragment extends Fragment {
 
         startQuiz(false);
         return view;
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (soundPlayer != null) soundPlayer.release();
     }
 
     private void startQuiz(boolean review) {
@@ -199,8 +188,6 @@ public class WordFragment extends Fragment {
             clicked.setBackgroundColor(0xFF4CAF50);
             clicked.setTextColor(0xFFFFFFFF);
             streakCount++;
-            soundPlayer.play(MediaActionSound.CLICK);
-
             // 新词模式：答对即奖励，连续有额外奖励
             int wordBonus = 2;
             if (streakCount == 5) {
@@ -237,7 +224,6 @@ public class WordFragment extends Fragment {
             clicked.setTextColor(0xFFFFFFFF);
             streakCount = 0;
             tvPrompt.setText("❌ " + currentWord.meaning + " 才是对的哦");
-            soundPlayer.play(MediaActionSound.CLICK);
         }
 
         updateStats();
