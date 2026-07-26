@@ -50,7 +50,8 @@
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            tools:replace="android:screenOrientation" />
 
         <!-- 局域网同步服务 -->
         <service
