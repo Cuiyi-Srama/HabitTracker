@@ -79,4 +79,7 @@ dependencies {
 
     // AndroidX Biometric (指纹/设备解锁)
     implementation 'androidx.biometric:biometric:1.2.0-alpha05'
+
+    // Glide (图片加载)
+    implementation 'com.github.bumptech.glide:glide:4.15.1'
 }
