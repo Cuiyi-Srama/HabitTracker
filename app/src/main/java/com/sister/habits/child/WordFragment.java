@@ -280,6 +280,11 @@ public class WordFragment extends Fragment {
 
             syncManager.onDataChanged();
 
+            // 实时刷新金币余额显示
+            if (getActivity() instanceof ChildActivity) {
+                ((ChildActivity) getActivity()).refreshCoinBalance();
+            }
+
         } else {
             // ❌ 答错（不惩罚🌸）
             clicked.setBackgroundColor(0xFFE53935);
