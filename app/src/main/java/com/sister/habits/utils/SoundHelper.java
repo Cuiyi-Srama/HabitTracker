@@ -65,17 +65,6 @@ public class SoundHelper {
         Log.w(TAG, "Vibrator 获取状态: " + (vibrator != null ? "非空" : "NULL"));
         if (vibrator != null) {
             Log.w(TAG, "hasVibrator: " + vibrator.hasVibrator());
-            // 测试震动——启动时震一下确认系统功能正常
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(200, 255));
-                } else {
-                    vibrator.vibrate(200);
-                }
-                Log.w(TAG, "启动测试震动已发送 (200ms, amp=255)");
-            } catch (Exception e) {
-                Log.e(TAG, "启动测试震动失败", e);
-            }
         }
     }
 
@@ -97,44 +86,96 @@ public class SoundHelper {
     }
 
     /**
-     * 答对音效 + 震动
+     * 答对音效 + 愉悦确认震动
+     * 手感：短促有力的确认感（30ms 单震）
      */
     public void playCorrectSound() {
         if (!soundEnabled) return;
         try {
-            // 用 ToneGenerator 播放一个欢快的双音提示（类似叮咚）
             toneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 150);
-            vibrate(50);
+            vibrate(30, 255);
         } catch (Exception e) {
             Log.e(TAG, "播放答对音效失败", e);
         }
     }
 
     /**
-     * 点击按钮音效 + 震动
+     * 按钮点击震动——极短点触感
+     * 手感：干脆利落（12ms，类似 iOS light impact）
      */
     public void playClickSound() {
         if (!soundEnabled) return;
         try {
             toneGenerator.startTone(ToneGenerator.TONE_PROP_PROMPT, 80);
-            vibrate(20);
+            vibrate(12, 255);
         } catch (Exception e) {
             Log.e(TAG, "播放点击音效失败", e);
         }
     }
 
     /**
-     * 连击奖励音效（更响亮，更愉悦）
+     * Tab 切换震动——超轻点触
+     * 手感：最轻最柔（8ms，几乎感觉不到但增加质感）
+     */
+    public void playTabClickSound() {
+        if (!soundEnabled || vibrator == null || !vibrator.hasVibrator()) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(8, 200));
+            } else {
+                vibrator.vibrate(8);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Tab点击震动失败", e);
+        }
+    }
+
+    /**
+     * 答错反馈震动——轻柔双震提醒
+     * 手感：两次极短震动（类似 gently tap on shoulder），不惩罚不焦虑
+     */
+    public void playErrorVibration() {
+        if (!soundEnabled || vibrator == null || !vibrator.hasVibrator()) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createWaveform(
+                        new long[]{0, 10, 30, 10}, -1));
+            } else {
+                vibrator.vibrate(new long[]{0, 10, 30, 10}, -1);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "错误反馈震动失败", e);
+        }
+    }
+
+    /**
+     * 连击奖励音效 + 递增强度的震动
+     * 手感：连击数越高震动越强
      */
     public void playStreakSound(int count) {
         if (!soundEnabled) return;
         try {
-            if (count >= 5) {
+            if (count >= 10) {
+                toneGenerator.startTone(ToneGenerator.TONE_SUP_RINGTONE, 400);
+                // 10连：强确认感（两次增强震）
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(
+                            new long[]{0, 30, 50, 50}, -1));
+                } else {
+                    vibrator.vibrate(new long[]{0, 30, 50, 50}, -1);
+                }
+            } else if (count >= 5) {
                 toneGenerator.startTone(ToneGenerator.TONE_SUP_RINGTONE, 300);
-                vibrate(100);
+                // 5连：愉悦的渐强
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(
+                            new long[]{0, 15, 30, 25}, -1));
+                } else {
+                    vibrator.vibrate(new long[]{0, 15, 30, 25}, -1);
+                }
             } else {
                 toneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 200);
-                vibrate(60);
+                vibrate(20, 255);
             }
         } catch (Exception e) {
             Log.e(TAG, "播放连击音效失败", e);
@@ -142,48 +183,37 @@ public class SoundHelper {
     }
 
     /**
-     * 打卡完成音效
+     * 打卡完成音效 + 庆祝节奏震动
+     * 手感：渐强三连震（完成任务的成就感）
      */
     public void playCheckInSound() {
         if (!soundEnabled) return;
         try {
             toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 400);
-            // 节奏震动：短-短-长
-            vibratePattern(new long[]{0, 50, 100, 50, 100, 150});
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createWaveform(
+                        new long[]{0, 20, 30, 30, 50, 50}, -1));
+            } else {
+                vibrator.vibrate(new long[]{0, 20, 30, 30, 50, 50}, -1);
+            }
         } catch (Exception e) {
             Log.e(TAG, "播放打卡音效失败", e);
         }
     }
 
     /**
-     * 简单震动
+     * 简单震动（指定振幅）
      */
-    public void vibrate(long ms) {
+    public void vibrate(long ms, int amplitude) {
         if (vibrator == null || !vibrator.hasVibrator()) return;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE));
+                vibrator.vibrate(VibrationEffect.createOneShot(ms, amplitude));
             } else {
                 vibrator.vibrate(ms);
             }
         } catch (Exception e) {
             Log.e(TAG, "震动失败", e);
-        }
-    }
-
-    /**
-     * 节奏震动
-     */
-    public void vibratePattern(long[] pattern) {
-        if (vibrator == null || !vibrator.hasVibrator()) return;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
-            } else {
-                vibrator.vibrate(pattern, -1);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "节奏震动失败", e);
         }
     }
 
