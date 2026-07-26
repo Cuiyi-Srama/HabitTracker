@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.EconomyConfig;
