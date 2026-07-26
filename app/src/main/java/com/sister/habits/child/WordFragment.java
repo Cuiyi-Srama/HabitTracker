@@ -58,7 +58,7 @@ public class WordFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_word, container, false);
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
-        soundHelper = new SoundHelper(requireContext());
+        soundHelper = SoundHelper.getInstance(requireContext());
 
         // 读取每日单词上限
         EconomyConfig config = db.economyConfigDao().getConfig();
@@ -351,8 +351,6 @@ public class WordFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (soundHelper != null) {
-            soundHelper.shutdown();
-        }
+        SoundHelper.releaseInstance();
     }
 }
