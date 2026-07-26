@@ -49,6 +49,7 @@ public class WordFragment extends Fragment {
     private int streakCount = 0;
     private int todayLearnedCount = 0;
     private int dailyWordLimit = 10;
+    private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
     private boolean isReviewMode = false;
 
@@ -61,8 +62,12 @@ public class WordFragment extends Fragment {
 
         // 读取每日单词上限
         EconomyConfig config = db.economyConfigDao().getConfig();
-        if (config != null) dailyWordLimit = config.maxDailyWords;
+        if (config != null) {
+            dailyWordLimit = config.maxDailyWords;
+            dailyReviewLimit = config.maxDailyReview;
+        }
         if (dailyWordLimit <= 0) dailyWordLimit = 10;
+        if (dailyReviewLimit <= 0) dailyReviewLimit = 20;
 
         tvStats = view.findViewById(R.id.tv_word_stats);
         tvWord = view.findViewById(R.id.tv_word_display);
@@ -112,44 +117,30 @@ public class WordFragment extends Fragment {
 
         List<Vocabulary> words;
         if (review) {
-            // ===== 复习模式：获取到期的待复习单词 =====
+            // ===== 复习模式：获取到期的待复习单词，按每日上限截断 =====
             List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis());
             words = new ArrayList<>();
             for (WordReview wr : dueReviews) {
+                if (words.size() >= dailyReviewLimit) break;
                 Vocabulary v = db.vocabularyDao().getById(wr.wordId);
                 if (v != null && v.active && !v.mastered) {
                     words.add(v);
                 }
             }
             Collections.shuffle(words);
-            if (words.size() > 20) words = words.subList(0, 20);
-            tvPrompt.setText("🔄 今日复习 (" + words.size() + " 个待复习)");
+            tvPrompt.setText("🔄 今日复习 (" + words.size() + "/" + dueReviews.size() + " 个待复习)");
         } else {
-            // ===== 学习模式：获取未学过的新词 =====
+            // ===== 学习模式：只出未学过的新词，不自动补旧词 =====
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered();
             words = new ArrayList<>();
-            Set<String> existingReviews = new HashSet<>();
-            // 查询已有 WordReview 的单词（说明已进入学习周期）
             for (Vocabulary v : allActive) {
                 WordReview wr = db.wordReviewDao().getByWordId(v.id);
                 if (wr == null) {
-                    // 完全没有复习记录 → 新词
                     words.add(v);
                     if (words.size() >= dailyWordLimit) break;
                 }
             }
-            // 如果新词不够，补充已学但需要重试的（stage=0 且到期的）
-            if (words.size() < 5) {
-                for (Vocabulary v : allActive) {
-                    if (words.size() >= dailyWordLimit) break;
-                    WordReview wr = db.wordReviewDao().getByWordId(v.id);
-                    if (wr != null && wr.stage == 0 && wr.isDue() && !words.contains(v)) {
-                        words.add(v);
-                    }
-                }
-            }
-            Collections.shuffle(words);
-            tvPrompt.setText("📚 今日新词 (" + words.size() + " 个)");
+            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + dailyWordLimit + " 个)");
         }
 
         if (words.isEmpty()) {
