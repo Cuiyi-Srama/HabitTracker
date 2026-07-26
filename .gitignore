@@ -1,0 +1,88 @@
+# =============================================================================
+# 🚫 .gitignore — HabitTracker
+# =============================================================================
+# 好习惯养成 (HabitTracker) Android 项目 Git 忽略规则
+# =============================================================================
+
+# ── Android / Gradle ─────────────────────────────────────────────────────────
+*.iml
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# ── NDK / CMake ──────────────────────────────────────────────────────────────
+.cxx/
+*.so
+*.o
+*.obj
+*.exp
+*.lib
+*.dylib
+.externalNativeBuild/
+native-libs/
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iws
+*.ipr
+out/
+.nav/
+.nb-gradle/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# ── Android Studio captures ─────────────────────────────────────────────────
+captures/
+.externalNativeBuild/
+.navigation/
+.render/
+
+# ── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.bak
+*.log
+
+# ── Gradle wrapper (keep the jar) ───────────────────────────────────────────
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Signing / Keystore ──────────────────────────────────────────────────────
+*.keystore
+*.jks
+keystore.properties
+signing.properties
+
+# ── Firebase ────────────────────────────────────────────────────────────────
+google-services.json
+*.google-services.json
+
+# ── Python / Server ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ── Project specific ────────────────────────────────────────────────────────
+# 不要忽略 proguard 规则文件
+!app/proguard-rules.pro
+
+# HubServer 临时文件
+*.pid
+
+# 截图目录（仅跟踪目录结构）
+screenshots/
+
+# 编译产物 & 临时文件
+*.tmp
