@@ -203,6 +203,7 @@ public class ParentActivity extends AppCompatActivity {
         int totalCheckIns = db.checkInDao().getTotalCheckIns("sister");
         int maxStreak = db.checkInDao().getMaxStreak("sister");
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
+        int pendingTaskCount = db.taskDao().getByStatus("pending").size();
         Integer balance = db.coinTransactionDao().getBalance("sister");
 
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
@@ -215,7 +216,8 @@ public class ParentActivity extends AppCompatActivity {
                 "总打卡: " + totalCheckIns + " 天\n" +
                 "最长连续: " + maxStreak + " 天 🏆\n" +
                 "金币余额: 🪙 " + (balance != null ? balance : 0) + "\n" +
-                "待审批兑换: " + pendingCount + " 项"
+                "待审批兑换: " + pendingCount + " 项\n" +
+                "待确认任务: " + pendingTaskCount + " 项"
         );
     }
 
@@ -326,6 +328,7 @@ public class ParentActivity extends AppCompatActivity {
         android.widget.EditText etTitle = view.findViewById(R.id.et_task_title);
         android.widget.EditText etDesc = view.findViewById(R.id.et_task_desc);
         android.widget.EditText etReward = view.findViewById(R.id.et_task_reward);
+        RadioGroup rgType = view.findViewById(R.id.rg_task_type);
 
         new AlertDialog.Builder(this)
                 .setTitle("发布新任务")
@@ -337,10 +340,16 @@ public class ParentActivity extends AppCompatActivity {
                     try { task.rewardCoins = Integer.parseInt(etReward.getText().toString()); }
                     catch (Exception e) { task.rewardCoins = 10; }
                     task.type = "custom";
+                    // 读取任务类型
+                    int typeId = rgType.getCheckedRadioButtonId();
+                    if (typeId == R.id.rb_type_weekly) task.recurrenceType = "weekly";
+                    else if (typeId == R.id.rb_type_monthly) task.recurrenceType = "monthly";
+                    else if (typeId == R.id.rb_type_permanent) task.recurrenceType = "permanent";
+                    else task.recurrenceType = "once";
                     task.deviceId = syncManager.getDeviceId();
                     db.taskDao().insert(task);
                     syncManager.onDataChanged();
-                    Toast.makeText(this, "任务已发布 🎯", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "任务已发布 🎯 (" + task.recurrenceType + ")", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("取消", null)
                 .show();
