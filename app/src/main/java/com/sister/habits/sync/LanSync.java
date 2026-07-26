@@ -99,6 +99,9 @@ public class LanSync {
                         Log.d(TAG, "设备 " + targetIp + " 不可达");
                     }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "局域网同步扫描失败", e);
+        }
         }).start();
     }
 
