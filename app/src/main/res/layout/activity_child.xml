@@ -6,6 +6,21 @@
     android:orientation="vertical"
     android:background="@color/background_child">
 
+    <!-- 顶部：每日一句 -->
+    <TextView
+        android:id="@+id/tv_daily_quote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="#FFF3E0"
+        android:text="🌟 加载中..."
+        android:textSize="13sp"
+        android:textColor="#E65100"
+        android:lineSpacingExtra="2dp"
+        android:gravity="center" />
+
     <!-- 顶部：金币余额 + 打卡按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
