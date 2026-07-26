@@ -41,6 +41,7 @@ public abstract class AppDatabase extends RoomDatabase {
                         AppDatabase.class,
                         "habit_tracker.db"
                     )
+                    .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
                     .build();
                 }
