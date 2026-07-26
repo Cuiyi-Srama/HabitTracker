@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/background_main"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🌟 好习惯养成"
+        android:textSize="32sp"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="每天进步一点点～"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="48dp" />
+
+    <Button
+        android:id="@+id/btn_child_mode"
+        android:layout_width="280dp"
+        android:layout_height="64dp"
+        android:text="🎀 妹妹的乐园"
+        android:textSize="20sp"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/child_pink"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="24dp"
+        app:cornerRadius="32dp" />
+
+    <Button
+        android:id="@+id/btn_parent_mode"
+        android:layout_width="280dp"
+        android:layout_height="64dp"
+        android:text="🔐 家长管理"
+        android:textSize="20sp"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/parent_blue"
+        android:textColor="@android:color/white"
+        app:cornerRadius="32dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="家长模式需要密码验证"
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>

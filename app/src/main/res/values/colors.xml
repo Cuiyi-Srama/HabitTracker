@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色调 -->
+    <color name="child_pink">#FF6B9D</color>
+    <color name="child_pink_light">#FFF0F5</color>
+    <color name="child_green">#4CAF50</color>
+    <color name="parent_blue">#2196F3</color>
+
+    <!-- 背景色 -->
+    <color name="background_main">#FFF8F0</color>
+    <color name="background_child">#FFF5F9</color>
+    <color name="background_parent">#F0F5FF</color>
+
+    <!-- 文字色 -->
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#888888</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- 卡片背景 -->
+    <color name="card_background">#FFFFFF</color>
+</resources>

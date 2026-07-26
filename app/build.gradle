@@ -1,0 +1,77 @@
+plugins {
+    id 'com.android.application'
+    // Firebase远程同步：如果需要，取消下面这行的注释
+    // 同时需要在 app/ 目录下放 google-services.json
+    // id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'com.sister.habits'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.sister.habits'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    // AndroidX Core
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.3.1'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+
+    // Activity & Fragment
+    implementation 'androidx.activity:activity:1.7.2'
+    implementation 'androidx.fragment:fragment:1.6.1'
+
+    // Room Database
+    implementation 'androidx.room:room-runtime:2.5.2'
+    annotationProcessor 'androidx.room:room-compiler:2.5.2'
+
+    // Lifecycle
+    implementation 'androidx.lifecycle:lifecycle-runtime:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.6.2'
+
+    // Firebase (远程同步 - 如果需要，取消注释，并配置 google-services.json)
+    // implementation 'com.google.firebase:firebase-database:20.2.2'
+    // implementation 'com.google.firebase:firebase-auth:22.1.1'
+
+    // NanoHTTPD (局域网HTTP Server)
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+
+    // ZXing (QR码生成/扫描)
+    implementation 'com.google.zxing:core:3.5.1'
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
+    // Gson (JSON序列化)
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Crypto (AES-256-GCM 端到端加密)
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">好习惯养成</string>
+    <string name="child_mode">妹妹的乐园</string>
+    <string name="parent_mode">家长管理</string>
+    <string name="check_in">今日打卡</string>
+    <string name="coin_balance">金币余额</string>
+    <string name="shop">商城</string>
+    <string name="tasks">任务</string>
+    <string name="words">单词</string>
+    <string name="pending_approvals">待审批兑换</string>
+</resources>

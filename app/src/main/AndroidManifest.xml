@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 局域网同步需WiFi状态 + 网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- QR码扫描需相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 存储备份 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <application
+        android:name=".HabitApp"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.HabitTracker"
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:targetApi="34">
+
+        <!-- 主入口：双模式选择 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 孩子模式Activity -->
+        <activity
+            android:name=".child.ChildActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HabitTracker.Child" />
+
+        <!-- 家长模式Activity -->
+        <activity
+            android:name=".parent.ParentActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HabitTracker.Parent" />
+
+        <!-- QR码扫描Activity (ZXing) -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- 局域网同步服务 -->
+        <service
+            android:name=".sync.LanSyncService"
+            android:exported="false" />
+
+    </application>
+
+</manifest>
