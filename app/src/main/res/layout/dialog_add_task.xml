@@ -81,7 +81,31 @@
             android:text="常驻"
             android:textSize="13sp" />
 
+        <RadioButton
+            android:id="@+id/rb_type_timed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="限时"
+            android:textSize="13sp" />
+
     </RadioGroup>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_deadline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="截止时间（限时任务，格式: 2026-12-31）"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone">
+
+        <android.widget.EditText
+            android:id="@+id/et_task_deadline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="date" />
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
