@@ -27,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_DEFAULT_MODE = "default_mode";
     private static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
 
+    private static final String ONBOARDING_PREFS = "onboarding";
+    private static final String ONBOARDING_DONE = "onboarding_done";
+
     private Executor executor;
     private BiometricPrompt biometricPrompt;
     private BiometricPrompt.PromptInfo promptInfo;
@@ -48,8 +51,7 @@ public class MainActivity extends AppCompatActivity {
         String defaultMode = prefs.getString(KEY_DEFAULT_MODE, "child");
 
         if ("child".equals(defaultMode)) {
-            startActivity(new Intent(this, ChildActivity.class));
-            finish();
+            launchChildMode();
             return;
         } else if ("parent".equals(defaultMode)) {
             String savedPin = prefs.getString(KEY_PIN, null);
@@ -60,6 +62,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         showModeSelection();
+    }
+
+    private void launchChildMode() {
+        SharedPreferences onboardingPrefs = getSharedPreferences(ONBOARDING_PREFS, MODE_PRIVATE);
+        if (onboardingPrefs.getBoolean(ONBOARDING_DONE, false)) {
+            startActivity(new Intent(this, ChildActivity.class));
+        } else {
+            startActivity(new Intent(this, com.sister.habits.child.WelcomeActivity.class));
+        }
+        finish();
     }
 
     /**
@@ -133,7 +145,12 @@ public class MainActivity extends AppCompatActivity {
         Button btnParent = findViewById(R.id.btn_parent_mode);
 
         btnChild.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, ChildActivity.class));
+            SharedPreferences onboardingPrefs = getSharedPreferences(ONBOARDING_PREFS, MODE_PRIVATE);
+            if (onboardingPrefs.getBoolean(ONBOARDING_DONE, false)) {
+                startActivity(new Intent(MainActivity.this, ChildActivity.class));
+            } else {
+                startActivity(new Intent(MainActivity.this, com.sister.habits.child.WelcomeActivity.class));
+            }
         });
 
         btnParent.setOnClickListener(v -> {
