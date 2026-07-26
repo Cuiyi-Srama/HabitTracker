@@ -13,11 +13,11 @@ public class HabitApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // 初始化数据库（填充词库种子 + 经济参数）
-        DatabaseInitializer.init(this);
-
-        // 初始化同步管理器
-        SyncManager syncManager = SyncManager.getInstance(this);
-        syncManager.triggerLanSync();
+        // 初始化数据库和同步服务（放在子线程，Room禁止主线程操作）
+        new Thread(() -> {
+            DatabaseInitializer.init(this);
+            SyncManager syncManager = SyncManager.getInstance(this);
+            syncManager.triggerLanSync();
+        }).start();
     }
 }
