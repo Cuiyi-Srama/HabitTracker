@@ -1,56 +1,27 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="32dp"
-    android:background="@color/child_pink">
-
-    <TextView
-        android:id="@+id/tv_welcome_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:text="欢迎来到好习惯！"
-        android:layout_marginBottom="24dp" />
-
-    <TextView
-        android:id="@+id/tv_welcome_desc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:gravity="center"
-        android:lineSpacingExtra="4dp"
-        android:text="每天打卡、背单词、做任务
-就能获得金币兑换奖励哦！" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="48dp">
-
-        <Button
-            android:id="@+id/btn_welcome_skip"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="跳过"
-            style="@style/Widget.Material3.Button.Tonal" />
-
-        <Button
-            android:id="@+id/btn_welcome_next"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="下一步" />
-
+<?xml version=1.0 encoding=utf-8?>
+<LinearLayout xmlns:android=http://schemas.android.com/apk/res/android
+    android:layout_width=match_parent android:layout_height=match_parent
+    android:orientation=vertical android:gravity=center
+    android:padding=32dp android:background=@color/child_pink>
+    <TextView android:id=@+id/tv_welcome_title
+        android:layout_width=wrap_content android:layout_height=wrap_content
+        android:textSize=28sp android:textStyle=bold
+        android:textColor=@android:color/white android:text=欢迎来到好习惯！
+        android:layout_marginBottom=24dp />
+    <TextView android:id=@+id/tv_welcome_desc
+        android:layout_width=wrap_content android:layout_height=wrap_content
+        android:textSize=16sp android:textColor=@android:color/white
+        android:gravity=center android:lineSpacingExtra=4dp
+        android:text=每天打卡、背单词、做任务n就能获得金币兑换奖励哦！ />
+    <LinearLayout android:layout_width=match_parent
+        android:layout_height=wrap_content android:orientation=horizontal
+        android:gravity=center android:layout_marginTop=48dp>
+        <Button android:id=@+id/btn_welcome_skip
+            android:layout_width=0dp android:layout_height=48dp
+            android:layout_weight=1 android:layout_marginEnd=8dp
+            android:text=跳过 style=@style/Widget.Material3.Button.Tonal />
+        <Button android:id=@+id/btn_welcome_next
+            android:layout_width=0dp android:layout_height=48dp
+            android:layout_weight=1 android:text=下一步 />
     </LinearLayout>
-
 </LinearLayout>
