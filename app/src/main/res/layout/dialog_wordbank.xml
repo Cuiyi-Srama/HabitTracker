@@ -71,6 +71,13 @@
             android:text="五年级"
             android:textSize="14sp" />
 
+        <CheckBox
+            android:id="@+id/cb_grade_junior"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="初中（拓展）"
+            android:textSize="14sp" />
+
         <!-- 每日单词量 -->
         <TextView
             android:layout_width="match_parent"
