@@ -13,7 +13,8 @@ import java.util.UUID;
         indices = {@Index(value = "createdAt")})
 public class CoinTransaction {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String userId;        // 默认 "sister"
     public int amount;           // 正=获得，负=消费
