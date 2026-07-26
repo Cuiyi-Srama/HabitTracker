@@ -82,7 +82,7 @@ public class ChildActivity extends AppCompatActivity {
         }).attach();
     }
 
-    private void refreshCoinBalance() {
+    public void refreshCoinBalance() {
         Integer balance = db.coinTransactionDao().getBalance("sister");
         tvCoinBalance.setText("🪙 " + (balance != null ? balance : 0));
     }
