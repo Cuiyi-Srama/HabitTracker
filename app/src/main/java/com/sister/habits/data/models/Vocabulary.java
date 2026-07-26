@@ -1,5 +1,6 @@
 package com.sister.habits.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Entity(tableName = "vocabulary")
 public class Vocabulary {
     @PrimaryKey
+    @NonNull
     public String id;
 
     public String word;            // 英文单词
