@@ -4,6 +4,9 @@ import android.content.Context;
 import com.sister.habits.data.dao.EconomyConfigDao;
 import com.sister.habits.data.dao.VocabularyDao;
 import com.sister.habits.data.models.EconomyConfig;
+import com.sister.habits.data.models.Vocabulary;
+
+import java.util.List;
 
 /**
  * 数据库初始化——首次启动时填充种子数据
@@ -23,10 +26,12 @@ public class DatabaseInitializer {
             configDao.setConfig(new EconomyConfig());
         }
 
-        // 初始化三年级词库
+        // 初始化词库（仅首次）
         VocabularyDao vocabDao = db.vocabularyDao();
-        if (vocabDao.getUnmasteredCount() + vocabDao.getMasteredCount() == 0) {
-            vocabDao.insertAll(WordSeed.getWords());
+        int existingCount = vocabDao.getActiveCount();
+        if (existingCount == 0) {
+            List<Vocabulary> words = WordBankLoader.getAllWords();
+            vocabDao.insertAll(words);
         }
 
         initialized = true;
