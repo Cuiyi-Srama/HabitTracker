@@ -48,7 +48,7 @@ public class ChildActivity extends AppCompatActivity {
 
                 db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
-        soundHelper = new SoundHelper(this);
+        soundHelper = SoundHelper.getInstance(this);
 
         tvCoinBalance = findViewById(R.id.tv_coin_balance);
         Button btnCheckIn = findViewById(R.id.btn_check_in);
