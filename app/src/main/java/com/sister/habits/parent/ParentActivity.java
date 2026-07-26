@@ -49,7 +49,7 @@ public class ParentActivity extends AppCompatActivity {
     private SoundHelper soundHelper;
 
     private TextView tvStats;
-    private RecyclerView rvPendingApprovals;
+    private RecyclerView rvPendingApprovals, rvPendingTasks;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
 
     // 相册选图 — 当前选中的商品图片路径
@@ -164,6 +164,7 @@ public class ParentActivity extends AppCompatActivity {
 
         tvStats = findViewById(R.id.tv_parent_stats);
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
+        rvPendingTasks = findViewById(R.id.rv_pending_tasks);
         btnAddTask = findViewById(R.id.btn_add_task);
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
         btnSettings = findViewById(R.id.btn_settings);
@@ -171,6 +172,7 @@ public class ParentActivity extends AppCompatActivity {
         btnRefresh = findViewById(R.id.btn_refresh);
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
+        rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
 
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
@@ -194,6 +196,7 @@ public class ParentActivity extends AppCompatActivity {
     private void refreshAll() {
         refreshStats();
         loadPendingApprovals();
+        loadPendingTasks();
     }
 
     private void refreshStats() {
@@ -242,6 +245,80 @@ public class ParentActivity extends AppCompatActivity {
         refreshAll();
         Toast.makeText(this, (approved ? "✅ 已确认" : "❌ 已拒绝") + " " + redemption.itemName,
                 Toast.LENGTH_SHORT).show();
+    }
+
+    // ===== 任务审批 =====
+    private void loadPendingTasks() {
+        List<Task> pending = db.taskDao().getPending();
+        if (pending.isEmpty()) {
+            rvPendingTasks.setAdapter(null);
+            return;
+        }
+        rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
+    }
+
+    private void processTaskApproval(Task task, boolean approved) {
+        if (approved) {
+            // 确认 → 发金币
+            db.taskDao().confirmTask(task.id, System.currentTimeMillis());
+            Integer balance = db.coinTransactionDao().getBalance("sister");
+            int newBalance = (balance != null ? balance : 0) + task.rewardCoins;
+            com.sister.habits.data.models.CoinTransaction ct =
+                    new com.sister.habits.data.models.CoinTransaction(
+                            "sister", task.rewardCoins, newBalance,
+                            "task_reward", "任务奖励: " + task.title,
+                            syncManager.getDeviceId());
+            db.coinTransactionDao().insert(ct);
+            Toast.makeText(this, "✅ 已确认 " + task.title + "，妹妹获得 🪙+" + task.rewardCoins, Toast.LENGTH_SHORT).show();
+        } else {
+            // 拒绝 → 退回待完成状态
+            db.taskDao().reactivate(task.id);
+            Toast.makeText(this, "❌ 已拒绝 " + task.title + "，任务退回", Toast.LENGTH_SHORT).show();
+        }
+        syncManager.onDataChanged();
+        refreshAll();
+    }
+
+    private static class TaskApprovalAdapter extends RecyclerView.Adapter<TaskApprovalAdapter.ViewHolder> {
+        private final List<Task> tasks;
+        private final OnTaskApprovalListener listener;
+
+        interface OnTaskApprovalListener { void onApprove(Task task, boolean approved); }
+
+        TaskApprovalAdapter(List<Task> tasks, OnTaskApprovalListener listener) {
+            this.tasks = tasks;
+            this.listener = listener;
+        }
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = android.view.LayoutInflater.from(parent.getContext())
+                    .inflate(android.R.layout.simple_list_item_1, parent, false);
+            return new ViewHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            Task task = tasks.get(position);
+            holder.textView.setText("📋 " + task.title + "  🪙+" + task.rewardCoins);
+            holder.itemView.setOnClickListener(v -> {
+                new AlertDialog.Builder(v.getContext())
+                        .setTitle("确认任务完成")
+                        .setMessage("任务: " + task.title + "\n描述: " + task.description + "\n奖励: 🪙" + task.rewardCoins + "\n\n确认妹妹已完成此任务吗？")
+                        .setPositiveButton("✅ 确认发金币", (d, w) -> listener.onApprove(task, true))
+                        .setNegativeButton("❌ 未完成", (d, w) -> listener.onApprove(task, false))
+                        .setNeutralButton("稍后", null)
+                        .show();
+            });
+        }
+
+        @Override
+        public int getItemCount() { return tasks.size(); }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            android.widget.TextView textView;
+            ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
+        }
     }
 
     private void showAddTaskDialog() {
