@@ -1,5 +1,7 @@
 package com.sister.habits.child;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -20,6 +22,7 @@ import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.EconomyConfig;
 import com.sister.habits.data.models.WordReview;
 import com.sister.habits.sync.SyncManager;
+import com.sister.habits.utils.SoundHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -33,8 +36,9 @@ import java.util.Locale;
  */
 public class ChildActivity extends AppCompatActivity {
 
-    private AppDatabase db;
+        private AppDatabase db;
     private SyncManager syncManager;
+    private SoundHelper soundHelper;
     private TextView tvCoinBalance;
 
     @Override
@@ -42,8 +46,9 @@ public class ChildActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_child);
 
-        db = AppDatabase.getInstance(this);
+                db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
+        soundHelper = new SoundHelper(this);
 
         tvCoinBalance = findViewById(R.id.tv_coin_balance);
         Button btnCheckIn = findViewById(R.id.btn_check_in);
@@ -154,8 +159,9 @@ public class ChildActivity extends AppCompatActivity {
                 .setTitle("⚙️ 设置")
                 .setItems(new String[]{
                         "👤 查看我的统计",
-                        "🔊 朗读开关",
-                        "📖 今日单词进度"
+                        "🔊 朗读速度(正常/慢速)",
+                        "📖 今日单词进度",
+                        "🔐 进入家长管理"
                 }, (dialog, which) -> {
                     switch (which) {
                         case 0:
@@ -174,7 +180,15 @@ public class ChildActivity extends AppCompatActivity {
                                     .show();
                             break;
                         case 1:
-                            Toast.makeText(this, "🔊 朗读功能已切换（点击单词可朗读）", Toast.LENGTH_SHORT).show();
+                            // 切换TTS速度
+                            SharedPreferences prefs = getSharedPreferences("child_prefs", MODE_PRIVATE);
+                            boolean isSlow = prefs.getBoolean("tts_slow", false);
+                            float newSpeed = isSlow ? 1.0f : 0.5f;
+                            prefs.edit().putBoolean("tts_slow", !isSlow).apply();
+                            soundHelper.setTtsSpeed(newSpeed);
+                            String speedText = isSlow ? "🔊 已切换为正常速度" : "🐢 已切换为慢速(0.5x)";
+                            soundHelper.speakWord("Hello", newSpeed);
+                            Toast.makeText(this, speedText, Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
                             int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis());
@@ -188,6 +202,13 @@ public class ChildActivity extends AppCompatActivity {
                                             "✅ 已掌握: " + mastered + " 个")
                                     .setPositiveButton("继续加油 💪", null)
                                     .show();
+                            break;
+                        case 3:
+                            // 进入家长管理（需要验证）
+                            Intent intent = new Intent(this, com.sister.habits.MainActivity.class);
+                            intent.putExtra("force_parent_mode", true);
+                            startActivity(intent);
+                            finish();
                             break;
                     }
                 })

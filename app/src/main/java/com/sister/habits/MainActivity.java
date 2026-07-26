@@ -37,6 +37,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        // 检查是否从儿童模式强制跳转到家长模式
+        boolean forceParent = getIntent().getBooleanExtra("force_parent_mode", false);
+        if (forceParent) {
+            authenticateWithBiometricOrPin(true);
+            return;
+        }
+
         String defaultMode = prefs.getString(KEY_DEFAULT_MODE, "child");
 
         if ("child".equals(defaultMode)) {

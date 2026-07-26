@@ -6,6 +6,7 @@ import android.media.AudioManager;
 import android.media.SoundPool;
 import android.media.ToneGenerator;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
@@ -27,6 +28,7 @@ public class SoundHelper {
     private boolean ttsReady = false;
     private boolean soundEnabled = true;
     private boolean ttsEnabled = true;
+    private float ttsSpeed = 1.0f; // 1.0=正常, 0.5=慢速
 
     // 预加载音效ID（用 ToneGenerator 替代 SoundPool 的加载声音，避免依赖音频文件）
     private final ToneGenerator toneGenerator;
@@ -53,7 +55,7 @@ public class SoundHelper {
                 .build();
 
         // ToneGenerator 用于简单提示音
-        toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60);
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85);
 
         // 震动服务
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
@@ -63,9 +65,15 @@ public class SoundHelper {
      * TTS朗读单词
      */
     public void speakWord(String word) {
+        speakWord(word, ttsSpeed);
+    }
+
+    public void speakWord(String word, float speed) {
         if (!ttsEnabled || !ttsReady || tts == null) return;
         try {
-            tts.speak(word, TextToSpeech.QUEUE_FLUSH, null, null);
+            Bundle params = new Bundle();
+            params.putFloat(TextToSpeech.Engine.KEY_PARAM_SPEECH_RATE, speed);
+            tts.speak(word, TextToSpeech.QUEUE_FLUSH, params, null);
         } catch (Exception e) {
             Log.e(TAG, "TTS朗读失败: " + word, e);
         }
@@ -168,6 +176,10 @@ public class SoundHelper {
 
     public void setTtsEnabled(boolean enabled) {
         this.ttsEnabled = enabled;
+    }
+
+    public void setTtsSpeed(float speed) {
+        this.ttsSpeed = speed;
     }
 
     /**

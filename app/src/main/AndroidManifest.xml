@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- QR码扫描需相机权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 存储备份 -->
@@ -50,8 +51,7 @@
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
-            tools:replace="android:screenOrientation" />
+            android:screenOrientation="portrait" />
 
         <!-- 局域网同步服务 -->
         <service
