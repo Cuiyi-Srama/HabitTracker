@@ -1,6 +1,7 @@
 package com.sister.habits.child;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;

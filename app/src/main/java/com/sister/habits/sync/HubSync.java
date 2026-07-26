@@ -101,7 +101,7 @@ public class HubSync {
                         case "/hub/discover":
                             return handleDiscover();
                     }
-                    return newFixedLengthResponse(
+                    return NanoHTTPD.newFixedLengthResponse(
                             Response.Status.NOT_FOUND, "text/plain", "Not Found");
                 }
             };
@@ -145,12 +145,12 @@ public class HubSync {
 
             // 返回Hub上积累的所有未同步数据给请求方
             String responseData = buildAccumulatedPayload();
-            return newFixedLengthResponse(
+            return NanoHTTPD.NanoHTTPD.newFixedLengthResponse(
                     Response.Status.OK, "application/json", responseData);
 
         } catch (Exception e) {
             Log.e(TAG, "处理同步请求失败", e);
-            return newFixedLengthResponse(
+            return NanoHTTPD.newFixedLengthResponse(
                     Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
@@ -172,10 +172,10 @@ public class HubSync {
             response.hubDeviceId = SyncManager.getInstance(context).getDeviceId();
 
             String result = gson.toJson(response);
-            return newFixedLengthResponse(Response.Status.OK, "application/json", result);
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", result);
 
         } catch (Exception e) {
-            return newFixedLengthResponse(
+            return NanoHTTPD.newFixedLengthResponse(
                     Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
@@ -185,14 +185,14 @@ public class HubSync {
         String json = "{\"status\":\"hub_online\",\"device\":\""
                 + SyncManager.getInstance(context).getDeviceId()
                 + "\",\"uptime\":\"active\"}";
-        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
     /** GET /hub/discover — Hub发现接口（用于设备扫描） */
     private Response handleDiscover() {
         String json = "{\"type\":\"habit_hub\",\"version\":1,\"device\":\""
                 + SyncManager.getInstance(context).getDeviceId() + "\"}";
-        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
     // ==================== 客户端：设备端调用 ====================

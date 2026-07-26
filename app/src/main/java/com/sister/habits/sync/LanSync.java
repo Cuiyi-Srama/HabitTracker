@@ -55,7 +55,7 @@ public class LanSync {
                         case "/sync":
                             return serveSync(session);
                         default:
-                            return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found");
+                            return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not Found");
                     }
                 }
             };
@@ -161,7 +161,7 @@ public class LanSync {
     private Response servePeek() {
         String json = "{\"status\":\"online\",\"device\":\"" +
                 SyncManager.getInstance(context).getDeviceId() + "\"}";
-        return newFixedLengthResponse(Response.Status.OK, "application/json", json);
+        return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", json);
     }
 
     private Response serveSync(IHTTPSession session) {
@@ -180,9 +180,9 @@ public class LanSync {
                 payload = sb.toString();
             }
             mergeRemoteData(payload != null ? payload : "");
-            return newFixedLengthResponse(Response.Status.OK, "application/json", buildSyncPayload());
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", buildSyncPayload());
         } catch (Exception e) {
-            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 

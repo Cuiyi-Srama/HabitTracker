@@ -2,6 +2,7 @@ package com.sister.habits.utils;
 
 import android.content.Context;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.SoundPool;
 import android.media.ToneGenerator;
 import android.os.Build;
@@ -52,7 +53,7 @@ public class SoundHelper {
                 .build();
 
         // ToneGenerator 用于简单提示音
-        toneGenerator = new ToneGenerator(ToneGenerator.STREAM_NOTIFICATION, 60);
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60);
 
         // 震动服务
         vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
