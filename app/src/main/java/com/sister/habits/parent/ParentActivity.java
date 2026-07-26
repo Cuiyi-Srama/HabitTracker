@@ -41,7 +41,8 @@ public class ParentActivity extends AppCompatActivity {
 
     private TextView tvStats;
     private RecyclerView rvPendingApprovals;
-    private Button btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
+    private View btnAddTask, btnAddShopItem, btnSettings, btnSync;
+    private Button btnRefresh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
