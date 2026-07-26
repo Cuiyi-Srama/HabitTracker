@@ -27,7 +27,7 @@
         android:lineSpacingExtra="4dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- 操作按钮行 -->
+    <!-- 操作按钮行 - 用自定义布局避免emoji基线错位 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -35,40 +35,112 @@
         android:gravity="center"
         android:layout_marginBottom="16dp">
 
-        <Button
+        <LinearLayout
             android:id="@+id/btn_add_task"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="📋 发布任务"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="6dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="@drawable/card_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-        <Button
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="发布任务"
+                android:textSize="11sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_add_shop_item"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="🏪 上架商品"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="6dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="@drawable/card_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-        <Button
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏪"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="上架商品"
+                android:textSize="11sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_settings"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="⚙️ 设置"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="6dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="@drawable/card_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-        <Button
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙️"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="设置"
+                android:textSize="11sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_sync"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="🔄 同步"
-            android:textSize="14sp" />
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="@drawable/card_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔄"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="同步"
+                android:textSize="11sp"
+                android:textColor="@color/text_primary" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
@@ -86,11 +158,31 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <Button
+    <LinearLayout
         android:id="@+id/btn_refresh"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="🔄 刷新数据"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:background="@drawable/card_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄"
+            android:textSize="18sp"
+            android:layout_marginEnd="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="刷新数据"
+            android:textSize="14sp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
 
 </LinearLayout>
