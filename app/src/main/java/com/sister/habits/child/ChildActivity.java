@@ -80,6 +80,22 @@ public class ChildActivity extends AppCompatActivity {
                 case 2: tab.setText("📖 单词"); break;
             }
         }).attach();
+
+        // Tab 点击震动反馈
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            private boolean firstSelect = true;
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                if (firstSelect) { firstSelect = false; return; } // 跳过 attach 触发的那次
+                soundHelper.playTabClickSound();
+            }
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) { }
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                soundHelper.playTabClickSound();
+            }
+        });
     }
 
     public void refreshCoinBalance() {
@@ -146,6 +162,9 @@ public class ChildActivity extends AppCompatActivity {
 
         // 触发同步
         syncManager.onDataChanged();
+
+        // 打卡成功音效 + 庆祝震动
+        soundHelper.playCheckInSound();
 
         // 显示动画效果
         String msg = "🎉 打卡成功！+ " + coinsEarned + " 金币\n连续打卡 " + streakDay + " 天";
