@@ -31,6 +31,9 @@ public interface WordReviewDao {
     @Update
     void update(WordReview review);
 
+    @Query("SELECT COUNT(*) FROM word_reviews WHERE lastReviewedAt >= :todayStart")
+    int getTodayCount(long todayStart);
+
     @Query("DELETE FROM word_reviews WHERE wordId = :wordId")
     void deleteByWordId(String wordId);
 
