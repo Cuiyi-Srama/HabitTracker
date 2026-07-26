@@ -28,6 +28,7 @@ import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.data.models.Task;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.utils.SoundHelper;
+import com.sister.habits.utils.ProfileManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -47,6 +48,7 @@ public class ParentActivity extends AppCompatActivity {
     private AppDatabase db;
     private SyncManager syncManager;
     private SoundHelper soundHelper;
+    private ProfileManager profile;
 
     private TextView tvStats;
     private RecyclerView rvPendingApprovals, rvPendingTasks;
@@ -161,6 +163,7 @@ public class ParentActivity extends AppCompatActivity {
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
         soundHelper = SoundHelper.getInstance(this);
+        profile = ProfileManager.getInstance(this);
 
         tvStats = findViewById(R.id.tv_parent_stats);
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
@@ -209,8 +212,9 @@ public class ParentActivity extends AppCompatActivity {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         boolean checkedInToday = db.checkInDao().getByDate("sister", today) != null;
 
+        String nickname = profile.getNickname();
         tvStats.setText(
-                "📊 妹妹的习惯数据\n" +
+                "📊 " + nickname + "的习惯数据\n" +
                 "━━━━━━━━━━━━━━━\n" +
                 "今日打卡: " + (checkedInToday ? "✅ 已打卡" : "⭕ 未打卡") + "\n" +
                 "总打卡: " + totalCheckIns + " 天\n" +
@@ -271,7 +275,8 @@ public class ParentActivity extends AppCompatActivity {
                             "task_reward", "任务奖励: " + task.title,
                             syncManager.getDeviceId());
             db.coinTransactionDao().insert(ct);
-            Toast.makeText(this, "✅ 已确认 " + task.title + "，妹妹获得 🪙+" + task.rewardCoins, Toast.LENGTH_SHORT).show();
+            String nickname = profile.getNickname();
+            Toast.makeText(this, "✅ 已确认 " + task.title + "，" + nickname + "获得 🪙+" + task.rewardCoins, Toast.LENGTH_SHORT).show();
         } else {
             // 拒绝 → 退回待完成状态
             db.taskDao().reactivate(task.id);
@@ -304,9 +309,10 @@ public class ParentActivity extends AppCompatActivity {
             Task task = tasks.get(position);
             holder.textView.setText("📋 " + task.title + "  🪙+" + task.rewardCoins);
             holder.itemView.setOnClickListener(v -> {
+                String nickname = ProfileManager.getInstance(v.getContext()).getNickname();
                 new AlertDialog.Builder(v.getContext())
                         .setTitle("确认任务完成")
-                        .setMessage("任务: " + task.title + "\n描述: " + task.description + "\n奖励: 🪙" + task.rewardCoins + "\n\n确认妹妹已完成此任务吗？")
+                        .setMessage("任务: " + task.title + "\n描述: " + task.description + "\n奖励: 🪙" + task.rewardCoins + "\n\n确认" + nickname + "已完成此任务吗？")
                         .setPositiveButton("✅ 确认发金币", (d, w) -> listener.onApprove(task, true))
                         .setNegativeButton("❌ 未完成", (d, w) -> listener.onApprove(task, false))
                         .setNeutralButton("稍后", null)
@@ -456,11 +462,33 @@ public class ParentActivity extends AppCompatActivity {
         Button btnWordbank = view.findViewById(R.id.btn_wordbank_mgr);
         btnWordbank.setOnClickListener(v -> showWordbankDialog());
 
+        // ===== 个人信息字段 =====
+        android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
+        android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
+        Button btnPickAvatar = view.findViewById(R.id.btn_pick_avatar);
+
+        etNickname.setText(profile.getNickname());
+        etAppTitle.setText(profile.getAppTitle());
+
+        btnPickAvatar.setOnClickListener(v -> {
+            soundHelper.playClickSound();
+            pickShopImageLauncher.launch("image/*");  // 复用商店图片选择器
+        });
+
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 设置")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
                     try {
+                        // 保存个人信息
+                        String newNickname = etNickname.getText().toString().trim();
+                        if (!newNickname.isEmpty()) {
+                            profile.setNickname(newNickname);
+                        }
+                        String newTitle = etAppTitle.getText().toString().trim();
+                        if (!newTitle.isEmpty()) {
+                            profile.setAppTitle(newTitle);
+                        }
                         // 保存默认模式
                         int checkedId = rgMode.getCheckedRadioButtonId();
                         String mode = "child";
