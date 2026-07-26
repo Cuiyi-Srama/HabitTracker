@@ -47,12 +47,53 @@ public class TaskFragment extends Fragment {
     }
 
     private void loadTasks() {
+        List<Task> allTasks = db.taskDao().getAll();
+        autoResetRecurringTasks(allTasks);
         List<Task> active = db.taskDao().getByStatus("active");
         List<Task> pending = db.taskDao().getByStatus("pending");
         List<Task> all = new ArrayList<>();
         all.addAll(active);
         all.addAll(pending);
         recyclerView.setAdapter(new TaskAdapter(all, this::markTaskDone));
+    }
+
+    /**
+     * 自动重置循环任务
+     * - permanent: 确认后立即重置为active
+     * - weekly: 新的一周开始后重置
+     * - monthly: 新的一月开始后重置
+     */
+    private void autoResetRecurringTasks(List<Task> tasks) {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        for (Task task : tasks) {
+            if (!"confirmed".equals(task.status)) continue;
+
+            boolean shouldReset = false;
+            if ("permanent".equals(task.recurrenceType)) {
+                shouldReset = true;
+            } else if ("weekly".equals(task.recurrenceType)) {
+                cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                cal.set(java.util.Calendar.MINUTE, 0);
+                cal.set(java.util.Calendar.SECOND, 0);
+                cal.set(java.util.Calendar.MILLISECOND, 0);
+                if (task.confirmedAt < cal.getTimeInMillis()) shouldReset = true;
+            } else if ("monthly".equals(task.recurrenceType)) {
+                cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                cal.set(java.util.Calendar.MINUTE, 0);
+                cal.set(java.util.Calendar.SECOND, 0);
+                cal.set(java.util.Calendar.MILLISECOND, 0);
+                if (task.confirmedAt < cal.getTimeInMillis()) shouldReset = true;
+            }
+
+            if (shouldReset) {
+                task.status = "active";
+                task.completedAt = 0;
+                task.confirmedAt = 0;
+                db.taskDao().update(task);
+            }
+        }
     }
 
     private void markTaskDone(Task task) {
