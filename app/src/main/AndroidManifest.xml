@@ -35,6 +35,12 @@
             </intent-filter>
         </activity>
 
+        <!-- 新手引导页 -->
+        <activity
+            android:name=".child.WelcomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.HabitTracker.Child" />
+
         <!-- 孩子模式Activity -->
         <activity
             android:name=".child.ChildActivity"
