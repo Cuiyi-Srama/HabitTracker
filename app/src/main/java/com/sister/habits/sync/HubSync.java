@@ -157,7 +157,7 @@ public class HubSync {
     private NanoHTTPD.Response handlePull(NanoHTTPD.IHTTPSession session) {
         try {
             long since = 0;
-            String sinceParam = session.getParameters().get("since");
+            String sinceParam = session.getParms().get("since");
             if (sinceParam != null) {
                 try { since = Long.parseLong(sinceParam); } catch (Exception ignored) {}
             }
