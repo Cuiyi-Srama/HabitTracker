@@ -5,10 +5,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -196,6 +199,11 @@ public class ParentActivity extends AppCompatActivity {
         });
 
         EconomyConfig finalConfig = config;
+
+        // 词库管理按钮
+        Button btnWordbank = view.findViewById(R.id.btn_wordbank_mgr);
+        btnWordbank.setOnClickListener(v -> showWordbankDialog());
+
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 设置")
                 .setView(view)
@@ -240,6 +248,62 @@ public class ParentActivity extends AppCompatActivity {
 
     private int parseInt(android.widget.EditText et, int def) {
         try { return Integer.parseInt(et.getText().toString()); } catch (Exception e) { return def; }
+    }
+
+    /**
+     * 词库管理对话框：年级选择 + 每日单词量 + JSON导入
+     */
+    private void showWordbankDialog() {
+        View view = getLayoutInflater().inflate(R.layout.dialog_wordbank, null);
+        SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
+
+        // 恢复年级选择状态
+        ((CheckBox) view.findViewById(R.id.cb_grade1)).setChecked(prefs.getBoolean("grade1", true));
+        ((CheckBox) view.findViewById(R.id.cb_grade2)).setChecked(prefs.getBoolean("grade2", true));
+        ((CheckBox) view.findViewById(R.id.cb_grade3)).setChecked(prefs.getBoolean("grade3", true));
+        ((CheckBox) view.findViewById(R.id.cb_grade4)).setChecked(prefs.getBoolean("grade4", false));
+        ((CheckBox) view.findViewById(R.id.cb_grade5)).setChecked(prefs.getBoolean("grade5", false));
+
+        // 恢复每日单词量
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        android.widget.EditText etDailyWords = view.findViewById(R.id.et_daily_words);
+        etDailyWords.setText(String.valueOf(config != null ? config.maxDailyWords : 10));
+
+        // JSON导入按钮（暂为占位）
+        Button btnImport = view.findViewById(R.id.btn_import_wordbank);
+        btnImport.setOnClickListener(v ->
+                Toast.makeText(this, "📂 JSON导入功能开发中，敬请期待～\n当前词库已包含122个常用单词", Toast.LENGTH_LONG).show());
+
+        new AlertDialog.Builder(this)
+                .setTitle("📚 词库管理")
+                .setView(view)
+                .setPositiveButton("保存", (d, w) -> {
+                    // 保存年级选择
+                    boolean g1 = ((CheckBox) view.findViewById(R.id.cb_grade1)).isChecked();
+                    boolean g2 = ((CheckBox) view.findViewById(R.id.cb_grade2)).isChecked();
+                    boolean g3 = ((CheckBox) view.findViewById(R.id.cb_grade3)).isChecked();
+                    boolean g4 = ((CheckBox) view.findViewById(R.id.cb_grade4)).isChecked();
+                    boolean g5 = ((CheckBox) view.findViewById(R.id.cb_grade5)).isChecked();
+                    prefs.edit()
+                            .putBoolean("grade1", g1)
+                            .putBoolean("grade2", g2)
+                            .putBoolean("grade3", g3)
+                            .putBoolean("grade4", g4)
+                            .putBoolean("grade5", g5)
+                            .apply();
+
+                    // 保存每日单词量
+                    try {
+                        int dailyWords = Integer.parseInt(etDailyWords.getText().toString());
+                        if (dailyWords > 0) {
+                            db.economyConfigDao().updateMaxDailyWords(dailyWords);
+                        }
+                    } catch (Exception ignored) {}
+
+                    Toast.makeText(this, "词库配置已保存 ✅\n下次重启App生效", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     // 审批适配器
