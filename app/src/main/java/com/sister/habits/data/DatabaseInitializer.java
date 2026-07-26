@@ -1,6 +1,7 @@
 package com.sister.habits.data;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.util.Log;
 
@@ -14,11 +15,17 @@ import com.sister.habits.data.models.Vocabulary;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class DatabaseInitializer {
     private static final String TAG = "DatabaseInit";
+    private static final String PREFS_NAME = "wordbank_prefs";
+    private static final String KEY_GRADE_VERSION = "grade_version";
+    private static final String KEY_LAST_GRADE_VERSION = "last_grade_version";
     private static boolean initialized = false;
 
     public static synchronized void init(Context context) {
@@ -31,9 +38,24 @@ public class DatabaseInitializer {
         }
 
         VocabularyDao vocabDao = db.vocabularyDao();
+
+        // 检查年级配置是否变化
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        int currentVersion = prefs.getInt(KEY_GRADE_VERSION, 0);
+        int lastVersion = prefs.getInt(KEY_LAST_GRADE_VERSION, 0);
+
+        boolean needsReload = false;
+        if (currentVersion != lastVersion && vocabDao.getActiveCount() > 0) {
+            // 年级配置变了 → 清空并重新加载
+            vocabDao.deleteAll();
+            prefs.edit().putInt(KEY_LAST_GRADE_VERSION, currentVersion).apply();
+            needsReload = true;
+            Log.d(TAG, "年级配置变化，重新加载词库 (v" + lastVersion + "→ v" + currentVersion + ")");
+        }
+
         int existingCount = vocabDao.getActiveCount();
         if (existingCount == 0) {
-            List<Vocabulary> words = null;
+            List<Vocabulary> allWords = null;
             // 优先从 JSON 加载
             try {
                 AssetManager am = context.getAssets();
@@ -45,7 +67,7 @@ public class DatabaseInitializer {
                 Type type = new TypeToken<List<JsonWord>>(){}.getType();
                 List<JsonWord> jsonWords = new Gson().fromJson(json, type);
                 if (jsonWords != null && !jsonWords.isEmpty()) {
-                    words = new ArrayList<>();
+                    allWords = new ArrayList<>();
                     for (JsonWord jw : jsonWords) {
                         Vocabulary v = new Vocabulary();
                         v.id = UUID.randomUUID().toString();
@@ -57,20 +79,52 @@ public class DatabaseInitializer {
                         v.level = jw.l;
                         v.mastered = false;
                         v.active = true;
-                        words.add(v);
+                        allWords.add(v);
                     }
                 }
-                Log.d(TAG, "从JSON加载词库成功: " + (words != null ? words.size() : 0) + " 词");
+                Log.d(TAG, "从JSON加载词库成功: " + (allWords != null ? allWords.size() : 0) + " 词");
             } catch (Exception e) {
                 Log.w(TAG, "JSON词库加载失败，使用硬编码兜底", e);
             }
-            if (words == null || words.isEmpty()) {
-                words = WordBankLoader.getAllWords();
-                Log.d(TAG, "使用硬编码词库: " + words.size() + " 词");
+            if (allWords == null || allWords.isEmpty()) {
+                allWords = WordBankLoader.getAllWords();
+                Log.d(TAG, "使用硬编码词库: " + allWords.size() + " 词");
             }
-            vocabDao.insertAll(words);
+
+            // 按年级过滤
+            List<Vocabulary> filtered = filterByGrade(allWords, prefs);
+            Log.d(TAG, "年级过滤后: " + filtered.size() + "/" + allWords.size() + " 词");
+
+            vocabDao.insertAll(filtered);
+
+            // 记录本次加载的版本号
+            if (!needsReload) {
+                prefs.edit().putInt(KEY_LAST_GRADE_VERSION, currentVersion).apply();
+            }
         }
         initialized = true;
+    }
+
+    private static List<Vocabulary> filterByGrade(List<Vocabulary> words, SharedPreferences prefs) {
+        // 收集选中的年级
+        Set<String> selectedGrades = new HashSet<>();
+        if (prefs.getBoolean("grade1", true)) selectedGrades.add("grade1");
+        if (prefs.getBoolean("grade2", true)) selectedGrades.add("grade2");
+        if (prefs.getBoolean("grade3", true)) selectedGrades.add("grade3");
+        if (prefs.getBoolean("grade4", true)) selectedGrades.add("grade4");
+        if (prefs.getBoolean("grade5", true)) selectedGrades.add("grade5");
+        if (prefs.getBoolean("grade_junior", false)) selectedGrades.add("junior");
+
+        // 如果没选任何年级，返回全部
+        if (selectedGrades.isEmpty()) return words;
+
+        List<Vocabulary> result = new ArrayList<>();
+        for (Vocabulary v : words) {
+            if (v.gradeLevel != null && selectedGrades.contains(v.gradeLevel)) {
+                result.add(v);
+            }
+        }
+        return result;
     }
 
     private static class JsonWord {
