@@ -59,19 +59,40 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- 图片URL输入 -->
-    <com.google.android.material.textfield.TextInputLayout
+    <!-- 商品图片 — 从相册选择 -->
+    <Button
+        android:id="@+id/btn_pick_image"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="📷 从相册选择图片"
+        android:layout_marginBottom="8dp"
+        android:textAllCaps="false" />
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="商品图片URL（可选）"
-        app:helperText="输入图片链接，商品展示时会显示该图片">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
 
-        <android.widget.EditText
-            android:id="@+id/et_item_image_url"
-            android:layout_width="match_parent"
+        <ImageView
+            android:id="@+id/iv_image_preview"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="@drawable/ic_launcher_background" />
+
+        <TextView
+            android:id="@+id/tv_image_name"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="textUri" />
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:textSize="13sp"
+            android:textColor="#666666" />
 
-    </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
 </LinearLayout>
