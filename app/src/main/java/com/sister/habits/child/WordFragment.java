@@ -294,6 +294,9 @@ public class WordFragment extends Fragment {
 
             // 艾宾浩斯：答错不惩罚，推到下次再试
             updateWordReview(currentWord.id, false);
+
+            // 轻柔震动反馈，提醒但不焦虑
+            soundHelper.playErrorVibration();
         }
 
         updateStats();
