@@ -14,7 +14,8 @@ import java.util.UUID;
         indices = {@Index(value = {"userId", "date"}, unique = true)})
 public class CheckIn {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String userId;      // 默认 "sister"
     public String date;        // 格式 "yyyy-MM-dd"
