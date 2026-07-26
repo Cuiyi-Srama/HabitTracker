@@ -3,50 +3,137 @@ package com.sister.habits;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 
 import com.sister.habits.child.ChildActivity;
 import com.sister.habits.parent.ParentActivity;
 
+import java.util.concurrent.Executor;
+
 /**
  * 主入口——双模式选择
- * 孩子模式：一键进入（大按钮，卡通界面）
- * 家长模式：需要 PIN 验证
+ * 支持：默认模式自动进入、指纹/设备解锁、自定义密码
  */
 public class MainActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "parent_prefs";
     private static final String KEY_PIN = "parent_pin";
+    private static final String KEY_DEFAULT_MODE = "default_mode";
+    private static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
+
+    private Executor executor;
+    private BiometricPrompt biometricPrompt;
+    private BiometricPrompt.PromptInfo promptInfo;
+    private boolean pendingBiometricAuth = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String defaultMode = prefs.getString(KEY_DEFAULT_MODE, "child");
+
+        if ("child".equals(defaultMode)) {
+            startActivity(new Intent(this, ChildActivity.class));
+            finish();
+            return;
+        } else if ("parent".equals(defaultMode)) {
+            String savedPin = prefs.getString(KEY_PIN, null);
+            if (savedPin != null) {
+                authenticateWithBiometricOrPin(true);
+                return;
+            }
+        }
+
+        showModeSelection();
+    }
+
+    /**
+     * 指纹/设备解锁认证（优先）+ PIN码回退
+     */
+    private void authenticateWithBiometricOrPin(boolean autoEnter) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean biometricEnabled = prefs.getBoolean(KEY_BIOMETRIC_ENABLED, true);
+
+        if (biometricEnabled && isBiometricAvailable()) {
+            // 尝试指纹/设备解锁
+            tryBiometricAuth(autoEnter);
+        } else {
+            // 回退到PIN验证
+            showVerifyPinDialog(autoEnter);
+        }
+    }
+
+    private boolean isBiometricAvailable() {
+        BiometricManager manager = BiometricManager.from(this);
+        int result = manager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG
+                        | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        return result == BiometricManager.BIOMETRIC_SUCCESS;
+    }
+
+    private void tryBiometricAuth(boolean autoEnter) {
+        executor = ContextCompat.getMainExecutor(this);
+
+        biometricPrompt = new BiometricPrompt(this, executor,
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationError(int errorCode, CharSequence errString) {
+                        super.onAuthenticationError(errorCode, errString);
+                        // 用户取消或出错 → 回退到PIN
+                        showVerifyPinDialog(autoEnter);
+                    }
+
+                    @Override
+                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                        super.onAuthenticationSucceeded(result);
+                        Toast.makeText(MainActivity.this, "🔓 指纹验证通过", Toast.LENGTH_SHORT).show();
+                        enterParentMode();
+                    }
+
+                    @Override
+                    public void onAuthenticationFailed() {
+                        super.onAuthenticationFailed();
+                        // 指纹不匹配，不处理，让用户继续试
+                    }
+                });
+
+        promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("验证家长身份")
+                .setSubtitle("使用指纹或设备密码解锁")
+                .setDescription("只有家长才能进入管理界面哦")
+                .setNegativeButtonText("使用密码")
+                .setAllowedAuthenticators(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG
+                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    private void showModeSelection() {
         setContentView(R.layout.activity_main);
 
         Button btnChild = findViewById(R.id.btn_child_mode);
         Button btnParent = findViewById(R.id.btn_parent_mode);
-        TextView tvSubtitle = findViewById(R.id.tv_subtitle);
 
-        // 孩子模式—一键进入
         btnChild.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, ChildActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(MainActivity.this, ChildActivity.class));
         });
 
-        // 家长模式—需要PIN
         btnParent.setOnClickListener(v -> {
             String savedPin = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                     .getString(KEY_PIN, null);
             if (savedPin == null) {
-                // 首次使用：设置PIN
                 showSetPinDialog();
             } else {
-                // 验证PIN
-                showVerifyPinDialog();
+                authenticateWithBiometricOrPin(false);
             }
         });
     }
@@ -56,33 +143,61 @@ public class MainActivity extends AppCompatActivity {
         builder.setTitle("设置家长密码");
 
         final android.widget.EditText input = new android.widget.EditText(this);
-        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
-                android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        input.setHint("请输入4位数字密码");
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        input.setHint("请输入密码（数字/字母/符号均可）");
         builder.setView(input);
 
         builder.setPositiveButton("确定", (dialog, which) -> {
             String pin = input.getText().toString().trim();
-            if (pin.length() == 4) {
+            if (pin.length() >= 4 && pin.length() <= 64) {
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                         .edit()
                         .putString(KEY_PIN, pin)
                         .apply();
-                enterParentMode();
+                // 询问是否启用指纹
+                if (isBiometricAvailable()) {
+                    askEnableBiometric();
+                } else {
+                    enterParentMode();
+                }
+            } else {
+                Toast.makeText(this, "密码长度4-64位", Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("取消", null);
         builder.show();
     }
 
-    private void showVerifyPinDialog() {
+    private void askEnableBiometric() {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("启用指纹解锁？")
+                .setMessage("下次进入家长管理时，可以用指纹或设备解锁密码快速验证。\n\n（可在设置中随时关闭）")
+                .setPositiveButton("启用 ✅", (d, w) -> {
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(KEY_BIOMETRIC_ENABLED, true)
+                            .apply();
+                    enterParentMode();
+                })
+                .setNegativeButton("跳过", (d, w) -> {
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(KEY_BIOMETRIC_ENABLED, false)
+                            .apply();
+                    enterParentMode();
+                })
+                .show();
+    }
+
+    private void showVerifyPinDialog(boolean autoEnter) {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("输入家长密码");
 
         final android.widget.EditText input = new android.widget.EditText(this);
-        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
-                android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        input.setHint("请输入4位数字密码");
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        input.setHint("请输入密码");
         builder.setView(input);
 
         builder.setPositiveButton("确定", (dialog, which) -> {
@@ -92,15 +207,22 @@ public class MainActivity extends AppCompatActivity {
             if (pin.equals(savedPin)) {
                 enterParentMode();
             } else {
-                android.widget.Toast.makeText(this, "密码错误", android.widget.Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "密码错误", Toast.LENGTH_SHORT).show();
+                if (!autoEnter) showModeSelection();
+                else finish();
             }
         });
-        builder.setNegativeButton("取消", null);
+        builder.setNegativeButton("取消", (d, w) -> {
+            if (!autoEnter) showModeSelection();
+            else finish();
+        });
+        builder.setCancelable(false);
         builder.show();
     }
 
     private void enterParentMode() {
         Intent intent = new Intent(MainActivity.this, ParentActivity.class);
         startActivity(intent);
+        finish();
     }
 }
