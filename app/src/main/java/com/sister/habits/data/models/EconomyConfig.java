@@ -33,6 +33,7 @@ public class EconomyConfig {
     // 防刷限制
     public int maxDailyCoins = 500;
     public int maxDailyWords = 50;
+    public int maxDailyReview = 30;
 
     public EconomyConfig() {
         this.id = 1;
