@@ -1,6 +1,7 @@
 package com.sister.habits.parent;
 
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * 家长模式——统一管理界面
@@ -44,6 +49,65 @@ public class ParentActivity extends AppCompatActivity {
     private TextView tvStats;
     private RecyclerView rvPendingApprovals;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
+
+    // 词库JSON导入的文件选择器
+    private final ActivityResultLauncher<String[]> wordbankImportLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri == null) return;
+                try {
+                    // 读取文件内容
+                    java.io.InputStream is = getContentResolver().openInputStream(uri);
+                    byte[] buffer = new byte[is.available()];
+                    is.read(buffer);
+                    is.close();
+                    String json = new String(buffer, "UTF-8");
+
+                    // 解析JSON
+                    java.lang.reflect.Type type = new TypeToken<List<JsonImportWord>>(){}.getType();
+                    List<JsonImportWord> importWords = new Gson().fromJson(json, type);
+
+                    if (importWords == null || importWords.isEmpty()) {
+                        Toast.makeText(this, "词库文件格式有误，未找到有效单词", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // 批量入库
+                    List<com.sister.habits.data.models.Vocabulary> words = new java.util.ArrayList<>();
+                    for (JsonImportWord jw : importWords) {
+                        com.sister.habits.data.models.Vocabulary v = new com.sister.habits.data.models.Vocabulary();
+                        v.id = UUID.randomUUID().toString();
+                        v.word = jw.w;
+                        v.meaning = jw.m;
+                        v.phonetic = jw.p;
+                        v.category = jw.c;
+                        v.gradeLevel = jw.g;
+                        v.level = jw.l;
+                        v.mastered = false;
+                        v.active = true;
+                        words.add(v);
+                    }
+
+                    // 先清空旧词库再插入（替换模式）
+                    db.vocabularyDao().deleteAll();
+                    db.wordReviewDao().deleteAll();
+
+                    // 分批插入避免事务过大
+                    int batchSize = 50;
+                    for (int i = 0; i < words.size(); i += batchSize) {
+                        int end = Math.min(i + batchSize, words.size());
+                        db.vocabularyDao().insertAll(words.subList(i, end));
+                    }
+
+                    Toast.makeText(this, "✅ 导入成功！共 " + words.size() + " 个单词", Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    android.util.Log.e("ParentActivity", "词库导入失败", e);
+                    Toast.makeText(this, "❌ 导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+
+    private static class JsonImportWord {
+        String g; String c; String w; String m; String p; int l;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,6 +231,7 @@ public class ParentActivity extends AppCompatActivity {
         android.widget.EditText etDesc = view.findViewById(R.id.et_item_desc);
         android.widget.EditText etPrice = view.findViewById(R.id.et_item_price);
         android.widget.EditText etCategory = view.findViewById(R.id.et_item_category);
+        android.widget.EditText etImageUrl = view.findViewById(R.id.et_item_image_url);
 
         new AlertDialog.Builder(this)
                 .setTitle("添加上架商品")
@@ -178,6 +243,7 @@ public class ParentActivity extends AppCompatActivity {
                     try { item.priceCoins = Integer.parseInt(etPrice.getText().toString()); }
                     catch (Exception e) { item.priceCoins = 50; }
                     item.category = etCategory.getText().toString();
+                    item.iconUrl = etImageUrl.getText().toString().trim();
                     db.shopItemDao().insert(item);
                     Toast.makeText(this, "商品已上架 🏪", Toast.LENGTH_SHORT).show();
                 })
@@ -272,16 +338,19 @@ public class ParentActivity extends AppCompatActivity {
         ((CheckBox) view.findViewById(R.id.cb_grade3)).setChecked(prefs.getBoolean("grade3", true));
         ((CheckBox) view.findViewById(R.id.cb_grade4)).setChecked(prefs.getBoolean("grade4", false));
         ((CheckBox) view.findViewById(R.id.cb_grade5)).setChecked(prefs.getBoolean("grade5", false));
+        ((CheckBox) view.findViewById(R.id.cb_grade_junior)).setChecked(prefs.getBoolean("grade_junior", false));
 
         // 恢复每日单词量
         EconomyConfig config = db.economyConfigDao().getConfig();
         android.widget.EditText etDailyWords = view.findViewById(R.id.et_daily_words);
         etDailyWords.setText(String.valueOf(config != null ? config.maxDailyWords : 10));
 
-        // JSON导入按钮（暂为占位）
+        // JSON导入按钮——启动文件选择器
         Button btnImport = view.findViewById(R.id.btn_import_wordbank);
-        btnImport.setOnClickListener(v ->
-                Toast.makeText(this, "📂 JSON导入功能开发中，敬请期待～\n当前词库已包含122个常用单词", Toast.LENGTH_LONG).show());
+        btnImport.setOnClickListener(v -> {
+            soundHelper.playClickSound();
+            wordbankImportLauncher.launch(new String[]{"application/json", "*/*"});
+        });
 
         new AlertDialog.Builder(this)
                 .setTitle("📚 词库管理")
@@ -293,12 +362,16 @@ public class ParentActivity extends AppCompatActivity {
                     boolean g3 = ((CheckBox) view.findViewById(R.id.cb_grade3)).isChecked();
                     boolean g4 = ((CheckBox) view.findViewById(R.id.cb_grade4)).isChecked();
                     boolean g5 = ((CheckBox) view.findViewById(R.id.cb_grade5)).isChecked();
+                    boolean gj = ((CheckBox) view.findViewById(R.id.cb_grade_junior)).isChecked();
                     prefs.edit()
                             .putBoolean("grade1", g1)
                             .putBoolean("grade2", g2)
                             .putBoolean("grade3", g3)
                             .putBoolean("grade4", g4)
                             .putBoolean("grade5", g5)
+                            .putBoolean("grade_junior", gj)
+                            // 自增版本号，触发DatabaseInitializer重新加载
+                            .putInt("grade_version", prefs.getInt("grade_version", 0) + 1)
                             .apply();
 
                     // 保存每日单词量
@@ -309,7 +382,7 @@ public class ParentActivity extends AppCompatActivity {
                         }
                     } catch (Exception ignored) {}
 
-                    Toast.makeText(this, "词库配置已保存 ✅\n下次重启App生效", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("取消", null)
                 .show();
