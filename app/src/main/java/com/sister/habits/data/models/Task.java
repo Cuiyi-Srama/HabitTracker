@@ -11,7 +11,8 @@ import java.util.UUID;
 @Entity(tableName = "tasks")
 public class Task {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String title;           // 任务标题
     public String description;     // 任务描述
