@@ -11,7 +11,8 @@ import java.util.UUID;
 @Entity(tableName = "vocabulary")
 public class Vocabulary {
     @PrimaryKey
-    public String id;
+@androidx.annotation.NonNull
+        public String id;
 
     public String word;            // 英文单词
     public String meaning;         // 中文释义
