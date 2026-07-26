@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -63,7 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="商品图片URL（可选）"
-        android:helperText="输入图片链接，商品展示时会显示该图片">
+        app:helperText="输入图片链接，商品展示时会显示该图片">
 
         <android.widget.EditText
             android:id="@+id/et_item_image_url"
