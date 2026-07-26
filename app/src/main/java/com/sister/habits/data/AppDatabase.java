@@ -15,9 +15,10 @@ import com.sister.habits.data.models.*;
         ShopItem.class,
         Redemption.class,
         Vocabulary.class,
-        EconomyConfig.class
+        EconomyConfig.class,
+        WordReview.class
     },
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -31,6 +32,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract RedemptionDao redemptionDao();
     public abstract VocabularyDao vocabularyDao();
     public abstract EconomyConfigDao economyConfigDao();
+    public abstract WordReviewDao wordReviewDao();
 
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
