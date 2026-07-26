@@ -18,7 +18,7 @@ public interface TaskDao {
     @Update
     void update(Task task);
 
-    @Query("UPDATE tasks SET status = :status, completedAt = :completedAt WHERE id = :id")
+    @Query("UPDATE tasks SET status = 'completed', completedAt = :completedAt WHERE id = :id")
     void complete(String id, long completedAt);
 
     @Query("SELECT * FROM tasks WHERE synced = 0 ORDER BY syncTimestamp ASC")
