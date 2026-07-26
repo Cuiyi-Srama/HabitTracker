@@ -112,15 +112,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-        promptInfo = new BiometricPrompt.PromptInfo.Builder()
+        BiometricPrompt.PromptInfo.Builder builder = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("验证家长身份")
                 .setSubtitle("使用指纹或设备密码解锁")
                 .setDescription("只有家长才能进入管理界面哦")
-                .setNegativeButtonText("使用密码")
                 .setAllowedAuthenticators(
                         BiometricManager.Authenticators.BIOMETRIC_STRONG
-                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                .build();
+                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        // 注意：当允许 DEVICE_CREDENTIAL 时，不能设置 setNegativeButtonText
+        // 系统会自动提供取消按钮
+        promptInfo = builder.build();
 
         biometricPrompt.authenticate(promptInfo);
     }
