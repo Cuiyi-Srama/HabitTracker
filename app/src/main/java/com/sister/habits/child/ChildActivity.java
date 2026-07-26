@@ -13,6 +13,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
+import com.sister.habits.data.DailyQuote;
 import com.sister.habits.data.models.CheckIn;
 import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.EconomyConfig;
@@ -46,6 +47,10 @@ public class ChildActivity extends AppCompatActivity {
         Button btnCheckIn = findViewById(R.id.btn_check_in);
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
+
+        // 显示每日一句
+        TextView tvQuote = findViewById(R.id.tv_daily_quote);
+        tvQuote.setText("💬 " + DailyQuote.getTodayQuote());
 
         // 刷新金币余额
         refreshCoinBalance();
