@@ -53,6 +53,11 @@ public class WordFragment extends Fragment {
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
+    // 复习模式组批字段
+    private int currentReviewTotal = 0;                    // 本轮复习总词数
+    private final List<String> wrongInReviewSet = new ArrayList<>();  // 本轮答错的词
+    private boolean reviewRetryMode = false;                // 是否在纠错重试中
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_word, container, false);
@@ -145,18 +150,24 @@ public class WordFragment extends Fragment {
         List<Vocabulary> words;
         String bankId = getCurrentBankId();
         if (review) {
-            // ===== 复习检测模式：获取到期的待复习单词 =====
+            // ===== 复习模式：获取所有待复习词，组批 =====
             List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis(), bankId);
             words = new ArrayList<>();
             for (WordReview wr : dueReviews) {
-                if (words.size() >= dailyReviewLimit) break;
                 Vocabulary v = db.vocabularyDao().getById(wr.wordId);
                 if (v != null && v.active && !v.mastered && bankId.equals(v.bankId)) {
                     words.add(v);
                 }
             }
             Collections.shuffle(words);
-            tvPrompt.setText("🔄 复习检测 (" + words.size() + "个待复习)  答对得金币 🪙");
+            currentReviewTotal = words.size();
+            wrongInReviewSet.clear();
+            reviewRetryMode = false;
+            if (currentReviewTotal > 0) {
+                tvPrompt.setText("🔄 复习检测 (" + currentReviewTotal + "个)  全对得 🪙" + (currentReviewTotal * 2));
+            } else {
+                tvPrompt.setText("🔄 当前没有待复习词，去学新词吧");
+            }
         } else {
             // ===== 学习模式：只出未学过的新词，今日限额 =====
             java.util.Calendar cal = java.util.Calendar.getInstance();
@@ -197,11 +208,33 @@ public class WordFragment extends Fragment {
 
     private void showNextWord() {
         if (quizQueue.isEmpty()) {
-            // 如果复习模式下还有待复习词（刚才答错的词已设 nextReviewAt=now），自动重新加载
             if (isReviewMode) {
-                int stillDue = db.wordReviewDao().getDueCount(System.currentTimeMillis(), getCurrentBankId());
-                if (stillDue > 0) {
-                    startQuiz(true);
+                // 复习模式：一轮结束，检查是否全部答对
+                if (wrongInReviewSet.isEmpty()) {
+                    // ✅ 全部答对 → 发放积分
+                    int totalBonus = currentReviewTotal * 2;
+                    grantReviewReward(totalBonus);
+                    tvWord.setText("🎉 全部通关！+" + totalBonus + "金币！");
+                    tvPhonetic.setText("");
+                    tvPrompt.setText("太棒了！全部答对 💪 继续加油～");
+                    for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+                    updateStats();
+                    return;
+                } else {
+                    // ❌ 有答错 → 纠错重来：只重做出错的词
+                    int wrongCount = wrongInReviewSet.size();
+                    tvPrompt.setText("💪 差一点就全部通关了！再来纠错 " + wrongCount + " 个词～加油！");
+                    // 用答错的词重新填充队列
+                    List<Vocabulary> retryWords = new ArrayList<>();
+                    for (String wid : wrongInReviewSet) {
+                        Vocabulary v = db.vocabularyDao().getById(wid);
+                        if (v != null) retryWords.add(v);
+                    }
+                    Collections.shuffle(retryWords);
+                    quizQueue = retryWords;
+                    wrongInReviewSet.clear();  // 清空，开始新一轮纠错
+                    reviewRetryMode = true;
+                    new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 800);
                     return;
                 }
             }
@@ -278,72 +311,58 @@ public class WordFragment extends Fragment {
             clicked.setTextColor(0xFFFFFFFF);
             streakCount++;
 
-            // ===== 复习检测模式才给金币，学习模式不给 =====
             if (isReviewMode) {
-                // 计算金币奖励（复习检测）
-                int wordBonus = 2;
-                if (streakCount == 5) {
-                    wordBonus = 12;
-                    tvPrompt.setText("🌟 连续答对5题！+12金币！");
-                } else if (streakCount == 10) {
-                    wordBonus = 35;
-                    tvPrompt.setText("🏆 连续答对10题！+35金币！");
-                } else if (streakCount >= 3) {
-                    wordBonus = 4;
-                    tvPrompt.setText("✅ 检测通过！连续" + streakCount + "题啦 💪 +4金币");
-                } else {
-                    tvPrompt.setText("✅ 检测通过！+2金币 🪙");
-                }
-
-                // 发放金币
+                // 复习模式：不单独发积分，最后统一发
+                tvPrompt.setText("✅ 答对了！继续加油 💪");
+                soundHelper.playCorrectSound();
+            } else {
+                // 学习模式：每个词一次机会，答对得2金币
+                int coinReward = 2;
                 Integer balance = db.coinTransactionDao().getBalance("sister");
-                int newBalance = (balance != null ? balance : 0) + wordBonus;
+                int newBalance = (balance != null ? balance : 0) + coinReward;
                 CoinTransaction ct = new CoinTransaction(
-                        "sister", wordBonus, newBalance,
-                        "word_review_pass", "复习检测: " + currentWord.word,
+                        "sister", coinReward, newBalance,
+                        "word_learn_pass", "新词学习: " + currentWord.word,
                         syncManager.getDeviceId());
                 db.coinTransactionDao().insert(ct);
 
-                // 音效 + 震动
-                if (streakCount >= 5) {
-                    soundHelper.playStreakSound(streakCount);
-                } else {
-                    soundHelper.playCorrectSound();
+                // 实时刷新金币
+                if (getActivity() instanceof ChildActivity) {
+                    ((ChildActivity) getActivity()).refreshCoinBalance();
                 }
-            } else {
-                tvPrompt.setText("📖 已记住: " + currentWord.word + "  切换到复习赚金币吧 🪙");
-                // 学习模式不给金币，轻柔反馈即可
+
+                tvPrompt.setText("📖 已记住: " + currentWord.word + "  +" + coinReward + "金币 🪙");
                 soundHelper.playClickSound();
             }
 
-            // 🐛 修复：答对后无论学习/复习模式都更新艾宾浩斯复习状态
-            // 学习模式→创建WordReview记录（stage=0），复习模式→推进stage
+            // 答对更新复习状态
             updateWordReview(currentWord.id, true);
 
-            syncManager.onDataChanged();
-
-            // 实时刷新金币余额显示
-            if (getActivity() instanceof ChildActivity) {
-                ((ChildActivity) getActivity()).refreshCoinBalance();
-            }
-
         } else {
-            // ❌ 答错（不惩罚🌸）
+            // ❌ 答错
             clicked.setBackgroundColor(0xFFE53935);
             clicked.setTextColor(0xFFFFFFFF);
             streakCount = 0;
-            tvPrompt.setText("🌸 " + currentWord.meaning + " 才是对的哦，下次加油～");
-
-            // 艾宾浩斯：答错不惩罚，推到下次再试
-            updateWordReview(currentWord.id, false);
-
-            // 轻柔震动反馈，提醒但不焦虑
             soundHelper.playErrorVibration();
+
+            if (isReviewMode) {
+                // 复习模式：记录答错的词，纠错重来
+                wrongInReviewSet.add(currentWord.id);
+                tvPrompt.setText("🌸 答错了～" + currentWord.meaning + " 才是对的，纠错时间！💪");
+            } else {
+                // 学习模式：答错不扣分，直接进复习区
+                tvPrompt.setText("🌸 " + currentWord.meaning + " 才对哦，已加入复习区～");
+            }
+
+            // 答错更新复习状态
+            updateWordReview(currentWord.id, false);
         }
 
+        syncManager.onDataChanged();
         updateStats();
         updateStreakDisplay();
 
+        // 学习模式：答对答错都跳过该词（仅一次机会）
         new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 1200);
     }
 
@@ -351,10 +370,10 @@ public class WordFragment extends Fragment {
      * 更新复习状态
      * 
      * 核心逻辑：
-     * - 学习模式答对 → 创建记录，7天后复习（标记已见，不进复习队列）
+     * - 学习模式答对 → 创建记录，7天后复习（标记已见）
      * - 学习模式答错 → 创建记录，立即进复习队列
-     * - 复习模式答对 → 推进stage，最终标记掌握
-     * - 复习模式答错 → 继续留在复习队列（nextReviewAt=现在）
+     * - 复习模式答对 → 推进stage，加权间隔
+     * - 复习模式答错 → nextReviewAt=现在，立即纠错
      */
     private void updateWordReview(String wordId, boolean correct) {
         String bankId = getCurrentBankId();
@@ -371,7 +390,7 @@ public class WordFragment extends Fragment {
             wr.correctCount = 0;
             wr.wrongCount = 0;
             if (correct) {
-                // ✅ 学习模式答对 → 标记已见，7天后再复习（不进近期复习队列）
+                // ✅ 学习模式答对 → 标记已见，7天后再复习
                 wr.nextReviewAt = now + 7L * 24 * 3600 * 1000;
             } else {
                 // ❌ 学习模式答错 → 立即进复习队列
@@ -380,14 +399,13 @@ public class WordFragment extends Fragment {
             db.wordReviewDao().insert(wr);
         } else {
             if (correct) {
-                // ✅ 答对 → 阶段推进
+                // ✅ 答对 → 阶段推进，使用加权间隔
                 wr.correctCount++;
                 if (wr.stage < WordReview.MAX_STAGE) {
                     wr.stage++;
-                    // 正常间隔：阶段越高间隔越长
-                    wr.nextReviewAt = now + WordReview.INTERVALS[wr.stage];
+                    // 使用加权间隔：错误率越高，间隔越短
+                    wr.nextReviewAt = now + wr.getWeightedInterval(wr.stage);
                 } else {
-                    // 已到最高阶段 → 标记掌握 ✅
                     wr.nextReviewAt = Long.MAX_VALUE;
                     db.vocabularyDao().markMastered(wordId, now);
                 }
@@ -395,11 +413,28 @@ public class WordFragment extends Fragment {
             } else {
                 // ❌ 答错 → 不降级，立即再次进入复习队列
                 wr.wrongCount++;
-                wr.nextReviewAt = now;     // ★ 关键：设为本，当前复习结束后马上可再次复习
+                wr.nextReviewAt = now;
                 wr.lastReviewedAt = now;
             }
             db.wordReviewDao().update(wr);
         }
+    }
+
+    /** 复习模式全通关后统一发放积分奖励 */
+    private void grantReviewReward(int totalBonus) {
+        if (totalBonus <= 0) return;
+        Integer balance = db.coinTransactionDao().getBalance("sister");
+        int newBalance = (balance != null ? balance : 0) + totalBonus;
+        CoinTransaction ct = new CoinTransaction(
+                "sister", totalBonus, newBalance,
+                "word_review_pass", "复习通关: 全对" + currentReviewTotal + "词",
+                syncManager.getDeviceId());
+        db.coinTransactionDao().insert(ct);
+
+        if (getActivity() instanceof ChildActivity) {
+            ((ChildActivity) getActivity()).refreshCoinBalance();
+        }
+        soundHelper.playStreakSound(Math.min(streakCount, 15));
     }
 
     private void updateStats() {
