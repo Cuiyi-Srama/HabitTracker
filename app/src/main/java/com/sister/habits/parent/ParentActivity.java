@@ -758,6 +758,48 @@ public class ParentActivity extends AppCompatActivity {
             externalLayout.addView(tvError);
         }
 
+        // ===== 已下载词库列表（切换功能） =====
+        LinearLayout installedLayout = view.findViewById(R.id.layout_installed_banks);
+        String activeBankId = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
+        java.util.List<com.sister.habits.data.models.WordBank> installedBanks = db.wordBankDao().getAll();
+        if (installedBanks.isEmpty()) {
+            TextView tvNoBank = new TextView(this);
+            tvNoBank.setText("暂无已下载词库");
+            tvNoBank.setTextSize(12);
+            tvNoBank.setTextColor(0xFF888888);
+            tvNoBank.setPadding(8, 8, 8, 8);
+            installedLayout.addView(tvNoBank);
+        } else {
+            for (com.sister.habits.data.models.WordBank bank : installedBanks) {
+                boolean isActive = bank.id.equals(activeBankId);
+                Button btnBank = new Button(this);
+                String prefix = isActive ? "✅ " : "  ";
+                btnBank.setText(prefix + bank.name + " (" + bank.wordCount + "词)");
+                btnBank.setTextSize(13);
+                btnBank.setAllCaps(false);
+                btnBank.setBackgroundColor(isActive ? 0xFFE8F5E9 : 0xFFF5F5F5);
+                android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(0, 3, 0, 3);
+                btnBank.setLayoutParams(lp);
+                final String bankId = bank.id;
+                final String bankName = bank.name;
+                btnBank.setOnClickListener(v -> {
+                    if (bankId.equals(activeBankId)) {
+                        Toast.makeText(this, "当前已在使用此词库", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    getSharedPreferences("wordbank_prefs", MODE_PRIVATE)
+                            .edit().putString("active_bank_id", bankId).apply();
+                    db.wordBankDao().deactivateAll();
+                    db.wordBankDao().setActive(bankId);
+                    Toast.makeText(this, "✅ 已切换到: " + bankName, Toast.LENGTH_LONG).show();
+                });
+                installedLayout.addView(btnBank);
+            }
+        }
+
         new AlertDialog.Builder(this)
                 .setTitle("📚 词库管理")
                 .setView(view)
