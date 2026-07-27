@@ -753,12 +753,10 @@ public class ParentActivity extends AppCompatActivity {
 
     /** 预览孩子心愿单 */
         private void showProfileSettings() {
-        View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
-        // 只显示个人信息区域
+        View view = getLayoutInflater().inflate(R.layout.dialog_profile_settings, null);
         android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
         android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
         Button btnPickAvatar = view.findViewById(R.id.btn_pick_avatar);
-        // 隐藏其他不需要的区域
         etNickname.setText(profile.getNickname());
         etAppTitle.setText(profile.getAppTitle());
         btnPickAvatar.setOnClickListener(v -> pickShopImageLauncher.launch("image/*"));
