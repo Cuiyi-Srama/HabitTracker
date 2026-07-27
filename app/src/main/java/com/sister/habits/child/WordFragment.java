@@ -165,6 +165,8 @@ public class WordFragment extends Fragment {
             cal.set(java.util.Calendar.SECOND, 0);
             cal.set(java.util.Calendar.MILLISECOND, 0);
             int learnedToday = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId);
+            // Limit review count too in learning mode
+            int reviewedToday = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId) - learnedToday;
             int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
 
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
@@ -377,9 +379,10 @@ public class WordFragment extends Fragment {
         cal.set(java.util.Calendar.SECOND, 0);
         cal.set(java.util.Calendar.MILLISECOND, 0);
         int todayNew = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId);
+        int todayReview = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId) - todayNew;
         String todayProgress = "  📝 " + Math.min(todayNew, dailyWordLimit) + "/" + dailyWordLimit;
 
-        tvStats.setText(mode + todayProgress + "  |  ✅ " + mastered + "/" + total + "  |  ⏰ " + dueCount + " 待复习");
+        tvStats.setText(mode + todayProgress + "  |  ✅ " + mastered + "掌握  |  ⏰ " + dueCount + "待复习");
     }
 
     private void updateStreakDisplay() {
