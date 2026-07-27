@@ -155,6 +155,126 @@ public class ParentActivity extends AppCompatActivity {
         String g; String c; String w; String m; String p; int l;
     }
 
+    /** 外部词库源 */
+    private static class ExternalSource {
+        String id;
+        String name;
+        String description;
+        String url;
+        String format;
+        String gradeLabel;
+    }
+
+    /** 下载外部词库 → 预览 → 确认后应用 */
+    private void downloadAndPreview(ExternalSource source) {
+        soundHelper.playClickSound();
+        android.app.ProgressDialog progress = new android.app.ProgressDialog(this);
+        progress.setTitle("📥 下载词库中...");
+        progress.setMessage("正在下载: " + source.name);
+        progress.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+        progress.setCancelable(false);
+        progress.show();
+
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(source.url);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(30000);
+                java.io.InputStream is = conn.getInputStream();
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = is.read(buf)) != -1) {
+                    baos.write(buf, 0, len);
+                }
+                is.close();
+                String json = baos.toString("UTF-8");
+
+                // 自动解析
+                String grade = source.gradeLabel != null ? source.gradeLabel : "external";
+                java.util.List<com.sister.habits.data.models.Vocabulary> words = com.sister.habits.utils.WordBankParser.parse(json, grade);
+
+                runOnUiThread(() -> {
+                    progress.dismiss();
+                    if (words.isEmpty()) {
+                        Toast.makeText(this, "❌ 词库为空或格式不兼容", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // 构建预览消息
+                    StringBuilder samples = new StringBuilder();
+                    int sampleCount = Math.min(5, words.size());
+                    for (int i = 0; i < sampleCount; i++) {
+                        com.sister.habits.data.models.Vocabulary v = words.get(i);
+                        samples.append("• ").append(v.word).append(" — ").append(v.meaning).append("\n");
+                    }
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("📖 预览词库")
+                            .setMessage("来源: " + source.name + "\n" +
+                                    "共 " + words.size() + " 个单词\n" +
+                                    "格式: " + source.format.toUpperCase() + "（自动兼容）\n\n" +
+                                    "📝 示例:\n" + samples.toString() + "\n" +
+                                    "⚠️ 确认后将替换当前词库，当前学习进度将丢失。")
+                            .setPositiveButton("✅ 确认使用", (d, w) -> applyExternalWordbank(words, source))
+                            .setNegativeButton("取消", null)
+                            .show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    progress.dismiss();
+                    Toast.makeText(this, "❌ 下载失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    /** 应用外部词库到数据库 */
+    private void applyExternalWordbank(java.util.List<com.sister.habits.data.models.Vocabulary> words, ExternalSource source) {
+        try {
+            // 先存档旧词库
+            java.util.List<com.sister.habits.data.models.Vocabulary> oldVocab = db.vocabularyDao().getAll();
+            if (!oldVocab.isEmpty()) {
+                java.util.Map<String, Object> archive = new java.util.HashMap<>();
+                archive.put("archivedAt", System.currentTimeMillis());
+                archive.put("vocabCount", oldVocab.size());
+                archive.put("vocabulary", oldVocab);
+                String archiveJson = new Gson().toJson(archive);
+                java.io.File archiveDir = new java.io.File(getFilesDir(), "wordbank_archives");
+                archiveDir.mkdirs();
+                String archiveName = "ext_" + source.id + "_" + System.currentTimeMillis() + ".json";
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(new java.io.File(archiveDir, archiveName));
+                fos.write(archiveJson.getBytes("UTF-8"));
+                fos.close();
+            }
+
+            // 清空当前词库
+            db.vocabularyDao().deleteAll();
+            db.wordReviewDao().deleteAll();
+
+            // 分批插入
+            int batchSize = 100;
+            for (int i = 0; i < words.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, words.size());
+                db.vocabularyDao().insertAll(words.subList(i, end));
+            }
+
+            // 记录使用了外部词库
+            SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
+            prefs.edit()
+                    .putString("external_source_id", source.id)
+                    .putString("external_source_name", source.name)
+                    .putInt("external_word_count", words.size())
+                    .apply();
+
+            Toast.makeText(this, "✅ 已启用: " + source.name + "（" + words.size() + "词）", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            android.util.Log.e("ParentActivity", "应用外部词库失败", e);
+            Toast.makeText(this, "❌ 应用失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -557,6 +677,85 @@ public class ParentActivity extends AppCompatActivity {
             soundHelper.playClickSound();
             wordbankImportLauncher.launch(new String[]{"application/json", "*/*"});
         });
+
+        // ===== 外部词库源加载 =====
+        LinearLayout externalLayout = view.findViewById(R.id.layout_external_sources);
+        try {
+            android.content.res.AssetManager am = getAssets();
+            java.io.InputStream is = am.open("wordbank_sources.json");
+            byte[] buf = new byte[is.available()];
+            is.read(buf);
+            is.close();
+            String json = new String(buf, "UTF-8");
+            Type sourceType = new TypeToken<List<ExternalSource>>(){}.getType();
+            List<ExternalSource> sources = new Gson().fromJson(json, sourceType);
+
+            for (ExternalSource source : sources) {
+                // 卡片式布局
+                android.widget.LinearLayout card = new android.widget.LinearLayout(this);
+                card.setOrientation(android.widget.LinearLayout.VERTICAL);
+                card.setPadding(12, 12, 12, 12);
+                android.widget.LinearLayout.LayoutParams cardParams = new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                cardParams.setMargins(0, 0, 0, 8);
+                card.setLayoutParams(cardParams);
+                card.setBackgroundResource(R.drawable.card_background);
+
+                // 名称+标签
+                android.widget.LinearLayout headerRow = new android.widget.LinearLayout(this);
+                headerRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                headerRow.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                TextView tvName = new TextView(this);
+                tvName.setText(source.name);
+                tvName.setTextSize(14);
+                tvName.setTypeface(null, android.graphics.Typeface.BOLD);
+                tvName.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+                TextView tvTag = new TextView(this);
+                tvTag.setText(source.gradeLabel);
+                tvTag.setTextSize(12);
+                tvTag.setTextColor(0xFF6B35);
+                tvTag.setBackgroundResource(R.drawable.card_background);
+                tvTag.setPadding(6, 2, 6, 2);
+
+                headerRow.addView(tvName);
+                headerRow.addView(tvTag);
+                card.addView(headerRow);
+
+                // 描述
+                TextView tvDesc = new TextView(this);
+                tvDesc.setText(source.description);
+                tvDesc.setTextSize(12);
+                tvDesc.setTextColor(0xFF666666);
+                tvDesc.setPadding(0, 4, 0, 8);
+                card.addView(tvDesc);
+
+                // 下载按钮
+                Button btnDownload = new Button(this);
+                btnDownload.setText("📥 下载并预览");
+                btnDownload.setTextSize(13);
+                btnDownload.setAllCaps(false);
+                btnDownload.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        36));
+                btnDownload.setOnClickListener(v -> downloadAndPreview(source));
+                card.addView(btnDownload);
+
+                externalLayout.addView(card);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("ParentActivity", "加载外部词库源失败", e);
+            TextView tvError = new TextView(this);
+            tvError.setText("外部词库加载失败: " + e.getMessage());
+            tvError.setTextSize(12);
+            tvError.setTextColor(0xFFFF4444);
+            tvError.setPadding(0, 8, 0, 0);
+            externalLayout.addView(tvError);
+        }
 
         new AlertDialog.Builder(this)
                 .setTitle("📚 词库管理")
