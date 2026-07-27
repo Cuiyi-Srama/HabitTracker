@@ -544,30 +544,60 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     private void showSettingsDialog() {
+        soundHelper.playClickSound();
+        String[] categories = {
+                "📚 词库管理（年级/下载/切换）",
+                "🏪 商城管理（上架/编辑/下架）",
+                "👤 个人信息（昵称/头像/标题）",
+                "💰 经济参数（金币/限额）",
+                "🏠 中枢/Hub模式",
+                "📊 查看统计数据"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("⚙️ 家长设置")
+                .setItems(categories, (d, which) -> {
+                    switch (which) {
+                        case 0: showWordbankDialog(); break;
+                        case 1: showManageShopDialog(); break;
+                        case 2: showProfileSettings(); break;
+                        case 3: showEconomySettings(); break;
+                        case 4: showHubSettings(); break;
+                        case 5: refreshStats(); Toast.makeText(this, tvStats.getText(), Toast.LENGTH_LONG).show(); break;
+                    }
+                })
+                .setNegativeButton("关闭", null)
+                .show();
+    }
+
+    private void showProfileSettings() {
         View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
+        // 只显示个人信息区域
+        android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
+        android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
+        Button btnPickAvatar = view.findViewById(R.id.btn_pick_avatar);
+        // 隐藏其他不需要的区域
+        etNickname.setText(profile.getNickname());
+        etAppTitle.setText(profile.getAppTitle());
+        btnPickAvatar.setOnClickListener(v -> pickShopImageLauncher.launch("image/*"));
+        new AlertDialog.Builder(this)
+                .setTitle("👤 个人信息")
+                .setView(view)
+                .setPositiveButton("保存", (d, w) -> {
+                    String nn = etNickname.getText().toString().trim();
+                    if (!nn.isEmpty()) profile.setNickname(nn);
+                    String at = etAppTitle.getText().toString().trim();
+                    if (!at.isEmpty()) profile.setAppTitle(at);
+                    Toast.makeText(this, "个人信息已更新 ✅", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null).show();
+    }
+
+    private void showEconomySettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
-
-        // 初始化默认模式选择
-        SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
-        String currentMode = prefs.getString("default_mode", "child");
-        RadioGroup rgMode = view.findViewById(R.id.rg_default_mode);
-        if ("child".equals(currentMode)) rgMode.check(R.id.rb_mode_child);
-        else if ("parent".equals(currentMode)) rgMode.check(R.id.rb_mode_parent);
-        else rgMode.check(R.id.rb_mode_ask);
-
-        // 初始化Hub模式开关状态
-        androidx.appcompat.widget.SwitchCompat switchHub = view.findViewById(R.id.switch_hub_mode);
-        switchHub.setChecked(syncManager.isHubModeEnabled());
-        switchHub.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            syncManager.setHubModeEnabled(isChecked);
-            Toast.makeText(this, isChecked ? "🏠 家庭中枢模式已开启" : "🏠 家庭中枢模式已关闭",
-                    Toast.LENGTH_SHORT).show();
-        });
-
+        View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
         EconomyConfig finalConfig = config;
 
-        // 初始化单词参数输入框
         android.widget.EditText etWordReward = view.findViewById(R.id.et_word_reward);
         android.widget.EditText etMaxWords = view.findViewById(R.id.et_max_words);
         android.widget.EditText etMaxReview = view.findViewById(R.id.et_max_review);
@@ -575,80 +605,38 @@ public class ParentActivity extends AppCompatActivity {
         etMaxWords.setText(String.valueOf(finalConfig.maxDailyWords));
         etMaxReview.setText(String.valueOf(finalConfig.maxDailyReview));
 
-        // 词库管理按钮
-        Button btnWordbank = view.findViewById(R.id.btn_wordbank_mgr);
-        btnWordbank.setOnClickListener(v -> showWordbankDialog());
-
-        // 商城管理按钮
-        Button btnManageShop = view.findViewById(R.id.btn_manage_shop);
-        btnManageShop.setOnClickListener(v -> showManageShopDialog());
-
-        // ===== 个人信息字段 =====
-        android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
-        android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
-        Button btnPickAvatar = view.findViewById(R.id.btn_pick_avatar);
-
-        etNickname.setText(profile.getNickname());
-        etAppTitle.setText(profile.getAppTitle());
-
-        btnPickAvatar.setOnClickListener(v -> {
-            soundHelper.playClickSound();
-            pickShopImageLauncher.launch("image/*");  // 复用商店图片选择器
-        });
-
         new AlertDialog.Builder(this)
-                .setTitle("⚙️ 设置")
+                .setTitle("💰 经济参数")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
-                    try {
-                        // 保存个人信息
-                        String newNickname = etNickname.getText().toString().trim();
-                        if (!newNickname.isEmpty()) {
-                            profile.setNickname(newNickname);
-                        }
-                        String newTitle = etAppTitle.getText().toString().trim();
-                        if (!newTitle.isEmpty()) {
-                            profile.setAppTitle(newTitle);
-                        }
-                        // 保存默认模式
-                        int checkedId = rgMode.getCheckedRadioButtonId();
-                        String mode = "child";
-                        if (checkedId == R.id.rb_mode_child) mode = "child";
-                        else if (checkedId == R.id.rb_mode_parent) mode = "parent";
-                        else if (checkedId == R.id.rb_mode_ask) mode = "ask";
-                        prefs.edit().putString("default_mode", mode).apply();
-
-                        // 保存经济参数
-                        android.widget.EditText etBaseReward = view.findViewById(R.id.et_base_reward);
-                        android.widget.EditText etStreak7 = view.findViewById(R.id.et_streak7);
-                        android.widget.EditText etMaxDaily = view.findViewById(R.id.et_max_daily);
-                        db.economyConfigDao().updateAll(
-                                parseInt(etBaseReward, 10),
-                                finalConfig.streak3Bonus,
-                                parseInt(etStreak7, 50),
-                                finalConfig.streak14Bonus,
-                                finalConfig.streak30Bonus,
-                                parseInt(etWordReward, 2),
-                                finalConfig.wordBatchBonus10,
-                                finalConfig.wordBatchBonus20,
-                                finalConfig.taskDailyMin,
-                                finalConfig.taskDailyMax,
-                                finalConfig.taskChallengeMin,
-                                finalConfig.taskChallengeMax,
-                                parseInt(etMaxDaily, 500),
-                                parseInt(etMaxWords, 10),
-                                parseInt(etMaxReview, 30)
-                        );
-                        Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
-                    } catch (Exception e) {
-                        Toast.makeText(this, "参数格式错误", Toast.LENGTH_SHORT).show();
-                    }
+                    db.economyConfigDao().updateAll(
+                            10, 5, 50, 100, 200, parseInt(etWordReward, 2),
+                            50, 100, 5, 20, 10, 30,
+                            500, parseInt(etMaxWords, 10), parseInt(etMaxReview, 30));
+                    Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("取消", null)
-                .show();
+                .setNegativeButton("取消", null).show();
     }
 
-    private int parseInt(android.widget.EditText et, int def) {
+    private void showHubSettings() {
+        SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
+        String currentMode = prefs.getString("default_mode", "child");
+        String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
+        int checked = "child".equals(currentMode) ? 0 : "parent".equals(currentMode) ? 1 : 2;
+        new AlertDialog.Builder(this)
+                .setTitle("🏠 默认启动模式 + Hub中枢")
+                .setSingleChoiceItems(modes, checked, (d, w) -> {
+                    String mode = w == 0 ? "child" : w == 1 ? "parent" : "ask";
+                    prefs.edit().putString("default_mode", mode).apply();
+                })
+                .setNeutralButton("Hub模式开关: " + (syncManager.isHubModeEnabled() ? "🟢开启" : "🔴关闭"), (d, w) -> {
+                    syncManager.setHubModeEnabled(!syncManager.isHubModeEnabled());
+                    Toast.makeText(this, syncManager.isHubModeEnabled() ? "🏠 中枢已开启" : "🏠 中枢已关闭", Toast.LENGTH_SHORT).show();
+                })
+                .setPositiveButton("关闭", null).show();
+    }
+
+    private int parseInt    private int parseInt(android.widget.EditText et, int def) {
         try { return Integer.parseInt(et.getText().toString()); } catch (Exception e) { return def; }
     }
 
