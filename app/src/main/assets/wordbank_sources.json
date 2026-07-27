@@ -38,5 +38,13 @@
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/5-%E8%80%83%E7%A0%94-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
     "gradeLabel": "kaoyan"
+  },
+  {
+    "id": "habit_primary",
+    "name": "HabitTracker 小学词汇（推荐）",
+    "description": "约50词，小学1-6年级基础英语词汇，适合入门学习",
+    "url": "https://raw.githubusercontent.com/Cuiyi-Srama/HabitTracker/main/app/src/main/assets/wordbank_primary.json",
+    "format": "native",
+    "gradeLabel": "primary"
   }
 ]
