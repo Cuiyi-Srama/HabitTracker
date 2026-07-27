@@ -69,16 +69,7 @@ public class SyncManager {
 
     public String getDeviceId() {
         if (deviceId == null) {
-            deviceId = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    .getString(KEY_DEVICE_ID, null);
-            if (deviceId == null) {
-                deviceId = "device_" + android.os.Build.MODEL.replace(" ", "_")
-                        + "_" + System.currentTimeMillis() % 10000;
-                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        .edit()
-                        .putString(KEY_DEVICE_ID, deviceId)
-                        .apply();
-            }
+            deviceId = com.sister.habits.utils.DeviceIdentity.getDeviceKey(context);
         }
         return deviceId;
     }
