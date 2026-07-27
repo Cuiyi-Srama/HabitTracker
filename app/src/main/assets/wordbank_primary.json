@@ -1,0 +1,386 @@
+[
+  {
+    "g": "grade1",
+    "c": "animal",
+    "w": "cat",
+    "m": "猫",
+    "p": "/kæt/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "animal",
+    "w": "dog",
+    "m": "狗",
+    "p": "/dɒɡ/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "animal",
+    "w": "fish",
+    "m": "鱼",
+    "p": "/fɪʃ/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "animal",
+    "w": "bird",
+    "m": "鸟",
+    "p": "/bɜːrd/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "color",
+    "w": "red",
+    "m": "红色",
+    "p": "/red/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "color",
+    "w": "blue",
+    "m": "蓝色",
+    "p": "/bluː/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "color",
+    "w": "green",
+    "m": "绿色",
+    "p": "/ɡriːn/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "number",
+    "w": "one",
+    "m": "一",
+    "p": "/wʌn/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "number",
+    "w": "two",
+    "m": "二",
+    "p": "/tuː/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "body",
+    "w": "eye",
+    "m": "眼睛",
+    "p": "/aɪ/",
+    "l": 1
+  },
+  {
+    "g": "grade1",
+    "c": "body",
+    "w": "ear",
+    "m": "耳朵",
+    "p": "/ɪr/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "food",
+    "w": "apple",
+    "m": "苹果",
+    "p": "/ˈæpəl/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "food",
+    "w": "banana",
+    "m": "香蕉",
+    "p": "/bəˈnænə/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "food",
+    "w": "orange",
+    "m": "橙子",
+    "p": "/ˈɔːrɪndʒ/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "family",
+    "w": "father",
+    "m": "爸爸",
+    "p": "/ˈfɑːðər/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "family",
+    "w": "mother",
+    "m": "妈妈",
+    "p": "/ˈmʌðər/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "family",
+    "w": "sister",
+    "m": "姐妹",
+    "p": "/ˈsɪstər/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "school",
+    "w": "book",
+    "m": "书",
+    "p": "/bʊk/",
+    "l": 1
+  },
+  {
+    "g": "grade2",
+    "c": "school",
+    "w": "teacher",
+    "m": "老师",
+    "p": "/ˈtiːtʃər/",
+    "l": 1
+  },
+  {
+    "g": "grade3",
+    "c": "verb",
+    "w": "run",
+    "m": "跑",
+    "p": "/rʌn/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "verb",
+    "w": "jump",
+    "m": "跳",
+    "p": "/dʒʌmp/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "verb",
+    "w": "swim",
+    "m": "游泳",
+    "p": "/swɪm/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "verb",
+    "w": "read",
+    "m": "阅读",
+    "p": "/riːd/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "verb",
+    "w": "eat",
+    "m": "吃",
+    "p": "/iːt/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "adj",
+    "w": "big",
+    "m": "大的",
+    "p": "/bɪɡ/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "adj",
+    "w": "small",
+    "m": "小的",
+    "p": "/smɔːl/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "adj",
+    "w": "happy",
+    "m": "开心的",
+    "p": "/ˈhæpi/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "place",
+    "w": "home",
+    "m": "家",
+    "p": "/hoʊm/",
+    "l": 2
+  },
+  {
+    "g": "grade3",
+    "c": "place",
+    "w": "school",
+    "m": "学校",
+    "p": "/skuːl/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "verb",
+    "w": "cook",
+    "m": "做饭",
+    "p": "/kʊk/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "verb",
+    "w": "clean",
+    "m": "打扫",
+    "p": "/kliːn/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "verb",
+    "w": "play",
+    "m": "玩耍",
+    "p": "/pleɪ/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "verb",
+    "w": "study",
+    "m": "学习",
+    "p": "/ˈstʌdi/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "time",
+    "w": "morning",
+    "m": "早上",
+    "p": "/ˈmɔːrnɪŋ/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "time",
+    "w": "night",
+    "m": "夜晚",
+    "p": "/naɪt/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "time",
+    "w": "today",
+    "m": "今天",
+    "p": "/təˈdeɪ/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "weather",
+    "w": "sunny",
+    "m": "晴天",
+    "p": "/ˈsʌni/",
+    "l": 2
+  },
+  {
+    "g": "grade4",
+    "c": "weather",
+    "w": "rainy",
+    "m": "下雨的",
+    "p": "/ˈreɪni/",
+    "l": 2
+  },
+  {
+    "g": "grade5",
+    "c": "nature",
+    "w": "flower",
+    "m": "花",
+    "p": "/ˈflaʊər/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "nature",
+    "w": "tree",
+    "m": "树",
+    "p": "/triː/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "nature",
+    "w": "moon",
+    "m": "月亮",
+    "p": "/muːn/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "nature",
+    "w": "star",
+    "m": "星星",
+    "p": "/stɑːr/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "subject",
+    "w": "English",
+    "m": "英语",
+    "p": "/ˈɪŋɡlɪʃ/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "subject",
+    "w": "math",
+    "m": "数学",
+    "p": "/mæθ/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "abstract",
+    "w": "love",
+    "m": "爱",
+    "p": "/lʌv/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "abstract",
+    "w": "friend",
+    "m": "朋友",
+    "p": "/frend/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "abstract",
+    "w": "dream",
+    "m": "梦想",
+    "p": "/driːm/",
+    "l": 3
+  },
+  {
+    "g": "grade5",
+    "c": "abstract",
+    "w": "family",
+    "m": "家庭",
+    "p": "/ˈfæməli/",
+    "l": 3
+  }
+]
