@@ -131,13 +131,23 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(@NonNull androidx.sqlite.db.SupportSQLiteDatabase database) {
-            // 旧表有 wordBatchBonus10/20 列，新 EconomyConfig.java 已去掉这两列
-            // SQLite 不支持直接 DROP COLUMN，需重建表
-            // 1. 保存旧数据
-            database.execSQL("CREATE TABLE economy_config_temp AS SELECT * FROM economy_config");
+            // 旧表有 wordBatchBonus10/20 列（已从 entity 中移除），
+            // 且没有 reviewPassReward/screenTime15min/30min/60min 列。
+            // SQLite 不支持 DROP COLUMN，需完整重建表。
+            // 注意：不能 SELECT 旧表中不存在的列，必须用字面默认值。
+
+            // 1. 保存旧数据（只保存旧表已有的列）
+            database.execSQL("CREATE TABLE economy_config_temp AS SELECT " +
+                "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
+                "wordLearnReward, " +
+                "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
+                "maxDailyCoins, maxDailyWords, maxDailyReview " +
+                "FROM economy_config");
+
             // 2. 删除旧表
             database.execSQL("DROP TABLE economy_config");
-            // 3. 创建新表（匹配 EconomyConfig.java 的字段）
+
+            // 3. 创建新表（匹配 EconomyConfig.java 的 18 个字段）
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS `economy_config` (" +
                 "`id` INTEGER NOT NULL, " +
@@ -160,7 +170,8 @@ public abstract class AppDatabase extends RoomDatabase {
                 "`maxDailyReview` INTEGER NOT NULL DEFAULT 30, " +
                 "PRIMARY KEY(`id`))"
             );
-            // 4. 从临时表复制数据（新列用 COALESCE 给默认值，避免旧数据为 NULL）
+
+            // 4. 从临时表复制数据（新列用字面默认值，因为旧表没有这些列）
             database.execSQL(
                 "INSERT INTO economy_config (" +
                 "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
@@ -170,12 +181,13 @@ public abstract class AppDatabase extends RoomDatabase {
                 "maxDailyCoins, maxDailyWords, maxDailyReview" +
                 ") SELECT " +
                 "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
-                "wordLearnReward, COALESCE(reviewPassReward, 2), " +
+                "wordLearnReward, 2, " +   // reviewPassReward 字面默认值
                 "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
-                "COALESCE(screenTime15min, 10), COALESCE(screenTime30min, 18), COALESCE(screenTime60min, 30), " +
+                "10, 18, 30, " +           // screenTime15/30/60min 字面默认值
                 "maxDailyCoins, maxDailyWords, maxDailyReview " +
                 "FROM economy_config_temp"
             );
+
             // 5. 清理临时表
             database.execSQL("DROP TABLE economy_config_temp");
         }
