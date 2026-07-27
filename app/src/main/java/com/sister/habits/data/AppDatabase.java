@@ -54,16 +54,16 @@ public abstract class AppDatabase extends RoomDatabase {
                 "CREATE TABLE IF NOT EXISTS `word_reviews` (" +
                 "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                 "`wordId` TEXT NOT NULL, " +
-                "`stage` INTEGER DEFAULT 0, " +
+                "`stage` INTEGER NOT NULL DEFAULT 0, " +
                 "`nextReviewAt` INTEGER NOT NULL, " +
                 "`lastReviewedAt` INTEGER NOT NULL, " +
-                "`correctCount` INTEGER DEFAULT 0, " +
-                "`wrongCount` INTEGER DEFAULT 0, " +
+                "`correctCount` INTEGER NOT NULL DEFAULT 0, " +
+                "`wrongCount` INTEGER NOT NULL DEFAULT 0, " +
                 "UNIQUE(`wordId`))"
             );
             // vocabulary 表新增列
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `gradeLevel` TEXT DEFAULT ''");
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `active` INTEGER DEFAULT 1");
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `gradeLevel` TEXT NOT NULL DEFAULT ''");
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `active` INTEGER NOT NULL DEFAULT 1");
         }
     };
 
@@ -78,33 +78,34 @@ public abstract class AppDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             // 创建词库元数据表
+            // 规则：原语类型(int/long/boolean) → NOT NULL 不带 DEFAULT，String → 不带 NOT NULL
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS `word_banks` (" +
                 "`id` TEXT NOT NULL, " +
-                "`name` TEXT DEFAULT '', " +
-                "`sourceUrl` TEXT DEFAULT '', " +
-                "`sourceType` TEXT DEFAULT 'builtin', " +
-                "`gradeLabel` TEXT DEFAULT '', " +
-                "`wordCount` INTEGER DEFAULT 0, " +
-                "`downloadedAt` INTEGER DEFAULT 0, " +
-                "`active` INTEGER DEFAULT 0, " +
+                "`name` TEXT, " +
+                "`sourceUrl` TEXT, " +
+                "`sourceType` TEXT, " +
+                "`gradeLabel` TEXT, " +
+                "`wordCount` INTEGER NOT NULL, " +
+                "`downloadedAt` INTEGER NOT NULL, " +
+                "`active` INTEGER NOT NULL, " +
                 "PRIMARY KEY(`id`))"
             );
             // 创建愿望清单表
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS `wishlist_items` (" +
                 "`id` TEXT NOT NULL, " +
-                "`shopItemId` TEXT NOT NULL, " +
-                "`addedAt` INTEGER DEFAULT 0, " +
+                "`shopItemId` TEXT, " +
+                "`addedAt` INTEGER NOT NULL, " +
                 "PRIMARY KEY(`id`))"
             );
-            // vocabulary 表新增 bankId 列
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `bankId` TEXT DEFAULT 'builtin'");
+            // vocabulary 表新增 bankId 列（String 类型，不带 NOT NULL）
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `bankId` TEXT");
             // word_reviews 表新增 bankId 列
-            database.execSQL("ALTER TABLE `word_reviews` ADD COLUMN `bankId` TEXT DEFAULT 'builtin'");
-            // 插入默认内置词库
-            database.execSQL("INSERT OR IGNORE INTO `word_banks` (`id`, `name`, `sourceType`, `gradeLabel`, `active`) " +
-                    "VALUES ('builtin', '内置词库（小学）', 'builtin', 'primary', 1)");
+            database.execSQL("ALTER TABLE `word_reviews` ADD COLUMN `bankId` TEXT");
+            // 插入默认内置词库（原语类型必须显式赋值）
+            database.execSQL("INSERT OR IGNORE INTO `word_banks` (`id`, `name`, `sourceType`, `gradeLabel`, `wordCount`, `downloadedAt`, `active`) " +
+                    "VALUES ('builtin', '内置词库（小学）', 'builtin', 'primary', 0, 0, 1)");
         }
     };
 
@@ -117,7 +118,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         AppDatabase.class,
                         "habit_tracker.db"
                     )
-                    .allowMainThreadQueries().fallbackToDestructiveMigration()
+                    .allowMainThreadQueries()
+                    .fallbackToDestructiveMigration()
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build();
                 }
