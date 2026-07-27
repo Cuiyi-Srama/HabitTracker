@@ -54,16 +54,16 @@ public abstract class AppDatabase extends RoomDatabase {
                 "CREATE TABLE IF NOT EXISTS `word_reviews` (" +
                 "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                 "`wordId` TEXT NOT NULL, " +
-                "`stage` INTEGER NOT NULL DEFAULT 0, " +
+                "`stage` INTEGER DEFAULT 0, " +
                 "`nextReviewAt` INTEGER NOT NULL, " +
                 "`lastReviewedAt` INTEGER NOT NULL, " +
-                "`correctCount` INTEGER NOT NULL DEFAULT 0, " +
-                "`wrongCount` INTEGER NOT NULL DEFAULT 0, " +
+                "`correctCount` INTEGER DEFAULT 0, " +
+                "`wrongCount` INTEGER DEFAULT 0, " +
                 "UNIQUE(`wordId`))"
             );
             // vocabulary 表新增列
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `gradeLevel` TEXT NOT NULL DEFAULT ''");
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `active` INTEGER NOT NULL DEFAULT 1");
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `gradeLevel` TEXT DEFAULT ''");
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `active` INTEGER DEFAULT 1");
         }
     };
 
@@ -81,13 +81,13 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS `word_banks` (" +
                 "`id` TEXT NOT NULL, " +
-                "`name` TEXT NOT NULL DEFAULT '', " +
-                "`sourceUrl` TEXT NOT NULL DEFAULT '', " +
-                "`sourceType` TEXT NOT NULL DEFAULT 'builtin', " +
-                "`gradeLabel` TEXT NOT NULL DEFAULT '', " +
-                "`wordCount` INTEGER NOT NULL DEFAULT 0, " +
-                "`downloadedAt` INTEGER NOT NULL DEFAULT 0, " +
-                "`active` INTEGER NOT NULL DEFAULT 0, " +
+                "`name` TEXT DEFAULT '', " +
+                "`sourceUrl` TEXT DEFAULT '', " +
+                "`sourceType` TEXT DEFAULT 'builtin', " +
+                "`gradeLabel` TEXT DEFAULT '', " +
+                "`wordCount` INTEGER DEFAULT 0, " +
+                "`downloadedAt` INTEGER DEFAULT 0, " +
+                "`active` INTEGER DEFAULT 0, " +
                 "PRIMARY KEY(`id`))"
             );
             // 创建愿望清单表
@@ -95,13 +95,13 @@ public abstract class AppDatabase extends RoomDatabase {
                 "CREATE TABLE IF NOT EXISTS `wishlist_items` (" +
                 "`id` TEXT NOT NULL, " +
                 "`shopItemId` TEXT NOT NULL, " +
-                "`addedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`addedAt` INTEGER DEFAULT 0, " +
                 "PRIMARY KEY(`id`))"
             );
             // vocabulary 表新增 bankId 列
-            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `bankId` TEXT NOT NULL DEFAULT 'builtin'");
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `bankId` TEXT DEFAULT 'builtin'");
             // word_reviews 表新增 bankId 列
-            database.execSQL("ALTER TABLE `word_reviews` ADD COLUMN `bankId` TEXT NOT NULL DEFAULT 'builtin'");
+            database.execSQL("ALTER TABLE `word_reviews` ADD COLUMN `bankId` TEXT DEFAULT 'builtin'");
             // 插入默认内置词库
             database.execSQL("INSERT OR IGNORE INTO `word_banks` (`id`, `name`, `sourceType`, `gradeLabel`, `active`) " +
                     "VALUES ('builtin', '内置词库（小学）', 'builtin', 'primary', 1)");
@@ -117,7 +117,7 @@ public abstract class AppDatabase extends RoomDatabase {
                         AppDatabase.class,
                         "habit_tracker.db"
                     )
-                    .allowMainThreadQueries()
+                    .allowMainThreadQueries().fallbackToDestructiveMigration()
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build();
                 }
