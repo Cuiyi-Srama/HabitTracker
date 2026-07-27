@@ -98,19 +98,17 @@ public class ParentActivity extends AppCompatActivity {
                 }
             });
 
-    // 词库JSON导入的文件选择器 — 现在使用 bankId 隔离
+    // 词库JSON导入 — 使用 bankId 隔离，不丢失学习进度
     private final ActivityResultLauncher<String[]> wordbankImportLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
                 if (uri == null) return;
                 try {
-                    // 读取文件内容
                     java.io.InputStream is = getContentResolver().openInputStream(uri);
                     byte[] buffer = new byte[is.available()];
                     is.read(buffer);
                     is.close();
                     String json = new String(buffer, "UTF-8");
 
-                    // 解析JSON
                     java.lang.reflect.Type type = new TypeToken<List<JsonImportWord>>(){}.getType();
                     List<JsonImportWord> importWords = new Gson().fromJson(json, type);
 
@@ -148,7 +146,7 @@ public class ParentActivity extends AppCompatActivity {
                         db.vocabularyDao().insertAll(words.subList(i, end));
                     }
 
-                    // 切换到新词库（学习进度独立保存，不丢失旧进度）
+                    // 切换到新词库
                     SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
                     prefs.edit().putString("active_bank_id", bankId).apply();
                     db.wordBankDao().deactivateAll();
@@ -226,7 +224,7 @@ public class ParentActivity extends AppCompatActivity {
                                     "共 " + words.size() + " 个单词\n" +
                                     "格式: " + source.format.toUpperCase() + "（自动兼容）\n\n" +
                                     "📝 示例:\n" + samples.toString() + "\n" +
-                                    "⚠️ 确认后将替换当前词库，当前学习进度将丢失。")
+                                    "💡 下载后学习进度独立保存，不影响现有词库进度。")
                             .setPositiveButton("✅ 确认使用", (d, w) -> applyExternalWordbank(words, source))
                             .setNegativeButton("取消", null)
                             .show();
@@ -240,22 +238,21 @@ public class ParentActivity extends AppCompatActivity {
         }).start();
     }
 
-    /** 应用外部词库到数据库 — 使用 bankId 隔离学习进度 */
+    /** 应用外部词库到数据库 — 使用 bankId 隔离，学习进度独立保存 */
     private void applyExternalWordbank(java.util.List<com.sister.habits.data.models.Vocabulary> words, ExternalSource source) {
         try {
-            // 为所有单词设置 bankId
             String bankId = "ext_" + source.id;
             for (com.sister.habits.data.models.Vocabulary v : words) {
                 v.bankId = bankId;
             }
 
-            // 创建词库记录
+            // 创建或更新词库记录
             com.sister.habits.data.models.WordBank bank = com.sister.habits.data.models.WordBank.fromExternal(
                     source.id, source.name, source.url, source.gradeLabel, words.size());
             bank.id = bankId;
             db.wordBankDao().insert(bank);
 
-            // 分批插入新词库（不清除旧词库和复习进度）
+            // 分批插入（不清除旧词库）
             int batchSize = 100;
             for (int i = 0; i < words.size(); i += batchSize) {
                 int end = Math.min(i + batchSize, words.size());
@@ -264,15 +261,11 @@ public class ParentActivity extends AppCompatActivity {
 
             // 切换到新词库
             SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
-            prefs.edit()
-                    .putString("active_bank_id", bankId)
-                    .putString("external_source_id", source.id)
-                    .putString("external_source_name", source.name)
-                    .apply();
+            prefs.edit().putString("active_bank_id", bankId).apply();
             db.wordBankDao().deactivateAll();
             db.wordBankDao().setActive(bankId);
 
-            Toast.makeText(this, "✅ 已启用: " + source.name + "（" + words.size() + "词），学习进度独立保存", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "✅ 已启用: " + source.name + "（" + words.size() + "词）\n学习进度独立保存，切回旧词库不丢失", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             android.util.Log.e("ParentActivity", "应用外部词库失败", e);
             Toast.makeText(this, "❌ 应用失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -695,7 +688,7 @@ public class ParentActivity extends AppCompatActivity {
             List<ExternalSource> sources = new Gson().fromJson(json, sourceType);
 
             for (ExternalSource source : sources) {
-                // 卡片式布局 — 每个源一个下载按钮
+                // 卡片式布局
                 android.widget.LinearLayout card = new android.widget.LinearLayout(this);
                 card.setOrientation(android.widget.LinearLayout.VERTICAL);
                 card.setPadding(12, 12, 12, 12);
