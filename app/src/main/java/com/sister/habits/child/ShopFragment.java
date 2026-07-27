@@ -38,7 +38,6 @@ public class ShopFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_shop, container, false);
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
-        syncManager = SyncManager.getInstance(requireContext());
 
         recyclerView = view.findViewById(R.id.recycler_shop);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
