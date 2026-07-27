@@ -55,8 +55,8 @@ public class WordFragment extends Fragment {
 
     // 复习模式组批字段
     private int currentReviewTotal = 0;                    // 本轮复习总词数
+    private List<Vocabulary> reviewAllWords = null;         // 本轮完整词列表（用于整组重排）
     private final List<String> wrongInReviewSet = new ArrayList<>();  // 本轮答错的词
-    private boolean reviewRetryMode = false;                // 是否在纠错重试中
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -161,8 +161,8 @@ public class WordFragment extends Fragment {
             }
             Collections.shuffle(words);
             currentReviewTotal = words.size();
+            reviewAllWords = new ArrayList<>(words);
             wrongInReviewSet.clear();
-            reviewRetryMode = false;
             if (currentReviewTotal > 0) {
                 tvPrompt.setText("🔄 复习检测 (" + currentReviewTotal + "个)  全对得 🪙" + (currentReviewTotal * 2));
             } else {
@@ -221,19 +221,15 @@ public class WordFragment extends Fragment {
                     updateStats();
                     return;
                 } else {
-                    // ❌ 有答错 → 纠错重来：只重做出错的词
+                    // ❌ 有答错 → 整组从头重排重新来
                     int wrongCount = wrongInReviewSet.size();
-                    tvPrompt.setText("💪 差一点就全部通关了！再来纠错 " + wrongCount + " 个词～加油！");
-                    // 用答错的词重新填充队列
-                    List<Vocabulary> retryWords = new ArrayList<>();
-                    for (String wid : wrongInReviewSet) {
-                        Vocabulary v = db.vocabularyDao().getById(wid);
-                        if (v != null) retryWords.add(v);
+                    tvPrompt.setText("💪 答错了 " + wrongCount + " 个～整组重来，全部答对才算通关！加油！");
+                    // 整组重新随机排列，从头开始
+                    if (reviewAllWords != null) {
+                        Collections.shuffle(reviewAllWords);
+                        quizQueue = new ArrayList<>(reviewAllWords);
                     }
-                    Collections.shuffle(retryWords);
-                    quizQueue = retryWords;
-                    wrongInReviewSet.clear();  // 清空，开始新一轮纠错
-                    reviewRetryMode = true;
+                    wrongInReviewSet.clear();
                     new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 800);
                     return;
                 }
