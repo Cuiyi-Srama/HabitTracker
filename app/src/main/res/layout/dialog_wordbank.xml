@@ -29,141 +29,41 @@
             android:textColor="@color/text_primary"
             android:layout_marginBottom="4dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="勾选后，下次启动App时自动加载对应年级的单词"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginBottom="8dp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="一年级"
-            android:textSize="14sp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="二年级"
-            android:textSize="14sp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="三年级（推荐）"
-            android:textSize="14sp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="四年级"
-            android:textSize="14sp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="五年级"
-            android:textSize="14sp" />
-
-        <CheckBox
-            android:id="@+id/cb_grade_junior"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="初中（拓展）"
-            android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="一年级" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade2" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="二年级" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade3" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="三年级（推荐）" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade4" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="四年级" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade5" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="五年级" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade_junior" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="初中（拓展）" android:textSize="14sp" />
 
         <!-- 每日单词量 -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="每日单词量"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="每日单词量" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginTop="16dp" android:layout_marginBottom="4dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="每日新词数量（默认10个）"
-            android:layout_marginBottom="16dp">
-
-            <android.widget.EditText
-                android:id="@+id/et_daily_words"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:text="10" />
-
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="每日新词数量（默认10个）" android:layout_marginBottom="16dp">
+            <android.widget.EditText android:id="@+id/et_daily_words" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="10" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- 导入词库 -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="导入词库"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="从JSON文件导入自定义词库，覆盖当前词库。文件格式见项目文档。"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary"
-            android:lineSpacingExtra="2dp"
-            android:layout_marginBottom="8dp" />
-
-        <Button
-            android:id="@+id/btn_import_wordbank"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="📂 选择JSON文件导入"
-            android:textSize="14sp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="导入词库" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginTop="8dp" android:layout_marginBottom="4dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="从JSON文件导入自定义词库，自动使用bankId隔离进度。" android:textSize="12sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="2dp" android:layout_marginBottom="8dp" />
+        <Button android:id="@+id/btn_import_wordbank" android:layout_width="match_parent" android:layout_height="48dp" android:text="📂 选择JSON文件导入" android:textSize="14sp" />
 
         <!-- 分隔 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E0E0E0"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" />
 
         <!-- 外部词库下载 -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🌐 从外部词库下载"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="4dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🌐 从外部词库下载" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginBottom="4dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="从开源词库下载并直接使用，自动兼容多种格式。下载后学习进度独立保存。" android:textSize="12sp" android:textColor="@color/text_secondary" android:lineSpacingExtra="2dp" android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="从开源词库下载并直接使用，自动兼容多种格式。下载后可预览确认。"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary"
-            android:lineSpacingExtra="2dp"
-            android:layout_marginBottom="8dp" />
+        <LinearLayout android:id="@+id/layout_external_sources" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
 
-        <LinearLayout
-            android:id="@+id/layout_external_sources"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+        <!-- ===== 分隔 ===== -->
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" />
+
+        <!-- ===== 已下载词库（切换） ===== -->
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="📦 已下载词库（点击切换）" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginBottom="8dp" />
+
+        <LinearLayout android:id="@+id/layout_installed_banks" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
 
     </LinearLayout>
 </ScrollView>
