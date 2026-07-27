@@ -162,6 +162,27 @@ chmod +x gradlew
 
 ---
 
+### 🎨 开源自定义 · Make It Yours
+
+想把这个 App 改成你自己的版本？**一行命令搞定：**
+
+```bash
+# 克隆后运行
+python3 scripts/customize_app.py --app-name "小明的日常" --nickname "小明"
+
+# 也可以同时替换图标和包名
+python3 scripts/customize_app.py --app-name "Baby Daily" --nickname "Alice" --icon my_icon.png --package com.yourname.babydaily
+```
+
+**App 内也可以随时修改：**
+- 👤 **昵称** → 家长模式 → ⚙️ 设置 → 个人信息 → 孩子昵称
+- 📝 **App 标题** → 家长模式 → ⚙️ 设置 → 个人信息 → App 内标题
+- 🖼️ **头像** → 家长模式 → ⚙️ 设置 → 个人信息 → 选择头像图片
+
+修改后保存，主页标题和按钮文字会自动更新 🎉
+
+---
+
 ## 👨‍👩‍👧 双模式说明 · Dual Mode
 
 ```
