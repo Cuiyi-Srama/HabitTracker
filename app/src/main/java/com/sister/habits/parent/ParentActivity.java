@@ -351,25 +351,17 @@ public class ParentActivity extends AppCompatActivity {
 
         String nickname = profile.getNickname();
         tvStats.setText(
-                "📊 " + nickname + "的习惯数据
-" +
-                "━━━━━━━━━━━━━━━
-" +
-                "今日打卡: " + (checkedInToday ? "✅ 已打卡" : "⭕ 未打卡") + "
-" +
-                "总打卡: " + totalCheckIns + " 天  |  最长连续: " + maxStreak + " 天 🏆
-" +
-                "━━━━━━━━━━━━━━━
-" +
-                "💰 金币余额: " + (balance != null ? balance : 0) + "
-" +
-                "🗥 今日收入: +" + todayEarned + "  |  今日消费: -" + todaySpent + "
-" +
-                "━━━━━━━━━━━━━━━
-" +
-                "待审批兑换: " + pendingCount + " 项  |  待确认任务: " + pendingTaskCount + " 项"
+                "\uD83D\uDCCA " + nickname + "\u7684\u4E60\u60EF\u6570\u636E\n" +
+                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
+                "\u4ECA\u65E5\u6253\u5361: " + (checkedInToday ? "\u2705 \u5DF2\u6253\u5361" : "\u2B55 \u672A\u6253\u5361") + "\n" +
+                "\u603B\u6253\u5361: " + totalCheckIns + " \u5929  |  \u6700\u957F\u8FDE\u7EED: " + maxStreak + " \u5929 \uD83C\uDFC6\n" +
+                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
+                "\uD83D\uDCB0 \u91D1\u5E01\u4F59\u989D: " + (balance != null ? balance : 0) + "\n" +
+                "\uD83D\uDDE5 \u4ECA\u65E5\u6536\u5165: +" + todayEarned + "  |  \u4ECA\u65E5\u6D88\u8D39: -" + todaySpent + "\n" +
+                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
+                "\u5F85\u5BA1\u6279\u5151\u6362: " + pendingCount + " \u9879  |  \u5F85\u786E\u8BA4\u4EFB\u52A1: " + pendingTaskCount + " \u9879"
         );
-    }}
+    }
 
     private void loadPendingApprovals() {
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
