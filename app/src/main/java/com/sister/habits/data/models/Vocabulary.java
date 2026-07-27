@@ -23,11 +23,13 @@ public class Vocabulary {
     public int level;              // 难度 1-5
     public boolean mastered;       // 是否已掌握
     public long masteredAt;        // 掌握时间
-    public boolean active;         // 家长是否启用（用于控制哪些词出现在妹妹的列表中）
+    public boolean active;         // 家长是否启用
+    public String bankId;           // 关联词库ID，"builtin" 为内置词库
 
     public Vocabulary() {
         this.id = UUID.randomUUID().toString();
         this.mastered = false;
         this.active = true;
+        this.bankId = "builtin";
     }
 }
