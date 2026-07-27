@@ -19,9 +19,11 @@ import com.sister.habits.data.models.*;
         Redemption.class,
         Vocabulary.class,
         EconomyConfig.class,
-        WordReview.class
+        WordReview.class,
+        WordBank.class,
+        WishlistItem.class
     },
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -36,6 +38,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract VocabularyDao vocabularyDao();
     public abstract EconomyConfigDao economyConfigDao();
     public abstract WordReviewDao wordReviewDao();
+    public abstract WordBankDao wordBankDao();
+    public abstract WishlistDao wishlistDao();
 
     /**
      * 数据库迁移 1→2：
@@ -63,6 +67,47 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * 数据库迁移 2→3：
+     * - 新增 word_banks 表（词库元数据）
+     * - 新增 wishlist_items 表（愿望清单）
+     * - vocabulary 表新增 bankId 列
+     * - word_reviews 表新增 bankId 列
+     */
+    static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 创建词库元数据表
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `word_banks` (" +
+                "`id` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL DEFAULT '', " +
+                "`sourceUrl` TEXT NOT NULL DEFAULT '', " +
+                "`sourceType` TEXT NOT NULL DEFAULT 'builtin', " +
+                "`gradeLabel` TEXT NOT NULL DEFAULT '', " +
+                "`wordCount` INTEGER NOT NULL DEFAULT 0, " +
+                "`downloadedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`active` INTEGER NOT NULL DEFAULT 0, " +
+                "PRIMARY KEY(`id`))"
+            );
+            // 创建愿望清单表
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `wishlist_items` (" +
+                "`id` TEXT NOT NULL, " +
+                "`shopItemId` TEXT NOT NULL, " +
+                "`addedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "PRIMARY KEY(`id`))"
+            );
+            // vocabulary 表新增 bankId 列
+            database.execSQL("ALTER TABLE `vocabulary` ADD COLUMN `bankId` TEXT NOT NULL DEFAULT 'builtin'");
+            // word_reviews 表新增 bankId 列
+            database.execSQL("ALTER TABLE `word_reviews` ADD COLUMN `bankId` TEXT NOT NULL DEFAULT 'builtin'");
+            // 插入默认内置词库
+            database.execSQL("INSERT OR IGNORE INTO `word_banks` (`id`, `name`, `sourceType`, `gradeLabel`, `active`) " +
+                    "VALUES ('builtin', '内置词库（小学）', 'builtin', 'primary', 1)");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -73,7 +118,7 @@ public abstract class AppDatabase extends RoomDatabase {
                         "habit_tracker.db"
                     )
                     .allowMainThreadQueries()
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build();
                 }
             }
