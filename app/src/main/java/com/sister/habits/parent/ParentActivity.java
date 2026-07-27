@@ -995,8 +995,7 @@ public class ParentActivity extends AppCompatActivity {
 
                     Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("取消", null)
-                .show();
+                .setNegativeButton("\u2190 返回上级", (d, w) -> showLearningMenu()).show();        .show();
     }
 
     
