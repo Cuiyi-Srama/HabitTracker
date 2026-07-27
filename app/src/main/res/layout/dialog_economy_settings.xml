@@ -1,52 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
-    <TextView
+    android:layout_height="wrap_content">
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="💰 单词学习经济参数"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="12dp" />
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="每学一个单词积分"
-        android:layout_marginBottom="8dp">
-        <android.widget.EditText
-            android:id="@+id/et_word_reward"
+        android:orientation="vertical"
+        android:padding="16dp">
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:text="2" />
-    </com.google.android.material.textfield.TextInputLayout>
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="每日新词上限"
-        android:layout_marginBottom="8dp">
-        <android.widget.EditText
-            android:id="@+id/et_max_words"
+            android:text="💰 经济参数设置"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="12dp" />
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:text="10" />
-    </com.google.android.material.textfield.TextInputLayout>
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="每日复习上限"
-        android:layout_marginBottom="8dp">
-        <android.widget.EditText
-            android:id="@+id/et_max_review"
+            android:text="✅ 签到奖励"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#FFF3E0"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2">
+            <com.google.android.material.textfield.TextInputLayout android:hint="基础签到" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_checkin_base" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="10"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="连续3天加" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_streak3" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="5"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="3" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="连续7天" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp">
+                <android.widget.EditText android:id="@+id/et_streak7" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="15"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="连续14天" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_streak14" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="30"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="连续30天" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_streak30" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="100"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:text="30" />
-    </com.google.android.material.textfield.TextInputLayout>
-</LinearLayout>
+            android:text="📚 单词奖励"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#E3F2FD"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="新词答对" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_word_learn" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="2"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="复习每词" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_review_pass" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="2"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📋 任务奖励范围"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#E8F5E9"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="日常最低" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_task_daily_min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="5"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="日常最高" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_task_daily_max" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="15"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="挑战最低" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_task_challenge_min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="20"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="挑战最高" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_task_challenge_max" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="50"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎮 娱乐时间价格"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#F3E5F5"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="3" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="15分钟" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_15" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="10"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="30分钟" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_30" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="18"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="1小时" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_60" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="30"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔒 防刷限制"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#FFEBEE"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="3" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="日收入上限" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp">
+                <android.widget.EditText android:id="@+id/et_max_daily_coins" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="500"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="日新词上限" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_max_words" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="10"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="日复习上限" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_max_review" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="30"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
