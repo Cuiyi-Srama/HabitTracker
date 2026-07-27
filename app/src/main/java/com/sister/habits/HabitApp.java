@@ -13,7 +13,10 @@ public class HabitApp extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // 初始化数据库和同步服务（放在子线程，Room禁止主线程操作）
+        // \u521d\u59cb\u5316\u8bbe\u5907\u552f\u4e00\u8eab\u4efd\uff08\u9996\u6b21\u542f\u52a8\u65f6\u751f\u6210\u5e76\u6c38\u4e45\u4fdd\u5b58\uff09
+        com.sister.habits.utils.DeviceIdentity.getDeviceKey(this);
+
+        // \u521d\u59cb\u5316\u6570\u636e\u5e93\u548c\u540c\u6b65\u670d\u52a1
         new Thread(() -> {
             DatabaseInitializer.init(this);
             SyncManager syncManager = SyncManager.getInstance(this);
