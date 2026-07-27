@@ -21,20 +21,23 @@ public interface EconomyConfigDao {
             "streak14Bonus = :streak14Bonus, " +
             "streak30Bonus = :streak30Bonus, " +
             "wordLearnReward = :wordLearnReward, " +
-            "wordBatchBonus10 = :wordBatchBonus10, " +
-            "wordBatchBonus20 = :wordBatchBonus20, " +
+            "reviewPassReward = :reviewPassReward, " +
             "taskDailyMin = :taskDailyMin, " +
             "taskDailyMax = :taskDailyMax, " +
             "taskChallengeMin = :taskChallengeMin, " +
             "taskChallengeMax = :taskChallengeMax, " +
+            "screenTime15min = :screenTime15min, " +
+            "screenTime30min = :screenTime30min, " +
+            "screenTime60min = :screenTime60min, " +
             "maxDailyCoins = :maxDailyCoins, " +
             "maxDailyWords = :maxDailyWords, " +
             "maxDailyReview = :maxDailyReview " +
             "WHERE id = 1")
     void updateAll(int checkInBaseReward, int streak3Bonus, int streak7Bonus,
-                   int streak14Bonus, int streak30Bonus, int wordLearnReward,
-                   int wordBatchBonus10, int wordBatchBonus20,
+                   int streak14Bonus, int streak30Bonus,
+                   int wordLearnReward, int reviewPassReward,
                    int taskDailyMin, int taskDailyMax,
                    int taskChallengeMin, int taskChallengeMax,
+                   int screenTime15min, int screenTime30min, int screenTime60min,
                    int maxDailyCoins, int maxDailyWords, int maxDailyReview);
 }
