@@ -40,11 +40,24 @@ public class ShopFragment extends Fragment {
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
 
+        Button btnAll = view.findViewById(R.id.btn_shop_all);
+        Button btnWish = view.findViewById(R.id.btn_shop_wishlist);
+        btnAll.setOnClickListener(v -> { btnAll.setBackgroundColor(0xFFFF9800); btnWish.setBackgroundColor(0xFFE0E0E0); loadShopItems(); });
+        btnWish.setOnClickListener(v -> { btnWish.setBackgroundColor(0xFFFF9800); btnAll.setBackgroundColor(0xFFE0E0E0); loadWishlistItems(); });
         recyclerView = view.findViewById(R.id.recycler_shop);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         loadShopItems();
         return view;
+    }
+    private void loadWishlistItems() {
+        java.util.List<com.sister.habits.data.models.WishlistItem> wishes = db.wishlistDao().getAll();
+        java.util.ArrayList<ShopItem> items = new java.util.ArrayList<>();
+        for (com.sister.habits.data.models.WishlistItem w : wishes) {
+            ShopItem si = db.shopItemDao().getById(w.shopItemId);
+            if (si != null && si.active) items.add(si);
+        }
+        recyclerView.setAdapter(new ShopAdapter(items, this::requestRedemption));
     }
 
     private void loadShopItems() {
