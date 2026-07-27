@@ -7,7 +7,6 @@
     android:background="@drawable/card_background"
     android:layout_margin="4dp">
 
-    <!-- 商品图片 -->
     <ImageView
         android:id="@+id/iv_shop_icon"
         android:layout_width="64dp"
@@ -16,7 +15,6 @@
         android:src="@drawable/ic_launcher"
         android:layout_marginEnd="12dp" />
 
-    <!-- 文字信息 -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -49,8 +47,17 @@
             android:textColor="#FF6B35"
             android:textStyle="bold" />
 
-    <Button android:id="@+id/btn_wishlist" android:layout_width="32dp" android:layout_height="32dp" android:text="⭐" android:textSize="16sp" android:background="#E0E0E0" android:layout_marginStart="8dp" />
     </LinearLayout>
 
-<Button android:id="@+id/btn_wishlist" android:layout_width="32dp" android:layout_height="32dp" android:text="⭐" android:textSize="16sp" android:background="#E0E0E0" android:layout_marginStart="8dp" />
-    </LinearLayout>
+    <!-- 愿望清单⭐按钮 -->
+    <Button
+        android:id="@+id/btn_wishlist"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:text="⭐"
+        android:textSize="18sp"
+        android:background="#E8E8E8"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="4dp" />
+
+</LinearLayout>
