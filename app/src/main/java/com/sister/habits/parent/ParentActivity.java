@@ -579,6 +579,10 @@ public class ParentActivity extends AppCompatActivity {
         Button btnWordbank = view.findViewById(R.id.btn_wordbank_mgr);
         btnWordbank.setOnClickListener(v -> showWordbankDialog());
 
+        // 商城管理按钮
+        Button btnManageShop = view.findViewById(R.id.btn_manage_shop);
+        btnManageShop.setOnClickListener(v -> showManageShopDialog());
+
         // ===== 个人信息字段 =====
         android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
         android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
@@ -785,6 +789,133 @@ public class ParentActivity extends AppCompatActivity {
                     } catch (Exception ignored) {}
 
                     Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    
+
+    /** 商城管理对话框 — 编辑/下架商品 */
+    private void showManageShopDialog() {
+        soundHelper.playClickSound();
+        java.util.List<ShopItem> allItems = db.shopItemDao().getAll();
+        if (allItems.isEmpty()) {
+            Toast.makeText(this, "暂无商品，请先上架", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 创建可滚动列表
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(16, 16, 16, 16);
+        scrollView.addView(container);
+
+        TextView tvTitle = new TextView(this);
+        tvTitle.setText("🏪 管理已有商品（点击编辑）");
+        tvTitle.setTextSize(14);
+        tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvTitle.setPadding(0, 0, 0, 12);
+        container.addView(tvTitle);
+
+        for (ShopItem item : allItems) {
+            android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            row.setPadding(8, 10, 8, 10);
+            android.widget.LinearLayout.LayoutParams rowParams = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rowParams.setMargins(0, 2, 0, 2);
+            row.setLayoutParams(rowParams);
+            row.setBackgroundColor(item.active ? 0xFFF5F5F5 : 0xFFFFF0F0);
+
+            TextView tvItem = new TextView(this);
+            String status = item.active ? "" : " [已下架]";
+            tvItem.setText((item.active ? "🟢 " : "🔴 ") + item.name + status + "  🪙" + item.priceCoins);
+            tvItem.setTextSize(13);
+            android.widget.LinearLayout.LayoutParams tvParams = new android.widget.LinearLayout.LayoutParams(
+                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            tvItem.setLayoutParams(tvParams);
+            row.addView(tvItem);
+
+            // 编辑按钮
+            Button btnEdit = new Button(this);
+            btnEdit.setText("✏️");
+            btnEdit.setTextSize(11);
+            btnEdit.setOnClickListener(v -> showEditShopItemDialog(item));
+            row.addView(btnEdit);
+
+            // 下架/上架按钮
+            Button btnToggle = new Button(this);
+            btnToggle.setText(item.active ? "⬇" : "⬆");
+            btnToggle.setTextSize(11);
+            btnToggle.setOnClickListener(v -> {
+                item.active = !item.active;
+                db.shopItemDao().update(item);
+                Toast.makeText(this, (item.active ? "✅ 已上架: " : "⬇ 已下架: ") + item.name, Toast.LENGTH_SHORT).show();
+                // 关闭当前对话框，重新打开
+                if (v.getRootView() != null) {
+                    ((ViewGroup) v.getRootView()).removeAllViews();
+                }
+                showManageShopDialog();
+            });
+            row.addView(btnToggle);
+
+            container.addView(row);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("🏪 商城管理")
+                .setView(scrollView)
+                .setPositiveButton("关闭", null)
+                .show();
+    }
+
+    /** 编辑商品 */
+    private void showEditShopItemDialog(ShopItem item) {
+        View view = getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
+        android.widget.EditText etName = view.findViewById(R.id.et_item_name);
+        android.widget.EditText etDesc = view.findViewById(R.id.et_item_desc);
+        android.widget.EditText etPrice = view.findViewById(R.id.et_item_price);
+        android.widget.EditText etCategory = view.findViewById(R.id.et_item_category);
+        Button btnPickImage = view.findViewById(R.id.btn_pick_image);
+        ImageView ivPreview = view.findViewById(R.id.iv_image_preview);
+        TextView tvImageName = view.findViewById(R.id.tv_image_name);
+
+        etName.setText(item.name);
+        etDesc.setText(item.description);
+        etPrice.setText(String.valueOf(item.priceCoins));
+        etCategory.setText(item.category);
+        selectedShopImagePath = item.iconUrl;
+
+        if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
+            ivPreview.setVisibility(View.VISIBLE);
+            tvImageName.setVisibility(View.VISIBLE);
+            tvImageName.setText("当前图片: " + item.iconUrl.substring(Math.max(0, item.iconUrl.length() - 30)));
+            Glide.with(this).load(new java.io.File(item.iconUrl)).into(ivPreview);
+        }
+
+        btnPickImage.setOnClickListener(v -> {
+            currentShopDialogView = view;
+            pickShopImageLauncher.launch("image/*");
+        });
+
+        new AlertDialog.Builder(this)
+                .setTitle("✏️ 编辑商品")
+                .setView(view)
+                .setPositiveButton("保存", (d, w) -> {
+                    item.name = etName.getText().toString();
+                    item.description = etDesc.getText().toString();
+                    try { item.priceCoins = Integer.parseInt(etPrice.getText().toString()); }
+                    catch (Exception e) { item.priceCoins = 50; }
+                    item.category = etCategory.getText().toString();
+                    if (selectedShopImagePath != null) item.iconUrl = selectedShopImagePath;
+                    db.shopItemDao().update(item);
+                    currentShopDialogView = null;
+                    selectedShopImagePath = null;
+                    Toast.makeText(this, "✅ 商品已更新", Toast.LENGTH_SHORT).show();
+                    showManageShopDialog();
                 })
                 .setNegativeButton("取消", null)
                 .show();
