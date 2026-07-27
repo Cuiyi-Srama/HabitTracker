@@ -66,6 +66,9 @@ public interface VocabularyDao {
     @Query("SELECT * FROM vocabulary ORDER BY RANDOM() LIMIT :count")
     List<Vocabulary> getRandom(int count);
 
+    @Query("SELECT * FROM vocabulary")
+    List<Vocabulary> getAll();
+
     @Delete
     void delete(Vocabulary word);
 
