@@ -28,12 +28,12 @@ public class NotificationHelper {
         }
     }
 
-    public static void notifyRedemption(Context ctx, String itemName, int redemptionId) {
+    public static void notifyRedemption(Context ctx, String itemName, String redemptionId) {
         Intent intent = new Intent(ctx, ParentActivity.class);
         intent.putExtra("open_approval", "redemption");
         intent.putExtra("item_id", redemptionId);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pi = PendingIntent.getActivity(ctx, redemptionId,
+        PendingIntent pi = PendingIntent.getActivity(ctx, redemptionId.hashCode(),
             intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
@@ -45,15 +45,15 @@ public class NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.notify(1000 + redemptionId, builder.build());
+        nm.notify(1000 + redemptionId.hashCode(), builder.build());
     }
 
-    public static void notifyTaskCompleted(Context ctx, String taskName, int taskId) {
+    public static void notifyTaskCompleted(Context ctx, String taskName, String taskId) {
         Intent intent = new Intent(ctx, ParentActivity.class);
         intent.putExtra("open_approval", "task");
         intent.putExtra("item_id", taskId);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pi = PendingIntent.getActivity(ctx, 2000 + taskId,
+        PendingIntent pi = PendingIntent.getActivity(ctx, 2000 + taskId.hashCode(),
             intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
@@ -65,6 +65,6 @@ public class NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.notify(2000 + taskId, builder.build());
+        nm.notify(2000 + taskId.hashCode(), builder.build());
     }
 }
