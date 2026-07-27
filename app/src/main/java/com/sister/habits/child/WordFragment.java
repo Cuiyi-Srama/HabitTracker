@@ -308,6 +308,10 @@ public class WordFragment extends Fragment {
                 soundHelper.playClickSound();
             }
 
+            // 🐛 修复：答对后无论学习/复习模式都更新艾宾浩斯复习状态
+            // 学习模式→创建WordReview记录（stage=0），复习模式→推进stage
+            updateWordReview(currentWord.id, true);
+
             syncManager.onDataChanged();
 
             // 实时刷新金币余额显示
