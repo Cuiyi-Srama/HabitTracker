@@ -770,6 +770,9 @@ public class ParentActivity extends AppCompatActivity {
                     if (!at.isEmpty()) profile.setAppTitle(at);
                     Toast.makeText(this, "个人信息已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
+                .show();
+    }
+
                     private void showEconomySettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
@@ -793,6 +796,9 @@ public class ParentActivity extends AppCompatActivity {
                             500, parseInt(etMaxWords, 10), parseInt(etMaxReview, 30));
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
+                .show();
+    }
+
                     private void showHubSettings() {
         SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
         String currentMode = prefs.getString("default_mode", "child");
