@@ -29,6 +29,7 @@ import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.data.models.Task;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.utils.SoundHelper;
+import com.sister.habits.utils.NotificationHelper;
 import com.sister.habits.utils.ProfileManager;
 
 import java.lang.reflect.Type;
@@ -306,6 +307,9 @@ public class ParentActivity extends AppCompatActivity {
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
         btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); });
         btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
+
+        // 创建通知渠道
+        NotificationHelper.createChannel(this);
     }
 
     @Override
@@ -455,6 +459,38 @@ public class ParentActivity extends AppCompatActivity {
 
     
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (intent.hasExtra("open_approval")) {
+            String type = intent.getStringExtra("open_approval");
+            int itemId = intent.getIntExtra("item_id", -1);
+            showApprovalCenterDialog(type, itemId);
+        }
+    }
+
+    /** 从通知直达审批中心 */
+    private void showApprovalCenterDialog(String focusType, int focusId) {
+        int pendingCount = db.redemptionDao().getByStatus("pending").size();
+        int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        String[] items = {
+            "💳 兑换审批（" + pendingCount + "项待处理）",
+            "📋 任务确认（" + pendingTaskCount + "项待确认）",
+            "📜 历史记录"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("✅ 审批中心")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
+                        case 1: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
+                        case 2: Toast.makeText(this, "历史记录（待实现）", Toast.LENGTH_SHORT).show(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
     /** 显示日期+时间选择器，更新按钮文字 */
     private void showDateTimePicker(Button btnDate) {
         java.util.Calendar cal = java.util.Calendar.getInstance();
@@ -575,8 +611,11 @@ public class ParentActivity extends AppCompatActivity {
      */
     private void showSettingsDialog() {
         soundHelper.playClickSound();
+        int pendingTotal = db.redemptionDao().getByStatus("pending").size()
+            + db.taskDao().getByStatus("pending").size();
         String[] mainMenu = {
-                "📊 总览与审批",
+                "📊 数据总览",
+                "✅ 审批中心" + (pendingTotal > 0 ? "（" + pendingTotal + "项待处理）" : ""),
                 "📚 学习管理",
                 "🏪 商城管理",
                 "📋 任务管理",
@@ -587,10 +626,13 @@ public class ParentActivity extends AppCompatActivity {
                 .setItems(mainMenu, (d, which) -> {
                     switch (which) {
                         case 0: showDashboardMenu(); break;
-                        case 1: showLearningMenu(); break;
-                        case 2: showShopMenu(); break;
-                        case 3: showTaskMenu(); break;
-                        case 4: showSystemMenu(); break;
+                        case 1:
+                            showApprovalCenterDialog(null, -1);
+                            break;
+                        case 2: showLearningMenu(); break;
+                        case 3: showShopMenu(); break;
+                        case 4: showTaskMenu(); break;
+                        case 5: showSystemMenu(); break;
                     }
                 })
                 .setNegativeButton("关闭", null)
@@ -651,8 +693,7 @@ public class ParentActivity extends AppCompatActivity {
         String[] items = {
                 "➕ 上架新商品",
                 "✏️ 管理已有商品（" + shopCount + "件）",
-                "✅ 兑换审批（" + pendingCount + "项待处理）",
-                "⭐ 孩子心愿单"
+                "✅ 兑换审批（" + pendingCount + "项待处理）"
         };
         new AlertDialog.Builder(this)
                 .setTitle("🏪 商城管理")
@@ -661,7 +702,6 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showAddShopItemDialog(); break;
                         case 1: showManageShopDialog(); break;
                         case 2: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
-                        case 3: showWishlistPreview(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -710,32 +750,7 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     /** 预览孩子心愿单 */
-    private void showWishlistPreview() {
-        java.util.List<com.sister.habits.data.models.WishlistItem> wishes = db.wishlistDao().getAll();
-        if (wishes.isEmpty()) {
-            Toast.makeText(this, "心愿单为空 💭", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        StringBuilder sb = new StringBuilder("⭐ 孩子的心愿单:
-
-");
-        for (com.sister.habits.data.models.WishlistItem w : wishes) {
-            com.sister.habits.data.models.ShopItem si = db.shopItemDao().getById(w.shopItemId);
-            if (si != null) {
-                sb.append("• ").append(si.name).append(" 🪙").append(si.priceCoins).append("
-");
-                if (!si.active) sb.append("  （⚠️ 已下架）
-");
-            }
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("⭐ 孩子心愿单")
-                .setMessage(sb.toString())
-                .setPositiveButton("关闭", null)
-                .show();
-    }
-
-    private void showProfileSettings() {
+        private void showProfileSettings() {
         View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
         // 只显示个人信息区域
         android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
