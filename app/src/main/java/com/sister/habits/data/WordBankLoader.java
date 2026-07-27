@@ -85,6 +85,7 @@ public class WordBankLoader {
         v.level = level;
         v.mastered = false;
         v.active = true;
+        v.bankId = "builtin";
         list.add(v);
     }
 }
