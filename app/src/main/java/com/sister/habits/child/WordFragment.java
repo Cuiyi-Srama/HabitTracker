@@ -1,5 +1,6 @@
 package com.sister.habits.child;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,15 +23,14 @@ import com.sister.habits.utils.SoundHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 单词学习Fragment——多邻国风格选择题 + 艾宾浩斯遗忘曲线复习
  * 学习模式：出未学过的新词，答对自动进入艾宾浩斯复习周期
  * 复习模式：出到期的待复习单词，答对推进阶段，答错第二天再试
  * TTS朗读 + 音效 + 震动反馈
+ * 词库隔离：通过 bankId 区分不同词库的学习进度
  */
 public class WordFragment extends Fragment {
 
@@ -51,6 +51,7 @@ public class WordFragment extends Fragment {
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
     private boolean isReviewMode = false;
+    private String currentBankId = "builtin";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -59,20 +60,18 @@ public class WordFragment extends Fragment {
         syncManager = SyncManager.getInstance(requireContext());
         soundHelper = SoundHelper.getInstance(requireContext());
 
-        // 读取每日单词上限
-        EconomyConfig config = db.economyConfigDao().getConfig();
-        if (config != null) {
-            dailyWordLimit = config.maxDailyWords;
-            dailyReviewLimit = config.maxDailyReview;
-        }
-        if (dailyWordLimit <= 0) dailyWordLimit = 10;
-        if (dailyReviewLimit <= 0) dailyReviewLimit = 20;
+        // 读取当前词库ID
+        SharedPreferences prefs = requireContext().getSharedPreferences("wordbank_prefs", 0);
+        currentBankId = prefs.getString("active_bank_id", "builtin");
+
+        // 读取每日单词上限（每次创建时重新读取，确保家长设置生效）
+        loadConfig();
 
         tvStats = view.findViewById(R.id.tv_word_stats);
         tvWord = view.findViewById(R.id.tv_word_display);
         tvPhonetic = view.findViewById(R.id.tv_phonetic);
         tvPrompt = view.findViewById(R.id.tv_prompt);
-                tvStreak = view.findViewById(R.id.tv_streak);
+        tvStreak = view.findViewById(R.id.tv_streak);
         btnSpeak = view.findViewById(R.id.btn_speak);
         btnSpeak.setOnClickListener(v -> {
             if (currentWord != null) {
@@ -108,20 +107,51 @@ public class WordFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 每次回到此页面时重新加载配置（家长修改限额后立即生效）
+        loadConfig();
+        // 重新读取活跃词库ID（家长切换词库后立即生效）
+        SharedPreferences prefs = requireContext().getSharedPreferences("wordbank_prefs", 0);
+        String newBankId = prefs.getString("active_bank_id", "builtin");
+        if (!newBankId.equals(currentBankId)) {
+            currentBankId = newBankId;
+            startQuiz(isReviewMode);
+        } else {
+            updateStats();
+        }
+    }
+
+    private void loadConfig() {
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        if (config != null) {
+            dailyWordLimit = config.maxDailyWords;
+            dailyReviewLimit = config.maxDailyReview;
+        }
+        if (dailyWordLimit <= 0) dailyWordLimit = 10;
+        if (dailyReviewLimit <= 0) dailyReviewLimit = 20;
+    }
+
+    private String getCurrentBankId() {
+        return currentBankId;
+    }
+
     private void startQuiz(boolean review) {
         isReviewMode = review;
         streakCount = 0;
         updateStreakDisplay();
 
         List<Vocabulary> words;
+        String bankId = getCurrentBankId();
         if (review) {
-            // ===== 复习检测模式：获取到期的待复习单词，按每日上限截断 =====
-            List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis());
+            // ===== 复习检测模式：获取到期的待复习单词 =====
+            List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis(), bankId);
             words = new ArrayList<>();
             for (WordReview wr : dueReviews) {
                 if (words.size() >= dailyReviewLimit) break;
                 Vocabulary v = db.vocabularyDao().getById(wr.wordId);
-                if (v != null && v.active && !v.mastered) {
+                if (v != null && v.active && !v.mastered && bankId.equals(v.bankId)) {
                     words.add(v);
                 }
             }
@@ -134,13 +164,13 @@ public class WordFragment extends Fragment {
             cal.set(java.util.Calendar.MINUTE, 0);
             cal.set(java.util.Calendar.SECOND, 0);
             cal.set(java.util.Calendar.MILLISECOND, 0);
-            int learnedToday = db.wordReviewDao().getTodayCount(cal.getTimeInMillis());
+            int learnedToday = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId);
             int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
 
-            List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered();
+            List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
             words = new ArrayList<>();
             for (Vocabulary v : allActive) {
-                WordReview wr = db.wordReviewDao().getByWordId(v.id);
+                WordReview wr = db.wordReviewDao().getByWordId(v.id, bankId);
                 if (wr == null) {
                     words.add(v);
                     if (words.size() >= remainingNew) break;
@@ -186,7 +216,7 @@ public class WordFragment extends Fragment {
         List<String> options = new ArrayList<>();
         options.add(currentWord.meaning);
 
-        List<Vocabulary> distractors = db.vocabularyDao().getRandom(8);
+        List<Vocabulary> distractors = db.vocabularyDao().getRandom(8, getCurrentBankId());
         Collections.shuffle(distractors);
         for (Vocabulary v : distractors) {
             if (!v.meaning.equals(currentWord.meaning) && !options.contains(v.meaning)) {
@@ -309,10 +339,11 @@ public class WordFragment extends Fragment {
      * 更新艾宾浩斯复习状态
      */
     private void updateWordReview(String wordId, boolean correct) {
-        WordReview wr = db.wordReviewDao().getByWordId(wordId);
+        String bankId = getCurrentBankId();
+        WordReview wr = db.wordReviewDao().getByWordId(wordId, bankId);
         if (wr == null && correct) {
             // 第一次答对 → 创建复习记录，进入阶段0
-            wr = WordReview.createNew(wordId);
+            wr = WordReview.createNew(wordId, bankId);
             db.wordReviewDao().insert(wr);
         } else if (wr != null) {
             if (correct) {
@@ -333,9 +364,10 @@ public class WordFragment extends Fragment {
     }
 
     private void updateStats() {
-        int mastered = db.vocabularyDao().getMasteredCount();
-        int total = db.vocabularyDao().getActiveCount();
-        int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis());
+        String bankId = getCurrentBankId();
+        int mastered = db.vocabularyDao().getMasteredCount(bankId);
+        int total = db.vocabularyDao().getActiveCount(bankId);
+        int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis(), bankId);
         String mode = isReviewMode ? "🔄 复习" : "📚 学习";
 
         // 今日进度：已学新词 / 每日上限
@@ -344,7 +376,7 @@ public class WordFragment extends Fragment {
         cal.set(java.util.Calendar.MINUTE, 0);
         cal.set(java.util.Calendar.SECOND, 0);
         cal.set(java.util.Calendar.MILLISECOND, 0);
-        int todayNew = db.wordReviewDao().getTodayCount(cal.getTimeInMillis());
+        int todayNew = db.wordReviewDao().getTodayCount(cal.getTimeInMillis(), bankId);
         String todayProgress = "  📝 " + Math.min(todayNew, dailyWordLimit) + "/" + dailyWordLimit;
 
         tvStats.setText(mode + todayProgress + "  |  ✅ " + mastered + "/" + total + "  |  ⏰ " + dueCount + " 待复习");
