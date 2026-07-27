@@ -636,7 +636,7 @@ public class ParentActivity extends AppCompatActivity {
                 .setPositiveButton("关闭", null).show();
     }
 
-    private int parseInt    private int parseInt(android.widget.EditText et, int def) {
+    private int parseInt(android.widget.EditText et, int def) {
         try { return Integer.parseInt(et.getText().toString()); } catch (Exception e) { return def; }
     }
 
