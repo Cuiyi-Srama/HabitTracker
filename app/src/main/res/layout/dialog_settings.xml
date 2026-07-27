@@ -308,7 +308,16 @@
 
         <!-- 词库管理入口 -->
         <Button
-            android:id="@+id/btn_wordbank_mgr"
+            android:id="@+id/btn_wordbank_mgr
+android:layout_marginBottom="4dp" />
+
+        <!-- 商城管理按钮 -->
+        <Button
+        android:id="@+id/btn_manage_shop"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="🏪 商城管理"
+        android:textSize="14sp""
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:text="📚 词库管理（年级/每日量/导入）"
