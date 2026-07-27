@@ -1,26 +1,42 @@
 [
   {
     "id": "kylebing_junior",
-    "name": "KyleBing 初中英语词库",
-    "description": "约3000词，含音标、翻译、短语。开源社区维护，质量高。",
+    "name": "KyleBing 初中词汇",
+    "description": "约3500词，包含初中阶段全部英语词汇，带音标和翻译",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/1-%E5%88%9D%E4%B8%AD-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
-    "gradeLabel": "初中"
+    "gradeLabel": "junior"
   },
   {
     "id": "kylebing_senior",
-    "name": "KyleBing 高中英语词库",
-    "description": "约4600词，含音标、翻译、短语。含高考核心词汇。",
+    "name": "KyleBing 高中词汇",
+    "description": "约5000词，高中英语进阶词汇",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/2-%E9%AB%98%E4%B8%AD-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
-    "gradeLabel": "高中"
+    "gradeLabel": "senior"
   },
   {
     "id": "kylebing_cet4",
-    "name": "KyleBing 大学四级词库",
-    "description": "约5300词，大学英语四级词汇库。",
+    "name": "KyleBing 四级词汇",
+    "description": "约4600词，大学英语四级(CET4)词汇",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/3-CET4-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
     "gradeLabel": "CET4"
+  },
+  {
+    "id": "kylebing_cet6",
+    "name": "KyleBing 六级词汇",
+    "description": "约4000词，大学英语六级(CET6)词汇",
+    "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/4-CET6-%E9%A1%BA%E5%BA%8F.json",
+    "format": "kylebing",
+    "gradeLabel": "CET6"
+  },
+  {
+    "id": "kylebing_kaoyan",
+    "name": "KyleBing 考研词汇",
+    "description": "约6500词，研究生英语考试词汇",
+    "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/5-%E8%80%83%E7%A0%94-%E9%A1%BA%E5%BA%8F.json",
+    "format": "kylebing",
+    "gradeLabel": "kaoyan"
   }
 ]
