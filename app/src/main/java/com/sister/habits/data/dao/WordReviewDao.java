@@ -31,6 +31,8 @@ public interface WordReviewDao {
     @Update
     void update(WordReview review);
 
+    @Query("SELECT COUNT(*) FROM word_reviews WHERE lastReviewedAt >= :todayStart AND bankId = :bankId AND stage = 0")
+    int getNewCount(long todayStart, String bankId);
     @Query("SELECT COUNT(*) FROM word_reviews WHERE lastReviewedAt >= :todayStart AND bankId = :bankId")
     int getTodayCount(long todayStart, String bankId);
 
