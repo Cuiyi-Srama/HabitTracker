@@ -47,7 +47,6 @@ public class WordFragment extends Fragment {
     private Vocabulary currentWord;
     private List<Vocabulary> quizQueue = new ArrayList<>();
     private int streakCount = 0;
-    private int todayLearnedCount = 0;
     private int dailyWordLimit = 10;
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
@@ -112,12 +111,11 @@ public class WordFragment extends Fragment {
     private void startQuiz(boolean review) {
         isReviewMode = review;
         streakCount = 0;
-        todayLearnedCount = 0;
         updateStreakDisplay();
 
         List<Vocabulary> words;
         if (review) {
-            // ===== 复习模式：获取到期的待复习单词，按每日上限截断 =====
+            // ===== 复习检测模式：获取到期的待复习单词，按每日上限截断 =====
             List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis());
             words = new ArrayList<>();
             for (WordReview wr : dueReviews) {
@@ -128,27 +126,35 @@ public class WordFragment extends Fragment {
                 }
             }
             Collections.shuffle(words);
-            tvPrompt.setText("🔄 今日复习 (" + words.size() + "/" + dueReviews.size() + " 个待复习)");
+            tvPrompt.setText("🔄 复习检测 (" + words.size() + "个待复习)  答对得金币 🪙");
         } else {
-            // ===== 学习模式：只出未学过的新词，不自动补旧词 =====
+            // ===== 学习模式：只出未学过的新词，今日限额 =====
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            cal.set(java.util.Calendar.MINUTE, 0);
+            cal.set(java.util.Calendar.SECOND, 0);
+            cal.set(java.util.Calendar.MILLISECOND, 0);
+            int learnedToday = db.wordReviewDao().getTodayCount(cal.getTimeInMillis());
+            int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
+
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered();
             words = new ArrayList<>();
             for (Vocabulary v : allActive) {
                 WordReview wr = db.wordReviewDao().getByWordId(v.id);
                 if (wr == null) {
                     words.add(v);
-                    if (words.size() >= dailyWordLimit) break;
+                    if (words.size() >= remainingNew) break;
                 }
             }
-            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + dailyWordLimit + " 个)");
+            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + dailyWordLimit + " 可学)  学习不给金币哦");
         }
 
         if (words.isEmpty()) {
             tvWord.setText("🎉 全部完成！");
-            tvPhonetic.setText(isReviewMode ? "复习完了，真棒 🎉" : "所有新词都学完啦 🎉");
+            tvPhonetic.setText(isReviewMode ? "复习完了，真棒 🎉" : "今日新词已学完 🎉");
             tvPrompt.setText(isReviewMode
-                    ? "所有单词都复习好了！去逛逛商城吧 🏪"
-                    : "暂时没有新单词了，切换到复习看看吧 🔄");
+                    ? "所有单词都检测通过了！去逛逛商城吧 🏪"
+                    : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
             updateStats();
             return;
@@ -228,45 +234,49 @@ public class WordFragment extends Fragment {
             }
         }
 
-        if (correct) {
+if (correct) {
             // ✅ 答对
             clicked.setBackgroundColor(0xFF4CAF50);
             clicked.setTextColor(0xFFFFFFFF);
             streakCount++;
-            todayLearnedCount++;
 
-            // 计算金币奖励
-            int wordBonus = 2;
-            if (streakCount == 5) {
-                wordBonus = 12;
-                tvPrompt.setText("🌟 连续答对5题！+12金币！");
-            } else if (streakCount == 10) {
-                wordBonus = 35;
-                tvPrompt.setText("🏆 连续答对10题！+35金币！");
-            } else if (streakCount >= 3) {
-                wordBonus = 4;
-                tvPrompt.setText("✅ 正确！连续" + streakCount + "题啦 💪");
+            // ===== 复习检测模式才给金币，学习模式不给 =====
+            if (isReviewMode) {
+                // 计算金币奖励（复习检测）
+                int wordBonus = 2;
+                if (streakCount == 5) {
+                    wordBonus = 12;
+                    tvPrompt.setText("🌟 连续答对5题！+12金币！");
+                } else if (streakCount == 10) {
+                    wordBonus = 35;
+                    tvPrompt.setText("🏆 连续答对10题！+35金币！");
+                } else if (streakCount >= 3) {
+                    wordBonus = 4;
+                    tvPrompt.setText("✅ 检测通过！连续" + streakCount + "题啦 💪 +4金币");
+                } else {
+                    tvPrompt.setText("✅ 检测通过！+2金币 🪙");
+                }
+
+                // 发放金币
+                Integer balance = db.coinTransactionDao().getBalance("sister");
+                int newBalance = (balance != null ? balance : 0) + wordBonus;
+                CoinTransaction ct = new CoinTransaction(
+                        "sister", wordBonus, newBalance,
+                        "word_review_pass", "复习检测: " + currentWord.word,
+                        syncManager.getDeviceId());
+                db.coinTransactionDao().insert(ct);
+
+                // 音效 + 震动
+                if (streakCount >= 5) {
+                    soundHelper.playStreakSound(streakCount);
+                } else {
+                    soundHelper.playCorrectSound();
+                }
             } else {
-                tvPrompt.setText("✅ 正确！+2金币");
+                tvPrompt.setText("📖 已记住: " + currentWord.word + "  切换到复习赚金币吧 🪙");
+                // 学习模式不给金币，轻柔反馈即可
+                soundHelper.playClickSound();
             }
-
-            // 发放金币
-            Integer balance = db.coinTransactionDao().getBalance("sister");
-            int newBalance = (balance != null ? balance : 0) + wordBonus;
-            CoinTransaction ct = new CoinTransaction(
-                    "sister", wordBonus, newBalance,
-                    "word_learn", "单词: " + currentWord.word,
-                    syncManager.getDeviceId());
-            db.coinTransactionDao().insert(ct);
-
-            // 艾宾浩斯复习：推进 WordReview 阶段
-            updateWordReview(currentWord.id, true);
-
-            // 音效 + 震动
-            if (streakCount >= 5) {
-                soundHelper.playStreakSound(streakCount);
-            } else {
-                soundHelper.playCorrectSound();
             }
 
             syncManager.onDataChanged();
