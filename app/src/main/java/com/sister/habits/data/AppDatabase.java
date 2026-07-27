@@ -23,7 +23,7 @@ import com.sister.habits.data.models.*;
         WordBank.class,
         WishlistItem.class
     },
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -120,11 +120,22 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build();
                 }
             }
         }
         return INSTANCE;
     }
+
+    static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull androidx.sqlite.db.SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE economy_config ADD COLUMN reviewPassReward INTEGER NOT NULL DEFAULT 2");
+            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime15min INTEGER NOT NULL DEFAULT 10");
+            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime30min INTEGER NOT NULL DEFAULT 18");
+            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime60min INTEGER NOT NULL DEFAULT 30");
+        }
+    };
+
 }
