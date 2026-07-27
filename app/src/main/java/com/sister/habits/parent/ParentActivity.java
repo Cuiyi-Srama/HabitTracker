@@ -98,7 +98,7 @@ public class ParentActivity extends AppCompatActivity {
                 }
             });
 
-    // 词库JSON导入的文件选择器
+    // 词库JSON导入的文件选择器 — 现在使用 bankId 隔离
     private final ActivityResultLauncher<String[]> wordbankImportLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
                 if (uri == null) return;
@@ -119,7 +119,13 @@ public class ParentActivity extends AppCompatActivity {
                         return;
                     }
 
-                    // 批量入库
+                    // 创建新词库记录
+                    String bankId = "import_" + System.currentTimeMillis();
+                    com.sister.habits.data.models.WordBank bank = com.sister.habits.data.models.WordBank.fromImport("自定义词库", importWords.size());
+                    bank.id = bankId;
+                    db.wordBankDao().insert(bank);
+
+                    // 批量入库（带 bankId）
                     List<com.sister.habits.data.models.Vocabulary> words = new java.util.ArrayList<>();
                     for (JsonImportWord jw : importWords) {
                         com.sister.habits.data.models.Vocabulary v = new com.sister.habits.data.models.Vocabulary();
@@ -132,21 +138,23 @@ public class ParentActivity extends AppCompatActivity {
                         v.level = jw.l;
                         v.mastered = false;
                         v.active = true;
+                        v.bankId = bankId;
                         words.add(v);
                     }
 
-                    // 先清空旧词库再插入（替换模式）
-                    db.vocabularyDao().deleteAll();
-                    db.wordReviewDao().deleteAll();
-
-                    // 分批插入避免事务过大
                     int batchSize = 50;
                     for (int i = 0; i < words.size(); i += batchSize) {
                         int end = Math.min(i + batchSize, words.size());
                         db.vocabularyDao().insertAll(words.subList(i, end));
                     }
 
-                    Toast.makeText(this, "✅ 导入成功！共 " + words.size() + " 个单词", Toast.LENGTH_LONG).show();
+                    // 切换到新词库（学习进度独立保存，不丢失旧进度）
+                    SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
+                    prefs.edit().putString("active_bank_id", bankId).apply();
+                    db.wordBankDao().deactivateAll();
+                    db.wordBankDao().setActive(bankId);
+
+                    Toast.makeText(this, "✅ 导入成功！共 " + words.size() + " 个单词，已切换到新词库", Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
                     android.util.Log.e("ParentActivity", "词库导入失败", e);
                     Toast.makeText(this, "❌ 导入失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -232,45 +240,39 @@ public class ParentActivity extends AppCompatActivity {
         }).start();
     }
 
-    /** 应用外部词库到数据库 */
+    /** 应用外部词库到数据库 — 使用 bankId 隔离学习进度 */
     private void applyExternalWordbank(java.util.List<com.sister.habits.data.models.Vocabulary> words, ExternalSource source) {
         try {
-            // 先存档旧词库
-            java.util.List<com.sister.habits.data.models.Vocabulary> oldVocab = db.vocabularyDao().getAll();
-            if (!oldVocab.isEmpty()) {
-                java.util.Map<String, Object> archive = new java.util.HashMap<>();
-                archive.put("archivedAt", System.currentTimeMillis());
-                archive.put("vocabCount", oldVocab.size());
-                archive.put("vocabulary", oldVocab);
-                String archiveJson = new Gson().toJson(archive);
-                java.io.File archiveDir = new java.io.File(getFilesDir(), "wordbank_archives");
-                archiveDir.mkdirs();
-                String archiveName = "ext_" + source.id + "_" + System.currentTimeMillis() + ".json";
-                java.io.FileOutputStream fos = new java.io.FileOutputStream(new java.io.File(archiveDir, archiveName));
-                fos.write(archiveJson.getBytes("UTF-8"));
-                fos.close();
+            // 为所有单词设置 bankId
+            String bankId = "ext_" + source.id;
+            for (com.sister.habits.data.models.Vocabulary v : words) {
+                v.bankId = bankId;
             }
 
-            // 清空当前词库
-            db.vocabularyDao().deleteAll();
-            db.wordReviewDao().deleteAll();
+            // 创建词库记录
+            com.sister.habits.data.models.WordBank bank = com.sister.habits.data.models.WordBank.fromExternal(
+                    source.id, source.name, source.url, source.gradeLabel, words.size());
+            bank.id = bankId;
+            db.wordBankDao().insert(bank);
 
-            // 分批插入
+            // 分批插入新词库（不清除旧词库和复习进度）
             int batchSize = 100;
             for (int i = 0; i < words.size(); i += batchSize) {
                 int end = Math.min(i + batchSize, words.size());
                 db.vocabularyDao().insertAll(words.subList(i, end));
             }
 
-            // 记录使用了外部词库
+            // 切换到新词库
             SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
             prefs.edit()
+                    .putString("active_bank_id", bankId)
                     .putString("external_source_id", source.id)
                     .putString("external_source_name", source.name)
-                    .putInt("external_word_count", words.size())
                     .apply();
+            db.wordBankDao().deactivateAll();
+            db.wordBankDao().setActive(bankId);
 
-            Toast.makeText(this, "✅ 已启用: " + source.name + "（" + words.size() + "词）", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "✅ 已启用: " + source.name + "（" + words.size() + "词），学习进度独立保存", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             android.util.Log.e("ParentActivity", "应用外部词库失败", e);
             Toast.makeText(this, "❌ 应用失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -693,7 +695,7 @@ public class ParentActivity extends AppCompatActivity {
             List<ExternalSource> sources = new Gson().fromJson(json, sourceType);
 
             for (ExternalSource source : sources) {
-                // 卡片式布局
+                // 卡片式布局 — 每个源一个下载按钮
                 android.widget.LinearLayout card = new android.widget.LinearLayout(this);
                 card.setOrientation(android.widget.LinearLayout.VERTICAL);
                 card.setPadding(12, 12, 12, 12);
