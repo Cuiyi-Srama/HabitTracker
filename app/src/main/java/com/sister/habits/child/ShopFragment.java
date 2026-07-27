@@ -31,12 +31,14 @@ public class ShopFragment extends Fragment {
 
     private AppDatabase db;
     private SyncManager syncManager;
+    private AppDatabase db;
     private RecyclerView recyclerView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_shop, container, false);
         db = AppDatabase.getInstance(requireContext());
+        syncManager = SyncManager.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
 
         recyclerView = view.findViewById(R.id.recycler_shop);
@@ -127,6 +129,20 @@ public class ShopFragment extends Fragment {
             }
 
             holder.itemView.setOnClickListener(v -> listener.onRedeem(item));
+            // 愿望清单⭐按钮
+            boolean isWishlisted = db.wishlistDao().getByShopItemId(item.id) != null;
+            holder.btnWishlist.setBackgroundColor(isWishlisted ? 0xFFFFD700 : 0xFFE0E0E0);
+            holder.btnWishlist.setOnClickListener(v2 -> {
+                if (isWishlisted) {
+                    db.wishlistDao().deleteByShopItemId(item.id);
+                    holder.btnWishlist.setBackgroundColor(0xFFE0E0E0);
+                    Toast.makeText(v2.getContext(), "已移除心愿 ⭐", Toast.LENGTH_SHORT).show();
+                } else {
+                    db.wishlistDao().insert(com.sister.habits.data.models.WishlistItem.create(item.id));
+                    holder.btnWishlist.setBackgroundColor(0xFFFFD700);
+                    Toast.makeText(v2.getContext(), "已加入心愿 ⭐", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
         @Override
@@ -134,10 +150,12 @@ public class ShopFragment extends Fragment {
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             ImageView ivIcon;
+            Button btnWishlist;
             TextView tvName, tvDesc, tvPrice;
             ViewHolder(View v) {
                 super(v);
                 ivIcon = v.findViewById(R.id.iv_shop_icon);
+                btnWishlist = v.findViewById(R.id.btn_wishlist);
                 tvName = v.findViewById(R.id.tv_shop_name);
                 tvDesc = v.findViewById(R.id.tv_shop_desc);
                 tvPrice = v.findViewById(R.id.tv_shop_price);
