@@ -131,10 +131,53 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(@NonNull androidx.sqlite.db.SupportSQLiteDatabase database) {
-            database.execSQL("ALTER TABLE economy_config ADD COLUMN reviewPassReward INTEGER NOT NULL DEFAULT 2");
-            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime15min INTEGER NOT NULL DEFAULT 10");
-            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime30min INTEGER NOT NULL DEFAULT 18");
-            database.execSQL("ALTER TABLE economy_config ADD COLUMN screenTime60min INTEGER NOT NULL DEFAULT 30");
+            // 旧表有 wordBatchBonus10/20 列，新 EconomyConfig.java 已去掉这两列
+            // SQLite 不支持直接 DROP COLUMN，需重建表
+            // 1. 保存旧数据
+            database.execSQL("CREATE TABLE economy_config_temp AS SELECT * FROM economy_config");
+            // 2. 删除旧表
+            database.execSQL("DROP TABLE economy_config");
+            // 3. 创建新表（匹配 EconomyConfig.java 的字段）
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `economy_config` (" +
+                "`id` INTEGER NOT NULL, " +
+                "`checkInBaseReward` INTEGER NOT NULL DEFAULT 10, " +
+                "`streak3Bonus` INTEGER NOT NULL DEFAULT 5, " +
+                "`streak7Bonus` INTEGER NOT NULL DEFAULT 15, " +
+                "`streak14Bonus` INTEGER NOT NULL DEFAULT 30, " +
+                "`streak30Bonus` INTEGER NOT NULL DEFAULT 100, " +
+                "`wordLearnReward` INTEGER NOT NULL DEFAULT 2, " +
+                "`reviewPassReward` INTEGER NOT NULL DEFAULT 2, " +
+                "`taskDailyMin` INTEGER NOT NULL DEFAULT 5, " +
+                "`taskDailyMax` INTEGER NOT NULL DEFAULT 15, " +
+                "`taskChallengeMin` INTEGER NOT NULL DEFAULT 20, " +
+                "`taskChallengeMax` INTEGER NOT NULL DEFAULT 50, " +
+                "`screenTime15min` INTEGER NOT NULL DEFAULT 10, " +
+                "`screenTime30min` INTEGER NOT NULL DEFAULT 18, " +
+                "`screenTime60min` INTEGER NOT NULL DEFAULT 30, " +
+                "`maxDailyCoins` INTEGER NOT NULL DEFAULT 500, " +
+                "`maxDailyWords` INTEGER NOT NULL DEFAULT 10, " +
+                "`maxDailyReview` INTEGER NOT NULL DEFAULT 30, " +
+                "PRIMARY KEY(`id`))"
+            );
+            // 4. 从临时表复制数据（新列用 COALESCE 给默认值，避免旧数据为 NULL）
+            database.execSQL(
+                "INSERT INTO economy_config (" +
+                "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
+                "wordLearnReward, reviewPassReward, " +
+                "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
+                "screenTime15min, screenTime30min, screenTime60min, " +
+                "maxDailyCoins, maxDailyWords, maxDailyReview" +
+                ") SELECT " +
+                "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
+                "wordLearnReward, COALESCE(reviewPassReward, 2), " +
+                "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
+                "COALESCE(screenTime15min, 10), COALESCE(screenTime30min, 18), COALESCE(screenTime60min, 30), " +
+                "maxDailyCoins, maxDailyWords, maxDailyReview " +
+                "FROM economy_config_temp"
+            );
+            // 5. 清理临时表
+            database.execSQL("DROP TABLE economy_config_temp");
         }
     };
 
