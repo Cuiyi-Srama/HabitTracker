@@ -5,7 +5,7 @@
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk)](https://openjdk.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![minSdk](https://img.shields.io/badge/minSdk-24-brightgreen?logo=android)](https://developer.android.com/studio)
-[![version](https://img.shields.io/badge/version-1.3.0-orange)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
+[![version](https://img.shields.io/badge/version-1.5.0-orange)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
 [![CI](https://github.com/Cuiyi-Srama/HabitTracker/actions/workflows/build.yml/badge.svg)](https://github.com/Cuiyi-Srama/HabitTracker/actions)
 [![GitHub Stars](https://img.shields.io/github/stars/Cuiyi-Srama/HabitTracker?style=social)](https://github.com/Cuiyi-Srama/HabitTracker)
 > 🎯 **播种一个行动，收获一种习惯；播种一种习惯，收获一种性格。**
@@ -18,45 +18,52 @@
 ## 📖 项目简介 · About
 ### 中文
 **好习惯养成（HabitTracker）** 是一款面向家庭的 Android 原生 App，旨在帮助 **小学三年级** 左右的小朋友通过 **每日打卡 ✅ · 单词学习 📚 · 积分商城 🏪** 的正向激励闭环培养好习惯。
-- 👶 **孩子模式** — 每日打卡、多邻国式单词选择题、艾宾浩斯记忆曲线复习、愿望清单⭐、积分兑换奖品
-- 👨‍👩‍👧 **家长模式** — 6类层级菜单管理、兑换/任务审批中心、多词库切换、限时任务DatePicker、通知直达审批
-- 🔒 **本地优先** — Room 本地数据库，离线可用，AES-256-GCM 加密备份
+- 👶 **孩子模式** — 每日打卡、多邻国式单词选择题、组批复习+错误率加权、积分商城、心愿单⭐、任务系统
+- 👨‍👩‍👧 **家长模式** — 审批中心（带小红点+通知直达）、6类层级菜单、经济参数微调（18项可调）、多词库切换、限时任务DatePicker
+- 💰 **经济系统** — 签到分级奖励、单词/任务积分、娱乐时间兑换、每日上限防刷、家长端经济仪表盘
+- 🆔 **设备标识** — SHA-256+多重熵源生成16位唯一Key，为多用户数据隔离奠定基础
+- 🔒 **本地优先** — Room 本地数据库（v4），离线可用，AES-256-GCM 加密备份
 ### English
-**HabitTracker** is a native Android application designed for families, helping children (around 3rd grade) build good habits through a gamified positive-reinforcement loop of **daily check-ins ✅, word learning 📚, and reward shop 🏪**.
-- 👶 **Child Mode** — Daily check-ins, Duolingo-style word quizzes, Ebbinghaus spaced repetition reviews, wishlist ⭐, and reward redemptions
-- 👨‍👩‍👧 **Parent Mode** — 6-category hierarchical menu, approval center for redemptions & tasks, multi-wordbank switching, timed tasks with DatePicker, notification deep-link
-- 🔒 **Local-First** — Offline-capable with Room local database and AES-256-GCM encrypted backups
+**HabitTracker** is a native Android application designed for families, helping children (around 3rd grade) build good habits through a gamified positive-reinforcement loop.
+- 👶 **Child Mode** — Daily check-ins, Duolingo-style word quizzes, batch review with error weighting, reward shop, wishlist ⭐, task system
+- 👨‍👩‍👧 **Parent Mode** — Approval center (badge + notification deep-link), 6-category hierarchical menu, 18 economic parameters, multi-wordbank switching, timed task DatePicker
+- 💰 **Economy System** — Tiered check-in streaks, word/task coins, screen-time exchange, daily cap, economic dashboard
+- 🆔 **Device Identity** — SHA-256 + multi-entropy 16-char unique key, foundation for multi-device isolation
+- 🔒 **Local-First** — Offline-capable with Room local database (v4) and AES-256-GCM encrypted backups
 ---
 ## ✨ 功能特性 · Features
 ### 👶 孩子乐园模式 · Child Mode
 | 中文 | English | Emoji |
 |------|---------|-------|
-| ✅ **每日打卡** — 自定义习惯列表，完成即打卡，获得积分奖励，支持连续天数激励 | **Daily Check-ins** — Custom habit list with streak rewards | ✅ |
-| 📚 **单词学习** — 内置/外部多词库，多邻国式选择题，艾宾浩斯复习曲线，词库学习进度独立保存 | **Word Learning** — Multi-wordbank support, Duolingo-style quizzes, Ebbinghaus review curve, isolated progress per bank | 📚 |
+| ✅ **每日打卡** — 自定义习惯列表，完成即打卡，获得积分奖励，支持连续天数激励（3/7/14/30天额外奖励） | **Daily Check-ins** — Custom habit list with tiered streak rewards | ✅ |
+| 📚 **单词学习** — 内置/外部多词库，多邻国式选择题，学习模式答对得2金币，答错立即进复习队列 | **Word Learning** — Multi-wordbank, Duolingo-style quizzes, +2 coins per correct answer, wrong answers go to review queue | 📚 |
+| 🔄 **组批复习** — 当日待复习词随机排列为一组，全答对一次性得积分，答错整组重排直到100%通过，错误率加权复现 | **Batch Review** — Random-order batch review, all-correct earns one-time reward, wrong answers reshuffle entire batch, error-weighted reappearance | 🔄 |
 | 🏪 **积分商城** — 用积累积分兑换奖品，⭐心愿单收藏，全部/心愿单双Tab切换 | **Reward Shop** — Redeem points for rewards, wishlist favorites, All/Wishlist tabs | 🏪 |
-| 📋 **任务系统** — 查看发布的任务，完成后等待家长确认获得金币，支持限时任务 | **Task System** — View assigned tasks, earn coins upon parent approval, timed tasks supported | 📋 |
+| 📋 **任务系统** — 查看家长发布的任务，完成后等待确认获得金币 | **Task System** — View assigned tasks, earn coins upon parent approval | 📋 |
 | 🎨 **儿童友好 UI** — 色彩活泼、大按钮、液态背景动画 + 弹性反馈、TTS朗读 | **Kid-Friendly UI** — Vibrant colors, big buttons, liquid background animation, TTS | 🎨 |
 ### 👨‍👩‍👧 家长管理模式 · Parent Mode
 | 中文 | English | Emoji |
 |------|---------|-------|
-| 📊 **数据总览** — 查看统计、手动同步 | **Dashboard** — View stats & trigger sync | 📊 |
-| ✅ **审批中心** — 兑换审批/任务确认统一入口，带小红点待处理数，通知直达 | **Approval Center** — Unified redemptions & tasks approval with badge count, notification deep-link | ✅ |
-| 📚 **学习管理** — 多词库切换、外部词库下载（小学至考研6个源）、每日学习限额、奖励参数 | **Learning Management** — Multi-wordbank switching, external download (6 grade levels), daily limits & rewards | 📚 |
-| 🏪 **商城管理** — 上架新商品、编辑/下架已有商品、兑换审批 | **Shop Management** — Add/edit/delist items, approve redemptions | 🏪 |
-| 📋 **任务管理** — 发布普通/周期/限时任务，DatePicker+TimePicker精确到分钟 | **Task Management** — Create once/recurring/timed tasks with native DatePicker & TimePicker | 📋 |
-| ⚙️ **系统设置** — 个人信息、启动模式 & Hub中枢、经济参数 | **System Settings** — Profile, startup mode & Hub, economy config | ⚙️ |
+| 📊 **数据总览** — 统计看板 + 经济仪表盘（今日收入/今日消费/储蓄率） | **Dashboard** — Stats panel + economic dashboard | 📊 |
+| ✅ **审批中心** — 兑换审批/任务确认统一入口（一级菜单），带小红点待处理数，通知直达 | **Approval Center** — Unified redemptions & tasks, badge count, notification deep-link | ✅ |
+| 📚 **学习管理** — 多词库切换、外部词库下载（小学至考研6个源）、每日学习限额、奖励参数 | **Learning Management** — Multi-wordbank switching, 6 external sources, daily limits | 📚 |
+| 🏪 **商城管理** — 上架/编辑/下架商品（不含孩子心愿单，家长不干涉） | **Shop Management** — Add/edit/delist items (wishlist is child's private space) | 🏪 |
+| 📋 **任务管理** — 发布日常/挑战任务，DatePicker+TimePicker精确到分钟 | **Task Management** — Daily/challenge tasks with DatePicker & TimePicker | 📋 |
+| ⚙️ **系统设置** — 个人信息、启动模式 & Hub中枢、经济参数微调（18项可调） | **System Settings** — Profile, startup mode, 18 economic parameters | ⚙️ |
 ### 🔧 通用能力 · Core Capabilities
-- 🔐 **设备锁保护** — Android Keyguard 集成，敏感操作需验证身份
-- 💾 **本地持久化** — Room 数据库（v3），离线可用，数据不丢失，多词库进度隔离
+- 🔐 **设备锁保护** — Android Keyguard + BiometricPrompt 集成，敏感操作需验证身份
+- 🆔 **设备唯一标识** — SHA-256 + 多重熵源生成16位可读Key（格式：ABCD-EFGH-IJKL-MNOP），多设备数据隔离
+- 💾 **本地持久化** — Room 数据库（v4），离线可用，数据不丢失
 - 🔄 **局域网多端同步** — NanoHTTPD 零配置多设备同步
 - 🔒 **加密备份** — AES-256-GCM 加密导出，保障隐私安全
+- 💰 **经济系统** — 18项可调参数，签到/单词/任务三收入渠道，娱乐时间三档定价，每日收入上限
 ---
 ## 🛠️ 技术栈 · Tech Stack
 | 层级 · Layer | 技术 · Technology | 用途 · Purpose |
 |-------------|-------------------|----------------|
 | 📱 语言 · Language | **Java 17** | 主要开发语言 |
 | 🏗️ 构建 · Build | **Gradle 8.1 + AGP 8.x** | 项目构建与依赖管理 |
-| 🗄️ 数据库 · Database | **Room 2.5.2** (SQLite v3) | 本地持久化，编译时注解处理器 |
+| 🗄️ 数据库 · Database | **Room 2.5.2** (SQLite v4) | 本地持久化，编译时注解处理器 |
 | 🖼️ UI | **Material Design 3 / ViewBinding / RecyclerView / ViewPager2 / CardView** | 界面组件 |
 | 🌐 局域网服务 · LAN | **NanoHTTPD 2.3.1** | 轻量级 HTTP 服务，零配置多端同步 |
 | 📷 二维码 · QR | **ZXing 3.5.1 + zxing-android-embedded 4.3.0** | QR 码生成与扫码配对 |
@@ -83,15 +90,17 @@ screenshots/
 ### 📲 获取 APK · Download APK
 > ⚠️ **项目维护者依赖 CI 编译，无法在本地编译 APK。**
 > *The project maintainer relies on GitHub Actions for APK builds.*
-**推荐方式：从 GitHub Actions 下载编译好的 APK**
+
+**推荐方式：下载最新 Release**
+👉 [前往 Releases 页面下载](https://github.com/Cuiyi-Srama/HabitTracker/releases/latest)
+
+**备用方式：从 GitHub Actions 下载**
 1. 前往 [Actions 页面](https://github.com/Cuiyi-Srama/HabitTracker/actions)
 2. 选择最新的成功 Workflow Run（绿色 ✅ 状态）
 3. 在 **Artifacts** 部分下载 `HabitTracker-Debug-APK`
 4. 解压后安装 `app-debug.apk` 到 Android 设备（API 24+）
-> 💡 **普通用户**：点击上方 Actions 链接 → 选择最新成功的 build → 下载 Artifacts 即可。
 ### 🛠️ 本地编译（适用于贡献者）· Build Locally (for Contributors)
 #### 环境要求 · Prerequisites
-
 | 工具 · Tool | 版本 · Version |
 |------------|----------------|
 | JDK | **17+**（推荐 Amazon Corretto 17 / Oracle JDK 17） |
@@ -100,7 +109,6 @@ screenshots/
 | Gradle | **8.1+**（使用项目 Gradle Wrapper 自动管理） |
 | 目标设备 | **Android 7.0+ (API 24)** |
 #### 编译步骤 · Build Steps
-
 ```bash
 # 1. 克隆仓库 / Clone
 git clone https://github.com/Cuiyi-Srama/HabitTracker.git
@@ -145,16 +153,38 @@ python3 scripts/customize_app.py --app-name "Baby Daily" --nickname "Alice" --ic
 | ✅ **打卡 / Check-in** | 一键打卡，连续天数激励金币 |
 | 🏪 **商城 / Shop** | 浏览商品/心愿单⭐，提交兑换申请 |
 | 📋 **任务 / Tasks** | 查看任务列表，完成后标记待家长确认 |
-| 📚 **单词 / Words** | 每日新词学习+艾宾浩斯复习 |
+| 📚 **单词 / Words** | 每日新词学习（+2🪙/词）+ 组批复习（错误率加权） |
 ### 家长管理 · Parent Mode
 | 界面 · Screen | 说明 · Description |
 |--------------|-------------------|
-| 📊 **数据总览 / Dashboard** | 统计看板+手动同步 |
-| ✅ **审批中心 / Approval** | 兑换审批+任务确认+通知直达 |
+| 📊 **数据总览 / Dashboard** | 统计看板+经济仪表盘+手动同步 |
+| ✅ **审批中心 / Approval** | 兑换审批+任务确认+小红点+通知直达 |
 | 📚 **学习管理 / Learning** | 多词库切换、外部下载、每日限额 |
 | 🏪 **商城管理 / Shop** | 上架/编辑/下架商品 |
-| 📋 **任务管理 / Tasks** | 发布任务（含DatePicker限时任务） |
-| ⚙️ **系统设置 / Settings** | 个人信息、启动模式、经济参数 |
+| 📋 **任务管理 / Tasks** | 发布日常/挑战任务（含DatePicker限时任务） |
+| ⚙️ **系统设置 / Settings** | 个人信息、启动模式、经济参数（18项可调） |
+---
+## 💰 经济系统 · Economy System
+### 收入渠道
+| 渠道 | 默认奖励 | 说明 |
+|:-----|:---------|:-----|
+| ✅ **签到** | 基础10🪙，连续3/7/14/30天额外+5/+15/+30/+100🪙 | 每日一次 |
+| 📚 **单词学习** | 2🪙/词（答对） | 答错不扣分，进复习区 |
+| 🔄 **复习通关** | 2🪙/词（整组全对） | 答错整组重排，100%通过才得积分 |
+| 📋 **日常任务** | 5~15🪙 | 家长可调范围 |
+| 🎮 **挑战任务** | 20~50🪙 | 高难度高回报 |
+### 消费渠道
+| 项目 | 价格 | 说明 |
+|:-----|:-----|:-----|
+| 🎮 **娱乐时间15分钟** | 10🪙 | 游戏/屏幕时间 |
+| 🎮 **娱乐时间30分钟** | 18🪙（9折） | 批量购买优惠 |
+| 🎮 **娱乐时间60分钟** | 30🪙（75折） | 更优惠 |
+| 🎁 **商城商品** | 家长自定义 | 实物/虚拟奖品 |
+### 防刷机制
+- 🔒 **每日收入上限**：500🪙（默认）
+- 📖 **每日新词上限**：10个（默认）
+- 🔄 **每日复习上限**：30个（默认）
+- 🏦 **家长可调所有参数**，经济仪表盘实时监控
 ---
 ## ⚙️ 配置说明 · Configuration
 ### Firebase 远程同步（可选）
@@ -167,7 +197,6 @@ python3 scripts/customize_app.py --app-name "Baby Daily" --nickname "Alice" --ic
 - 所有设备需处于同一 WiFi 网络
 - 支持 QR 码扫码快速配对，无需手动输入 IP
 - 数据采用 JSON 格式传输，加密备份使用 **AES-256-GCM** 保护
-
 ### Gradle 属性参考 · Gradle Properties
 | 属性 · Property | 推荐值 · Recommended | 说明 · Notes |
 |-----------------|---------------------|--------------|
@@ -175,7 +204,6 @@ python3 scripts/customize_app.py --app-name "Baby Daily" --nickname "Alice" --ic
 | `android.enableJetifier` | `true` | 自动迁移旧版支持库 |
 | `org.gradle.jvmargs` | `-Xmx2048m -XX:MaxMetaspaceSize=512m` | Gradle JVM 参数 |
 ---
-
 ## 📂 项目目录结构 · Project Structure
 ```
 HabitTracker/
@@ -187,58 +215,61 @@ HabitTracker/
 │       ├── assets/
 │       │   └── wordbank_sources.json             # 📦 外部词库源配置
 │       ├── java/com/sister/habits/
-│       │   ├── HabitApp.java                     # Application
+│       │   ├── HabitApp.java                     # Application（含设备标识初始化）
 │       │   ├── MainActivity.java                 # 入口/模式选择
 │       │   ├── child/                            # 👶 孩子模式
 │       │   │   ├── ChildActivity.java            # 主Activity（ViewPager+Tab）
 │       │   │   ├── ChildPagerAdapter.java        # 页面适配器
-│       │   │   ├── ShopFragment.java             # 商城+心愿单
+│       │   │   ├── ShopFragment.java             # 商城+心愿单+兑换通知
 │       │   │   ├── TaskFragment.java             # 任务列表
-│       │   │   └── WordFragment.java             # 单词学习
+│       │   │   └── WordFragment.java             # 单词学习+组批复习
 │       │   ├── parent/                           # 👨‍👩‍👧 家长管理
-│       │   │   └── ParentActivity.java           # 1162行，全功能管理
+│       │   │   └── ParentActivity.java           # 全功能管理（6项一级菜单+审批中心）
 │       │   ├── data/                             # 🗄️ 数据层
-│       │   │   ├── AppDatabase.java              # Room v3
+│       │   │   ├── AppDatabase.java              # Room v4（含MIGRATION_3_4）
+│       │   │   ├── DatabaseInitializer.java      # 数据库初始化（含默认经济参数）
 │       │   │   ├── dao/                          # DAO接口
 │       │   │   │   ├── CheckInDao.java
-│       │   │   │   ├── CoinTransactionDao.java
-│       │   │   │   ├── EconomyConfigDao.java
+│       │   │   │   ├── CoinTransactionDao.java   # 含getTotalEarnedSince/getTotalSpentSince
+│       │   │   │   ├── EconomyConfigDao.java     # 18参数updateAll
 │       │   │   │   ├── RedemptionDao.java
 │       │   │   │   ├── ShopItemDao.java
 │       │   │   │   ├── TaskDao.java
 │       │   │   │   ├── VocabularyDao.java
 │       │   │   │   ├── WordReviewDao.java
-│       │   │   │   ├── WordBankDao.java          # 🆕 v3新表
-│       │   │   │   └── WishlistDao.java          # 🆕 v3新表
+│       │   │   │   ├── WordBankDao.java
+│       │   │   │   └── WishlistDao.java
 │       │   │   └── models/                       # 实体
 │       │   │       ├── CheckIn.java
 │       │   │       ├── CoinTransaction.java
-│       │   │       ├── EconomyConfig.java
+│       │   │       ├── EconomyConfig.java        # 18项经济参数
 │       │   │       ├── Redemption.java
 │       │   │       ├── ShopItem.java
 │       │   │       ├── Task.java
 │       │   │       ├── Vocabulary.java
-│       │   │       ├── WordReview.java
-│       │   │       ├── WordBank.java             # 🆕
-│       │   │       └── WishlistItem.java         # 🆕
+│       │   │       ├── WordReview.java           # 含getErrorRate/getWeightedInterval
+│       │   │       ├── WordBank.java
+│       │   │       └── WishlistItem.java
 │       │   ├── sync/                             # 🔄 同步
 │       │   │   ├── LanSyncService.java
-│       │   │   ├── SyncManager.java
+│       │   │   ├── SyncManager.java              # 调用DeviceIdentity
 │       │   │   └── QRCodeHelper.java
 │       │   └── utils/                            # 🔧 工具
 │       │       ├── CryptoHelper.java
 │       │       ├── SoundHelper.java
 │       │       ├── ProfileManager.java
-│       │       ├── WordBankParser.java           # 🆕 词库解析
+│       │       ├── WordBankParser.java
 │       │       ├── NotificationHelper.java       # 🆕 通知系统
+│       │       ├── DeviceIdentity.java           # 🆕 设备唯一标识
 │       │       └── DailyQuote.java
 │       └── res/
 │           ├── drawable/
 │           ├── layout/
 │           │   ├── activity_parent.xml           # 审批仪表盘布局
-│           │   ├── dialog_wordbank.xml           # 词库管理（6个静态下载按钮）
+│           │   ├── dialog_profile_settings.xml   # 📋 独立个人信息布局
+│           │   ├── dialog_economy_settings.xml   # 💰 独立经济参数布局
+│           │   ├── dialog_wordbank.xml           # 词库管理
 │           │   ├── dialog_add_task.xml           # 限时任务DatePicker
-│           │   ├── item_shop.xml                 # 商品卡片（含⭐按钮）
 │           │   └── ...
 │           ├── values/
 │           │   └── colors.xml
@@ -255,8 +286,17 @@ HabitTracker/
 └── screenshots/
 ```
 ---
+## 📋 版本历史 · Changelog
+| 版本 | 日期 | 亮点 |
+|:-----|:-----|:-----|
+| **v1.5.0** | 2026-07-27 | 💰 经济系统全面升级（18项参数+签到分级+娱乐兑换+经济仪表盘）、数据库v4、单词复习重构、错误率加权复现 |
+| v1.4.0 | 2026-07-27 | 🆔 设备唯一标识系统、多用户数据隔离基础、个人信息/经济参数布局修复、二级菜单返回按钮全面补齐 |
+| v1.3.0 | 2026-07-27 | 🏗️ 家长界面B方案重构（审批中心独立+小红点）、通知系统、词库管理增强、商城优化 |
+| v1.2.0 | 2026-07-26 | 📚 词库管理系统、外部词库下载、艾宾浩斯复习、限时任务系统、家长审批流 |
+| v1.1.0 | 2026-07-25 | 📋 任务系统、⏰ 限时任务、统计数据页面 |
+| v1.0.0 | 2026-07-24 | 🎉 首个可用版本：每日打卡、单词学习、积分商城、局域网同步 |
+---
 ## 🤝 贡献指南 · Contributing
-
 我们欢迎任何形式的贡献！无论是报告 Bug、提交新功能，还是完善文档，你的每一份努力都在帮助更多家庭培养孩子的好习惯 💪
 We welcome all forms of contribution! Whether it's reporting bugs, suggesting features, or improving documentation, every effort helps families build good habits for their children.
 👉 **详见 / See: [CONTRIBUTING.md](CONTRIBUTING.md)**
@@ -268,7 +308,6 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) before contribu
 This project is licensed under the **GNU General Public License v3.0**.
 ```
 Copyright © 2026 Cuiyi-Srama
-
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -276,7 +315,6 @@ the Free Software Foundation, either version 3 of the License, or
 ```
 详见 / See [LICENSE](LICENSE) 文件。
 ---
-
 ## 📬 联系我们 · Contact & Resources
 | 渠道 · Channel | 链接 · Link |
 |---------------|-------------|
