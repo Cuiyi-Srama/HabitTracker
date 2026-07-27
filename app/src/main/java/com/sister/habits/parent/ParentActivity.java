@@ -331,7 +331,7 @@ public class ParentActivity extends AppCompatActivity {
         loadPendingTasks();
     }
 
-    private void refreshStats() {
+        private void refreshStats() {
         int totalCheckIns = db.checkInDao().getTotalCheckIns("sister");
         int maxStreak = db.checkInDao().getMaxStreak("sister");
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
@@ -341,18 +341,35 @@ public class ParentActivity extends AppCompatActivity {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         boolean checkedInToday = db.checkInDao().getByDate("sister", today) != null;
 
+        long todayStart = 0;
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.CHINA);
+            todayStart = sdf.parse(today).getTime();
+        } catch (Exception e) { }
+        int todayEarned = db.coinTransactionDao().getTotalEarnedSince("sister", todayStart);
+        int todaySpent = db.coinTransactionDao().getTotalSpentSince("sister", todayStart);
+
         String nickname = profile.getNickname();
         tvStats.setText(
-                "📊 " + nickname + "的习惯数据\n" +
-                "━━━━━━━━━━━━━━━\n" +
-                "今日打卡: " + (checkedInToday ? "✅ 已打卡" : "⭕ 未打卡") + "\n" +
-                "总打卡: " + totalCheckIns + " 天\n" +
-                "最长连续: " + maxStreak + " 天 🏆\n" +
-                "金币余额: 🪙 " + (balance != null ? balance : 0) + "\n" +
-                "待审批兑换: " + pendingCount + " 项\n" +
-                "待确认任务: " + pendingTaskCount + " 项"
+                "📊 " + nickname + "的习惯数据
+" +
+                "━━━━━━━━━━━━━━━
+" +
+                "今日打卡: " + (checkedInToday ? "✅ 已打卡" : "⭕ 未打卡") + "
+" +
+                "总打卡: " + totalCheckIns + " 天  |  最长连续: " + maxStreak + " 天 🏆
+" +
+                "━━━━━━━━━━━━━━━
+" +
+                "💰 金币余额: " + (balance != null ? balance : 0) + "
+" +
+                "🗥 今日收入: +" + todayEarned + "  |  今日消费: -" + todaySpent + "
+" +
+                "━━━━━━━━━━━━━━━
+" +
+                "待审批兑换: " + pendingCount + " 项  |  待确认任务: " + pendingTaskCount + " 项"
         );
-    }
+    }}
 
     private void loadPendingApprovals() {
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
@@ -773,31 +790,72 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
-                    private void showEconomySettings() {
+                        private void showEconomySettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
         View view = getLayoutInflater().inflate(R.layout.dialog_economy_settings, null);
         EconomyConfig finalConfig = config;
-
-        android.widget.EditText etWordReward = view.findViewById(R.id.et_word_reward);
+        android.widget.EditText etCheckinBase = view.findViewById(R.id.et_checkin_base);
+        android.widget.EditText etStreak3 = view.findViewById(R.id.et_streak3);
+        android.widget.EditText etStreak7 = view.findViewById(R.id.et_streak7);
+        android.widget.EditText etStreak14 = view.findViewById(R.id.et_streak14);
+        android.widget.EditText etStreak30 = view.findViewById(R.id.et_streak30);
+        android.widget.EditText etWordLearn = view.findViewById(R.id.et_word_learn);
+        android.widget.EditText etReviewPass = view.findViewById(R.id.et_review_pass);
+        android.widget.EditText etTaskDailyMin = view.findViewById(R.id.et_task_daily_min);
+        android.widget.EditText etTaskDailyMax = view.findViewById(R.id.et_task_daily_max);
+        android.widget.EditText etTaskChallengeMin = view.findViewById(R.id.et_task_challenge_min);
+        android.widget.EditText etTaskChallengeMax = view.findViewById(R.id.et_task_challenge_max);
+        android.widget.EditText etScreen15 = view.findViewById(R.id.et_screen_15);
+        android.widget.EditText etScreen30 = view.findViewById(R.id.et_screen_30);
+        android.widget.EditText etScreen60 = view.findViewById(R.id.et_screen_60);
+        android.widget.EditText etMaxDailyCoins = view.findViewById(R.id.et_max_daily_coins);
         android.widget.EditText etMaxWords = view.findViewById(R.id.et_max_words);
         android.widget.EditText etMaxReview = view.findViewById(R.id.et_max_review);
-        etWordReward.setText(String.valueOf(finalConfig.wordLearnReward));
+        etCheckinBase.setText(String.valueOf(finalConfig.checkInBaseReward));
+        etStreak3.setText(String.valueOf(finalConfig.streak3Bonus));
+        etStreak7.setText(String.valueOf(finalConfig.streak7Bonus));
+        etStreak14.setText(String.valueOf(finalConfig.streak14Bonus));
+        etStreak30.setText(String.valueOf(finalConfig.streak30Bonus));
+        etWordLearn.setText(String.valueOf(finalConfig.wordLearnReward));
+        etReviewPass.setText(String.valueOf(finalConfig.reviewPassReward));
+        etTaskDailyMin.setText(String.valueOf(finalConfig.taskDailyMin));
+        etTaskDailyMax.setText(String.valueOf(finalConfig.taskDailyMax));
+        etTaskChallengeMin.setText(String.valueOf(finalConfig.taskChallengeMin));
+        etTaskChallengeMax.setText(String.valueOf(finalConfig.taskChallengeMax));
+        etScreen15.setText(String.valueOf(finalConfig.screenTime15min));
+        etScreen30.setText(String.valueOf(finalConfig.screenTime30min));
+        etScreen60.setText(String.valueOf(finalConfig.screenTime60min));
+        etMaxDailyCoins.setText(String.valueOf(finalConfig.maxDailyCoins));
         etMaxWords.setText(String.valueOf(finalConfig.maxDailyWords));
         etMaxReview.setText(String.valueOf(finalConfig.maxDailyReview));
-
         new AlertDialog.Builder(this)
                 .setTitle("💰 经济参数")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
                     db.economyConfigDao().updateAll(
-                            10, 5, 50, 100, 200, parseInt(etWordReward, 2),
-                            50, 100, 5, 20, 10, 30,
-                            500, parseInt(etMaxWords, 10), parseInt(etMaxReview, 30));
+                            parseInt(etCheckinBase, 10),
+                            parseInt(etStreak3, 5),
+                            parseInt(etStreak7, 15),
+                            parseInt(etStreak14, 30),
+                            parseInt(etStreak30, 100),
+                            parseInt(etWordLearn, 2),
+                            parseInt(etReviewPass, 2),
+                            parseInt(etTaskDailyMin, 5),
+                            parseInt(etTaskDailyMax, 15),
+                            parseInt(etTaskChallengeMin, 20),
+                            parseInt(etTaskChallengeMax, 50),
+                            parseInt(etScreen15, 10),
+                            parseInt(etScreen30, 18),
+                            parseInt(etScreen60, 30),
+                            parseInt(etMaxDailyCoins, 500),
+                            parseInt(etMaxWords, 10),
+                            parseInt(etMaxReview, 30));
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
-    }
+    }}
 
                     private void showHubSettings() {
         SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
