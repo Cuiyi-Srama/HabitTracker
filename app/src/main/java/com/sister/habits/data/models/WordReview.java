@@ -92,4 +92,30 @@ public class WordReview {
     public boolean isDue() {
         return System.currentTimeMillis() >= nextReviewAt;
     }
+
+    /**
+     * 计算错误率 (0.0 ~ 1.0)
+     * 用于加权复习间隔：错误率越高 → 间隔越短 → 出现越频繁
+     */
+    public double getErrorRate() {
+        int total = correctCount + wrongCount;
+        return total == 0 ? 0.0 : (double) wrongCount / (total + 1);
+    }
+
+    /**
+     * 获取加权后的复习间隔（基于错误率缩短间隔）
+     * @param stageIndex 阶段索引（0~5）
+     * @return 加权后的间隔毫秒数
+     */
+    public long getWeightedInterval(int stageIndex) {
+        long baseInterval = INTERVALS[stageIndex];
+        if (stageIndex >= INTERVALS.length) return baseInterval;
+        double errorRate = getErrorRate();
+        // 错误率越高，因子越小，间隔越短
+        // 错误率80% → 因子 1-0.48=0.52 → 间隔缩短到52%
+        // 错误率20% → 因子 1-0.12=0.88 → 间隔缩短到88%
+        double factor = 1.0 - errorRate * 0.6;
+        // 最小保留30%，防止间隔过短
+        return (long) (baseInterval * Math.max(factor, 0.3));
+    }
 }
