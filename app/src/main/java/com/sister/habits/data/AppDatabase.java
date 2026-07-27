@@ -134,20 +134,26 @@ public abstract class AppDatabase extends RoomDatabase {
             // 旧表有 wordBatchBonus10/20 列（已从 entity 中移除），
             // 且没有 reviewPassReward/screenTime15min/30min/60min 列。
             // SQLite 不支持 DROP COLUMN，需完整重建表。
-            // 注意：不能 SELECT 旧表中不存在的列，必须用字面默认值。
+            //
+            // 使用 IF EXISTS / IF NOT EXISTS 以兼容之前迁移失败导致的脏状态：
+            // #275 的迁移可能在 step1/2/3 后失败，残留 economy_config_temp 表。
 
-            // 1. 保存旧数据（只保存旧表已有的列）
-            database.execSQL("CREATE TABLE economy_config_temp AS SELECT " +
+            // 1. 清理可能残留的临时表
+            database.execSQL("DROP TABLE IF EXISTS economy_config_temp");
+
+            // 2. 保存旧数据（只保存旧表已有的列，旧表可能已被 #275 重建为18列版本）
+            //    使用 IF NOT EXISTS 防止 #275 的 DROP TABLE 已删除旧表
+            database.execSQL("CREATE TABLE IF NOT EXISTS economy_config_temp AS SELECT " +
                 "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
                 "wordLearnReward, " +
                 "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
                 "maxDailyCoins, maxDailyWords, maxDailyReview " +
                 "FROM economy_config");
 
-            // 2. 删除旧表
-            database.execSQL("DROP TABLE economy_config");
+            // 3. 删除旧表
+            database.execSQL("DROP TABLE IF EXISTS economy_config");
 
-            // 3. 创建新表（匹配 EconomyConfig.java 的 18 个字段）
+            // 4. 创建新表（匹配 EconomyConfig.java 的 18 个字段）
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS `economy_config` (" +
                 "`id` INTEGER NOT NULL, " +
@@ -171,9 +177,9 @@ public abstract class AppDatabase extends RoomDatabase {
                 "PRIMARY KEY(`id`))"
             );
 
-            // 4. 从临时表复制数据（新列用字面默认值，因为旧表没有这些列）
+            // 5. 从临时表复制数据（新列用字面默认值，因为旧表没有这些列）
             database.execSQL(
-                "INSERT INTO economy_config (" +
+                "INSERT OR IGNORE INTO economy_config (" +
                 "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
                 "wordLearnReward, reviewPassReward, " +
                 "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
@@ -188,8 +194,23 @@ public abstract class AppDatabase extends RoomDatabase {
                 "FROM economy_config_temp"
             );
 
-            // 5. 清理临时表
-            database.execSQL("DROP TABLE economy_config_temp");
+            // 6. 清理临时表
+            database.execSQL("DROP TABLE IF EXISTS economy_config_temp");
+
+            // 7. 确保默认行存在（如果旧表已经被 #275 清空/损坏）
+            database.execSQL("INSERT OR IGNORE INTO economy_config (" +
+                "id, checkInBaseReward, streak3Bonus, streak7Bonus, streak14Bonus, streak30Bonus, " +
+                "wordLearnReward, reviewPassReward, " +
+                "taskDailyMin, taskDailyMax, taskChallengeMin, taskChallengeMax, " +
+                "screenTime15min, screenTime30min, screenTime60min, " +
+                "maxDailyCoins, maxDailyWords, maxDailyReview" +
+                ") VALUES (" +
+                "1, 10, 5, 15, 30, 100, " +
+                "2, 2, " +
+                "5, 15, 20, 50, " +
+                "10, 18, 30, " +
+                "500, 10, 30" +
+                ")");
         }
     };
 
