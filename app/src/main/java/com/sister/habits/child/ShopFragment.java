@@ -22,6 +22,7 @@ import com.sister.habits.data.models.Redemption;
 import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.sync.SyncManager;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
