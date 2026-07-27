@@ -770,13 +770,10 @@ public class ParentActivity extends AppCompatActivity {
                     if (!at.isEmpty()) profile.setAppTitle(at);
                     Toast.makeText(this, "个人信息已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("取消", null).show();
-    }
-
-    private void showEconomySettings() {
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())  private void showEconomySettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
-        View view = getLayoutInflater().inflate(R.layout.dialog_settings, null);
+        View view = getLayoutInflater().inflate(R.layout.dialog_economy_settings, null);
         EconomyConfig finalConfig = config;
 
         android.widget.EditText etWordReward = view.findViewById(R.id.et_word_reward);
@@ -796,10 +793,7 @@ public class ParentActivity extends AppCompatActivity {
                             500, parseInt(etMaxWords, 10), parseInt(etMaxReview, 30));
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("取消", null).show();
-    }
-
-    private void showHubSettings() {
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())  private void showHubSettings() {
         SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
         String currentMode = prefs.getString("default_mode", "child");
         String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
