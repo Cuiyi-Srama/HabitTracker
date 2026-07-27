@@ -129,15 +129,15 @@ public class ShopFragment extends Fragment {
             holder.itemView.setOnClickListener(v -> listener.onRedeem(item));
             // 愿望清单⭐按钮
             boolean isWishlisted = db.wishlistDao().getByShopItemId(item.id) != null;
-            holder.btnWishlist.setBackgroundColor(isWishlisted ? 0xFFFFD700 : 0xFFE0E0E0);
+            ((View)holder.btnWishlist).setBackgroundColor(isWishlisted ? 0xFFFFD700 : 0xFFE0E0E0);
             holder.btnWishlist.setOnClickListener(v2 -> {
                 if (isWishlisted) {
                     db.wishlistDao().deleteByShopItemId(item.id);
-                    holder.btnWishlist.setBackgroundColor(0xFFE0E0E0);
+                    ((View)holder.btnWishlist).setBackgroundColor(0xFFE0E0E0);
                     Toast.makeText(v2.getContext(), "已移除心愿 ⭐", Toast.LENGTH_SHORT).show();
                 } else {
                     db.wishlistDao().insert(com.sister.habits.data.models.WishlistItem.create(item.id));
-                    holder.btnWishlist.setBackgroundColor(0xFFFFD700);
+                    ((View)holder.btnWishlist).setBackgroundColor(0xFFFFD700);
                     Toast.makeText(v2.getContext(), "已加入心愿 ⭐", Toast.LENGTH_SHORT).show();
                 }
             });
@@ -148,7 +148,7 @@ public class ShopFragment extends Fragment {
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             ImageView ivIcon;
-            Button btnWishlist;
+            View btnWishlist;
             TextView tvName, tvDesc, tvPrice;
             ViewHolder(View v) {
                 super(v);
