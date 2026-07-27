@@ -21,6 +21,7 @@ import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.Redemption;
 import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.sync.SyncManager;
+import com.sister.habits.utils.NotificationHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +97,10 @@ public class ShopFragment extends Fragment {
 
         // 触发同步
         syncManager.onDataChanged();
+
+        // 发送通知给家长
+        NotificationHelper.createChannel(requireContext());
+        NotificationHelper.notifyRedemption(requireContext(), item.name, redemption.id);
 
         Toast.makeText(getContext(), "✅ 兑换申请已提交！等家长审批～", Toast.LENGTH_LONG).show();
         loadShopItems(); // 刷新
