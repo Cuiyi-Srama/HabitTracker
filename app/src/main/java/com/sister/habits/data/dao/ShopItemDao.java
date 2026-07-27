@@ -21,6 +21,9 @@ public interface ShopItemDao {
     @Query("UPDATE shop_items SET active = :active WHERE id = :id")
     void setActive(String id, boolean active);
 
+    @Query("SELECT * FROM shop_items WHERE id = :id")
+    ShopItem getById(String id);
+
     @Delete
     void delete(ShopItem item);
 }
