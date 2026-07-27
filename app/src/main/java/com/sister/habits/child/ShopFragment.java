@@ -31,7 +31,6 @@ public class ShopFragment extends Fragment {
 
     private AppDatabase db;
     private SyncManager syncManager;
-    private AppDatabase db;
     private RecyclerView recyclerView;
 
     @Override
@@ -90,7 +89,7 @@ public class ShopFragment extends Fragment {
     }
 
     // 简单适配器
-    private static class ShopAdapter extends RecyclerView.Adapter<ShopAdapter.ViewHolder> {
+    class ShopAdapter extends RecyclerView.Adapter<ShopAdapter.ViewHolder> {
         private final List<ShopItem> items;
         private final OnRedeemListener listener;
 
