@@ -234,7 +234,7 @@ public class WordFragment extends Fragment {
             }
         }
 
-if (correct) {
+        if (correct) {
             // ✅ 答对
             clicked.setBackgroundColor(0xFF4CAF50);
             clicked.setTextColor(0xFFFFFFFF);
@@ -276,7 +276,6 @@ if (correct) {
                 tvPrompt.setText("📖 已记住: " + currentWord.word + "  切换到复习赚金币吧 🪙");
                 // 学习模式不给金币，轻柔反馈即可
                 soundHelper.playClickSound();
-            }
             }
 
             syncManager.onDataChanged();
