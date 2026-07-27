@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.Task;
+import com.sister.habits.utils.NotificationHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,6 +122,11 @@ public class TaskFragment extends Fragment {
         }
         // 标记为"待家长确认"
         db.taskDao().markPending(task.id, System.currentTimeMillis());
+
+        // 发送通知给家长
+        NotificationHelper.createChannel(requireContext());
+        NotificationHelper.notifyTaskCompleted(requireContext(), task.title, task.id);
+
         Toast.makeText(getContext(), "✅ 任务已完成！等待家长确认中～", Toast.LENGTH_SHORT).show();
         loadTasks();
     }
