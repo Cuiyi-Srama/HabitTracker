@@ -187,7 +187,8 @@ public class ChildActivity extends AppCompatActivity {
                             int totalCheckIns = db.checkInDao().getTotalCheckIns("sister");
                             int maxStreak = db.checkInDao().getMaxStreak("sister");
                             Integer balance = db.coinTransactionDao().getBalance("sister");
-                            int wordMastered = db.vocabularyDao().getMasteredCount();
+                            String bankId = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
+                            int wordMastered = db.vocabularyDao().getMasteredCount(bankId);
                             new android.app.AlertDialog.Builder(this)
                                     .setTitle("👤 我的统计")
                                     .setMessage(
@@ -210,9 +211,10 @@ public class ChildActivity extends AppCompatActivity {
                             Toast.makeText(this, speedText, Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
-                            int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis());
-                            int totalLearning = db.wordReviewDao().getTotalLearningCount();
-                            int mastered = db.wordReviewDao().getMasteredCount(WordReview.MAX_STAGE, Long.MAX_VALUE);
+                            String bankId2 = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
+                            int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis(), bankId2);
+                            int totalLearning = db.wordReviewDao().getTotalLearningCount(bankId2);
+                            int mastered = db.wordReviewDao().getMasteredCount(WordReview.MAX_STAGE, Long.MAX_VALUE, bankId2);
                             new android.app.AlertDialog.Builder(this)
                                     .setTitle("📖 单词进度")
                                     .setMessage(
