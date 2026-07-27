@@ -78,6 +78,7 @@ public class DatabaseInitializer {
                         v.gradeLevel = jw.g;
                         v.level = jw.l;
                         v.mastered = false;
+                    v.bankId = "builtin";
                         v.active = true;
                         allWords.add(v);
                     }
