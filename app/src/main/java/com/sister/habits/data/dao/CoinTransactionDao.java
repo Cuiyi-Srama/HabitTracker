@@ -18,6 +18,12 @@ public interface CoinTransactionDao {
     @Query("SELECT SUM(amount) FROM coin_transactions WHERE userId = :userId AND type = :type AND createdAt >= :since")
     Integer getTotalByTypeSince(String userId, String type, long since);
 
+
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM coin_transactions WHERE userId = :userId AND amount > 0 AND createdAt >= :since")
+    int getTotalEarnedSince(String userId, long since);
+
+    @Query("SELECT COALESCE(SUM(-amount), 0) FROM coin_transactions WHERE userId = :userId AND amount < 0 AND createdAt >= :since")
+    int getTotalSpentSince(String userId, long since);
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(CoinTransaction transaction);
 
