@@ -493,7 +493,7 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     /** 显示日期+时间选择器，更新按钮文字 */
-    private void showDateTimePicker(Button btnDate) {
+    private void showDateTimePicker(android.widget.EditText etDate) {
         java.util.Calendar cal = java.util.Calendar.getInstance();
         new android.app.DatePickerDialog(this, (view, year, month, day) -> {
             java.util.Calendar dateCal = java.util.Calendar.getInstance();
@@ -501,7 +501,7 @@ public class ParentActivity extends AppCompatActivity {
             // 选择时间
             new android.app.TimePickerDialog(this, (view2, hour, minute) -> {
                 String dateStr = year + "-" + (month+1) + "-" + day + " " + hour + ":" + (minute < 10 ? "0"+minute : minute);
-                btnDate.setText("📅 " + dateStr);
+                etDate.setText("📅 " + dateStr);
             }, cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE), true).show();
         }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show();
     }
@@ -517,11 +517,12 @@ public class ParentActivity extends AppCompatActivity {
 
         // 选择"限时"时显示截止时间输入
         rgType.setOnCheckedChangeListener((group, checkedId) -> {
-            view.findViewById(R.id.ll_deadline).setVisibility(checkedId == R.id.rb_type_timed ? View.VISIBLE : View.GONE);
+            view.findViewById(R.id.til_deadline).setVisibility(checkedId == R.id.rb_type_timed ? View.VISIBLE : View.GONE);
         });
-        // 日期时间选择器
-        Button btnDate = view.findViewById(R.id.btn_pick_date);
-        btnDate.setOnClickListener(v -> showDateTimePicker(btnDate));
+        // 日期时间选择器（使用til_deadline的EditText点击触发）
+        android.widget.EditText etDate = view.findViewById(R.id.et_task_deadline);
+        etDate.setOnClickListener(v -> showDateTimePicker(etDate));
+        etDate.setFocusable(false);
 
         new AlertDialog.Builder(this)
                 .setTitle("发布新任务")
