@@ -847,9 +847,9 @@ public class ParentActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
-    }}
+    }
 
-                    private void showHubSettings() {
+    private void showHubSettings() {
         SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
         String currentMode = prefs.getString("default_mode", "child");
         String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
