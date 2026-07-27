@@ -16,6 +16,7 @@ public class WordReview {
     public long id;
 
     public String wordId;           // 关联 Vocabulary.id
+    public String bankId;           // 关联词库ID，用于隔离不同词库的学习进度
 
     public int stage;               // 当前阶段 0=刚学, 1~5=复习轮次
     public long nextReviewAt;       // 下次复习时间（毫秒时间戳）
@@ -41,9 +42,10 @@ public class WordReview {
     /**
      * 创建一个新记录（刚学）
      */
-    public static WordReview createNew(String wordId) {
+    public static WordReview createNew(String wordId, String bankId) {
         WordReview r = new WordReview();
         r.wordId = wordId;
+        r.bankId = bankId;
         r.stage = 0;
         r.nextReviewAt = System.currentTimeMillis() + INTERVALS[0];
         r.lastReviewedAt = System.currentTimeMillis();
