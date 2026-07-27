@@ -49,6 +49,8 @@
             android:textColor="#FF6B35"
             android:textStyle="bold" />
 
+    <Button android:id="@+id/btn_wishlist" android:layout_width="32dp" android:layout_height="32dp" android:text="⭐" android:textSize="16sp" android:background="#E0E0E0" android:layout_marginStart="8dp" />
     </LinearLayout>
 
-</LinearLayout>
+<Button android:id="@+id/btn_wishlist" android:layout_width="32dp" android:layout_height="32dp" android:text="⭐" android:textSize="16sp" android:background="#E0E0E0" android:layout_marginStart="8dp" />
+    </LinearLayout>
