@@ -197,6 +197,14 @@ public class WordFragment extends Fragment {
 
     private void showNextWord() {
         if (quizQueue.isEmpty()) {
+            // 如果复习模式下还有待复习词（刚才答错的词已设 nextReviewAt=now），自动重新加载
+            if (isReviewMode) {
+                int stillDue = db.wordReviewDao().getDueCount(System.currentTimeMillis(), getCurrentBankId());
+                if (stillDue > 0) {
+                    startQuiz(true);
+                    return;
+                }
+            }
             tvWord.setText("🎉 本轮完成！");
             tvPhonetic.setText("");
             tvPrompt.setText("点击「📚新词」或「🔄复习」继续");
@@ -340,31 +348,58 @@ public class WordFragment extends Fragment {
     }
 
     /**
-     * 更新艾宾浩斯复习状态
+     * 更新复习状态
+     * 
+     * 核心逻辑：
+     * - 学习模式答对 → 创建记录，7天后复习（标记已见，不进复习队列）
+     * - 学习模式答错 → 创建记录，立即进复习队列
+     * - 复习模式答对 → 推进stage，最终标记掌握
+     * - 复习模式答错 → 继续留在复习队列（nextReviewAt=现在）
      */
     private void updateWordReview(String wordId, boolean correct) {
         String bankId = getCurrentBankId();
         WordReview wr = db.wordReviewDao().getByWordId(wordId, bankId);
-        if (wr == null && correct) {
-            // 第一次答对 → 创建复习记录，进入阶段0
-            wr = WordReview.createNew(wordId, bankId);
-            db.wordReviewDao().insert(wr);
-        } else if (wr != null) {
+        long now = System.currentTimeMillis();
+
+        if (wr == null) {
+            // 第一次见这个词
+            wr = new WordReview();
+            wr.wordId = wordId;
+            wr.bankId = bankId;
+            wr.stage = 0;
+            wr.lastReviewedAt = now;
+            wr.correctCount = 0;
+            wr.wrongCount = 0;
             if (correct) {
-                // 答对 → 推进到下一阶段
-                wr.advanceStage();
-                db.wordReviewDao().update(wr);
-                // 如果已到最终阶段，标记单词为掌握
-                if (wr.isMastered()) {
-                    db.vocabularyDao().markMastered(wordId, System.currentTimeMillis());
-                }
+                // ✅ 学习模式答对 → 标记已见，7天后再复习（不进近期复习队列）
+                wr.nextReviewAt = now + 7L * 24 * 3600 * 1000;
             } else {
-                // 答错 → 不降级，推到明天再试（鼓励模式🌸）
-                wr.failStage();
-                db.wordReviewDao().update(wr);
+                // ❌ 学习模式答错 → 立即进复习队列
+                wr.nextReviewAt = now;
             }
+            db.wordReviewDao().insert(wr);
+        } else {
+            if (correct) {
+                // ✅ 答对 → 阶段推进
+                wr.correctCount++;
+                if (wr.stage < WordReview.MAX_STAGE) {
+                    wr.stage++;
+                    // 正常间隔：阶段越高间隔越长
+                    wr.nextReviewAt = now + WordReview.INTERVALS[wr.stage];
+                } else {
+                    // 已到最高阶段 → 标记掌握 ✅
+                    wr.nextReviewAt = Long.MAX_VALUE;
+                    db.vocabularyDao().markMastered(wordId, now);
+                }
+                wr.lastReviewedAt = now;
+            } else {
+                // ❌ 答错 → 不降级，立即再次进入复习队列
+                wr.wrongCount++;
+                wr.nextReviewAt = now;     // ★ 关键：设为本，当前复习结束后马上可再次复习
+                wr.lastReviewedAt = now;
+            }
+            db.wordReviewDao().update(wr);
         }
-        // 如果 wr==null && !correct（第一次就答错），不做任何事，下次继续出现
     }
 
     private void updateStats() {
