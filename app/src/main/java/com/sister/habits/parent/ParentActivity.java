@@ -569,29 +569,169 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * 家长管理主菜单 — 按层级重新组织
+     * 一级：总览 | 学习 | 商城 | 任务 | 系统
+     */
     private void showSettingsDialog() {
         soundHelper.playClickSound();
-        String[] categories = {
-                "📚 词库管理（年级/下载/切换）",
-                "🏪 商城管理（上架/编辑/下架）",
-                "👤 个人信息（昵称/头像/标题）",
-                "💰 经济参数（金币/限额）",
-                "🏠 中枢/Hub模式",
-                "📊 查看统计数据"
+        String[] mainMenu = {
+                "📊 总览与审批",
+                "📚 学习管理",
+                "🏪 商城管理",
+                "📋 任务管理",
+                "⚙️ 系统设置"
         };
         new AlertDialog.Builder(this)
-                .setTitle("⚙️ 家长设置")
-                .setItems(categories, (d, which) -> {
+                .setTitle("📱 家长管理中心")
+                .setItems(mainMenu, (d, which) -> {
                     switch (which) {
-                        case 0: showWordbankDialog(); break;
-                        case 1: showManageShopDialog(); break;
-                        case 2: showProfileSettings(); break;
-                        case 3: showEconomySettings(); break;
-                        case 4: showHubSettings(); break;
-                        case 5: refreshStats(); Toast.makeText(this, tvStats.getText(), Toast.LENGTH_LONG).show(); break;
+                        case 0: showDashboardMenu(); break;
+                        case 1: showLearningMenu(); break;
+                        case 2: showShopMenu(); break;
+                        case 3: showTaskMenu(); break;
+                        case 4: showSystemMenu(); break;
                     }
                 })
                 .setNegativeButton("关闭", null)
+                .show();
+    }
+
+    /** 二级菜单：📊 总览与审批 */
+    private void showDashboardMenu() {
+        int pendingCount = db.redemptionDao().getByStatus("pending").size();
+        int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        String[] items = {
+                "📊 查看统计数据",
+                "✅ 兑换审批（" + pendingCount + "项待处理）",
+                "📋 任务审批（" + pendingTaskCount + "项待确认）",
+                "🔄 手动同步"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("📊 总览与审批")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: refreshStats(); Toast.makeText(this, tvStats.getText(), Toast.LENGTH_LONG).show(); break;
+                        case 1: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
+                        case 2: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
+                        case 3: syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
+    /** 二级菜单：📚 学习管理 */
+    private void showLearningMenu() {
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        int dailyWords = config != null ? config.maxDailyWords : 10;
+        int dailyReview = config != null ? config.maxDailyReview : 20;
+        String[] items = {
+                "📖 词库管理（年级/下载/切换）",
+                "📝 每日学习限额（新词:" + dailyWords + " 复习:" + dailyReview + "）",
+                "💰 学习奖励参数"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("📚 学习管理")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: showWordbankDialog(); break;
+                        case 1: showEconomySettings(); break;
+                        case 2: showEconomySettings(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
+    /** 二级菜单：🏪 商城管理 */
+    private void showShopMenu() {
+        int shopCount = db.shopItemDao().getAll().size();
+        int pendingCount = db.redemptionDao().getByStatus("pending").size();
+        String[] items = {
+                "➕ 上架新商品",
+                "✏️ 管理已有商品（" + shopCount + "件）",
+                "✅ 兑换审批（" + pendingCount + "项待处理）",
+                "⭐ 孩子心愿单"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("🏪 商城管理")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: showAddShopItemDialog(); break;
+                        case 1: showManageShopDialog(); break;
+                        case 2: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
+                        case 3: showWishlistPreview(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
+    /** 二级菜单：📋 任务管理 */
+    private void showTaskMenu() {
+        int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        String[] items = {
+                "➕ 发布新任务",
+                "✅ 任务审批（" + pendingTaskCount + "项待确认）",
+                "📋 刷新任务列表"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("📋 任务管理")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: showAddTaskDialog(); break;
+                        case 1: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
+                        case 2: loadPendingTasks(); Toast.makeText(this, "已刷新", Toast.LENGTH_SHORT).show(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
+    /** 二级菜单：⚙️ 系统设置 */
+    private void showSystemMenu() {
+        String[] items = {
+                "👤 个人信息（昵称/头像/标题）",
+                "🏠 启动模式 & Hub中枢",
+                "💰 完整经济参数"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("⚙️ 系统设置")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: showProfileSettings(); break;
+                        case 1: showHubSettings(); break;
+                        case 2: showEconomySettings(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+                .show();
+    }
+
+    /** 预览孩子心愿单 */
+    private void showWishlistPreview() {
+        java.util.List<com.sister.habits.data.models.WishlistItem> wishes = db.wishlistDao().getAll();
+        if (wishes.isEmpty()) {
+            Toast.makeText(this, "心愿单为空 💭", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder("⭐ 孩子的心愿单:
+
+");
+        for (com.sister.habits.data.models.WishlistItem w : wishes) {
+            com.sister.habits.data.models.ShopItem si = db.shopItemDao().getById(w.shopItemId);
+            if (si != null) {
+                sb.append("• ").append(si.name).append(" 🪙").append(si.priceCoins).append("
+");
+                if (!si.active) sb.append("  （⚠️ 已下架）
+");
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("⭐ 孩子心愿单")
+                .setMessage(sb.toString())
+                .setPositiveButton("关闭", null)
                 .show();
     }
 
