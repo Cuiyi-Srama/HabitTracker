@@ -45,7 +45,7 @@ public class DatabaseInitializer {
         int lastVersion = prefs.getInt(KEY_LAST_GRADE_VERSION, 0);
 
         boolean needsReload = false;
-        if (currentVersion != lastVersion && vocabDao.getActiveCount() > 0) {
+        if (currentVersion != lastVersion && vocabDao.getActiveCount("builtin") > 0) {
             // 年级配置变了 → 清空并重新加载
             vocabDao.deleteAll();
             prefs.edit().putInt(KEY_LAST_GRADE_VERSION, currentVersion).apply();
@@ -53,7 +53,7 @@ public class DatabaseInitializer {
             Log.d(TAG, "年级配置变化，重新加载词库 (v" + lastVersion + "→ v" + currentVersion + ")");
         }
 
-        int existingCount = vocabDao.getActiveCount();
+        int existingCount = vocabDao.getActiveCount("builtin");
         if (existingCount == 0) {
             List<Vocabulary> allWords = null;
             // 优先从 JSON 加载
@@ -78,8 +78,8 @@ public class DatabaseInitializer {
                         v.gradeLevel = jw.g;
                         v.level = jw.l;
                         v.mastered = false;
-                    v.bankId = "builtin";
                         v.active = true;
+                        v.bankId = "builtin";
                         allWords.add(v);
                     }
                 }
