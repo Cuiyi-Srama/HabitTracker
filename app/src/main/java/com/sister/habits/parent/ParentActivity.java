@@ -194,7 +194,9 @@ public class ParentActivity extends AppCompatActivity {
 
         new Thread(() -> {
             try {
-                java.net.URL url = new java.net.URL(source.url);
+                // ★ Fix 1: 使用URI处理URL中的非ASCII字符编码
+                java.net.URI uri = new java.net.URI(source.url);
+                java.net.URL url = uri.toURL();
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(30000);
@@ -913,10 +915,15 @@ public class ParentActivity extends AppCompatActivity {
         try {
             android.content.res.AssetManager am = getAssets();
             java.io.InputStream is = am.open("wordbank_sources.json");
-            byte[] buf = new byte[is.available()];
-            is.read(buf);
+            // ★ Fix 2: 使用ByteArrayOutputStream确保读取完整文件
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            byte[] tmp = new byte[4096];
+            int n;
+            while ((n = is.read(tmp)) != -1) {
+                baos.write(tmp, 0, n);
+            }
             is.close();
-            String json = new String(buf, "UTF-8");
+            String json = baos.toString("UTF-8");
             Type sourceType = new TypeToken<List<ExternalSource>>(){}.getType();
             List<ExternalSource> sources = new Gson().fromJson(json, sourceType);
 
