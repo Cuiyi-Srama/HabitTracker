@@ -832,7 +832,8 @@ public class ParentActivity extends AppCompatActivity {
                 "🏠 启动模式 & Hub中枢",
                 "💰 完整经济参数",
                 "🔐 数据导出备份",
-                "📡 设备同步 & QR配对"
+                "📡 设备同步 & QR配对",
+                "🔄 检查更新"
         };
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 系统设置")
@@ -843,6 +844,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 2: showEconomySettings(); break;
                         case 3: showBackupRestoreDialog(); break;
                         case 4: showSyncDashboardDialog(); break;
+                        case 5: checkForUpdate(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -850,7 +852,105 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     /** 预览孩子心愿单 */
-        private void showProfileSettings() {
+        
+
+    /** ⚙️ 检查更新 */
+    private void checkForUpdate() {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("https://api.github.com/repos/Cuiyi-Srama/HabitTracker/releases/latest");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setRequestProperty("User-Agent", "HabitTracker/1.5.0");
+                conn.setInstanceFollowRedirects(true);
+                java.io.InputStream is = conn.getInputStream();
+                java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\A");
+                String json = s.hasNext() ? s.next() : "";
+                is.close();
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                java.util.Map<String, Object> release = gson.fromJson(json, java.util.Map.class);
+                String latestTag = (String) release.get("tag_name");
+                String currentVer = "v1.5.0";
+                java.util.List<Object> assets = (java.util.List<Object>) release.get("assets");
+                String apkUrl = null;
+                if (assets != null) {
+                    for (Object a : assets) {
+                        java.util.Map<String, Object> asset = (java.util.Map<String, Object>) a;
+                        if (((String)asset.get("name")).endsWith(".apk")) {
+                            apkUrl = (String) asset.get("browser_download_url");
+                            break;
+                        }
+                    }
+                }
+                final String fTag = latestTag;
+                final String fApkUrl = apkUrl;
+                if (latestTag == null) {
+                    runOnUiThread(() -> Toast.makeText(this, "❌ 检查失败", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+                boolean isNewer = !latestTag.equals(currentVer);
+                runOnUiThread(() -> {
+                    if (isNewer && fApkUrl != null) {
+                        new AlertDialog.Builder(this)
+                                .setTitle("🔄 发现新版本")
+                                .setMessage("当前: " + currentVer + "
+最新: " + fTag + "
+
+是否下载更新？")
+                                .setPositiveButton("📥 下载更新", (d, w) -> downloadUpdate(fApkUrl))
+                                .setNegativeButton("☮ 稍后", null)
+                                .show();
+                    } else {
+                        Toast.makeText(this, "✅ 已是最新版本 (" + currentVer + ")", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "❌ 检查失败: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    private void downloadUpdate(String apkUrl) {
+        Toast.makeText(this, "📥 下载中...", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(apkUrl);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(60000);
+                conn.setInstanceFollowRedirects(true);
+                conn.connect();
+                int totalSize = conn.getContentLength();
+                java.io.InputStream is = conn.getInputStream();
+                java.io.FileOutputStream fos = new java.io.FileOutputStream("/storage/emulated/0/Download/HabitTracker_update.apk");
+                byte[] buf = new byte[8192];
+                int len;
+                long downloaded = 0;
+                while ((len = is.read(buf)) != -1) {
+                    fos.write(buf, 0, len);
+                    downloaded += len;
+                    final long d = downloaded;
+                    final int pct = totalSize > 0 ? (int)(downloaded*100/totalSize) : -1;
+                    runOnUiThread(() -> {
+                        if (pct >= 0)
+                            Toast.makeText(this, "📥 "+pct+"% ("+(d/1024)+"KB)", Toast.LENGTH_SHORT).show();
+                    });
+                }
+                fos.close(); is.close();
+                runOnUiThread(() -> {
+                    android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                    i.setDataAndType(android.net.Uri.fromFile(new java.io.File("/storage/emulated/0/Download/HabitTracker_update.apk")),
+                            "application/vnd.android.package-archive");
+                    i.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(i);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "❌ 下载失败: "+e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+private void showProfileSettings() {
         View view = getLayoutInflater().inflate(R.layout.dialog_profile_settings, null);
         android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
         android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
