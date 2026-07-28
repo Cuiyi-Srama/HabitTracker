@@ -21,18 +21,6 @@ import fi.iki.elonen.NanoHTTPD.Response;
 
 /**
  * 家庭中枢（Hub）同步模块
- *
- * 将一台旧设备变为 24/7 家庭数据服务器：
- * - 运行 NanoHTTPD 在端口 18081
- * - 任意设备可通过 POST /hub/sync 上报数据
- * - 任意设备可通过 GET /hub/pull 拉取最新数据
- * - 数据通过 DataMerger 自动合并冲突
- * - 支持跨网络访问（配合 Tailscale 等组网工具）
- *
- * 与 LanSync 的关系：
- * - LanSync 是 P2P 对等同步，适合临时发现
- * - HubSync 是 中心化存储，适合 24/7 持续同步
- * - 两者可以共存：有Hub时走Hub，没Hub时走P2P
  */
 public class HubSync {
 
@@ -47,8 +35,6 @@ public class HubSync {
     private NanoHTTPD server;
     private boolean running = false;
     private boolean hubModeEnabled = false;
-
-    // 缓存的Hub IP地址
     private String cachedHubIp = null;
     private long lastHubDiscovery = 0;
 
@@ -60,17 +46,6 @@ public class HubSync {
     private volatile boolean scanning = false;
 
     public HubSync(Context context, AppDatabase db, DataMerger merger, Gson gson) {
-        this.context = context.getApplicationContext();
-        this.db = db;
-        this.merger = merger;
-        this.gson = gson;
-    }
-
-
-
-
-    // 缓存的Hub IP地址
-
         this.context = context.getApplicationContext();
         this.db = db;
         this.merger = merger;
@@ -555,3 +530,4 @@ public class HubSync {
         long serverTime;
         String hubDeviceId;
     }
+}
