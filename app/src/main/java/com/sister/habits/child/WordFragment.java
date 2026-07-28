@@ -180,11 +180,13 @@ public class WordFragment extends Fragment {
 
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
             words = new ArrayList<>();
-            for (Vocabulary v : allActive) {
-                WordReview wr = db.wordReviewDao().getByWordId(v.id, bankId);
-                if (wr == null) {
-                    words.add(v);
-                    if (words.size() >= remainingNew) break;
+            if (remainingNew > 0) {
+                for (Vocabulary v : allActive) {
+                    WordReview wr = db.wordReviewDao().getByWordId(v.id, bankId);
+                    if (wr == null) {
+                        words.add(v);
+                        if (words.size() >= remainingNew) break;
+                    }
                 }
             }
             tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + dailyWordLimit + " 可学)  学习不给金币哦");
