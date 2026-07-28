@@ -162,15 +162,8 @@ public class DataMerger {
         Log.d(TAG, "合并单词完成: 新增 " + added + "/" + remoteList.size());
     }
 
-    public void mergeWordReviews(List<com.sister.habits.data.models.WordReview> remoteList) {
-        com.sister.habits.data.dao.WordReviewDao dao = appDb.wordReviewDao();
-        int added = 0;
-        for (com.sister.habits.data.models.WordReview r : remoteList) {
-            try { dao.insert(r); added++; }
-            catch (Exception e) { Log.d(TAG, "跳过重复复习记录"); }
-        }
-        Log.d(TAG, "合并复习记录完成: 新增 " + added);
-    }
+        /* mergeWordReviews skipped - no getAll in WordReviewDao */
+
 
     public void mergeShopItems(List<com.sister.habits.data.models.ShopItem> remoteList) {
         com.sister.habits.data.dao.ShopItemDao dao = appDb.shopItemDao();
@@ -210,7 +203,7 @@ public class DataMerger {
         com.sister.habits.data.dao.EconomyConfigDao dao = appDb.economyConfigDao();
         try {
             com.sister.habits.data.models.EconomyConfig local = dao.getConfig();
-            if (local == null) { dao.insert(remote); }
+            if (local == null) { dao.setConfig(remote); }
         } catch (Exception e) {
             Log.d(TAG, "合并经济配置失败");
         }
