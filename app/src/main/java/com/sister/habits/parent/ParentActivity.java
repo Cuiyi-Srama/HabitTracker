@@ -1029,9 +1029,19 @@ public class ParentActivity extends AppCompatActivity {
                 TextView tvTag = new TextView(this);
                 tvTag.setText(source.gradeLabel);
                 tvTag.setTextSize(12);
-                tvTag.setTextColor(0xFF6B35);
-                tvTag.setBackgroundResource(R.drawable.card_background);
-                tvTag.setPadding(6, 2, 6, 2);
+                tvTag.setTextColor(0xFFFFFFFF);
+                tvTag.setPadding(8, 3, 8, 3);
+                tvTag.setBackgroundColor(0xFF6B35);
+                android.widget.LinearLayout.LayoutParams tagLp = new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                tagLp.setMargins(0, 0, 4, 0);
+                tvTag.setLayoutParams(tagLp);
+                android.graphics.drawable.GradientDrawable tagBg = new android.graphics.drawable.GradientDrawable();
+                tagBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                tagBg.setCornerRadius(20);
+                tagBg.setColor(0xFF6B35);
+                tvTag.setBackground(tagBg);
 
                 headerRow.addView(tvName);
                 headerRow.addView(tvTag);
@@ -1465,6 +1475,15 @@ public class ParentActivity extends AppCompatActivity {
             btn.setText(labels[i]);
             btn.setTextSize(14);
             btn.setAllCaps(false);
+            btn.setTextColor(0xFFFFFFFF);
+            btn.setBackgroundColor(0xFF1976D2);
+            android.graphics.drawable.GradientDrawable btnBg = new android.graphics.drawable.GradientDrawable();
+            btnBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+            btnBg.setCornerRadius(8);
+            btnBg.setColor(0xFF1976D2);
+            btn.setBackground(btnBg);
+            btn.setPadding(16, 0, 16, 0);
+            btn.setMinHeight(48);
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 48);
             if (i > 0) lp.topMargin = 8;
