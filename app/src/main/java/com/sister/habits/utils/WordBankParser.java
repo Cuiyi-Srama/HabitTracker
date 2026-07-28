@@ -30,11 +30,15 @@ public class WordBankParser {
      * 从 JSON 字符串解析词库，自动检测格式
      */
     public static List<Vocabulary> parse(String json, String sourceGradeLevel) {
+        // ★ Fix 3: 去除UTF-8 BOM头（\uFEFF）
+        if (json != null && json.length() > 0 && json.charAt(0) == '\uFEFF') {
+            json = json.substring(1);
+        }
         String trimmed = json.trim();
         if (trimmed.startsWith("[")) {
             return parseJsonArray(trimmed, sourceGradeLevel);
         }
-        Log.w(TAG, "不支持的JSON格式，不以[开头");
+        Log.w(TAG, "不支持的JSON格式，不以[开头，实际前50字符: " + trimmed.substring(0, Math.min(50, trimmed.length())));
         return new ArrayList<>();
     }
 
