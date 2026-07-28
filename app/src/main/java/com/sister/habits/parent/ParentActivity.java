@@ -1482,8 +1482,10 @@ public class ParentActivity extends AppCompatActivity {
             btnBg.setCornerRadius(8);
             btnBg.setColor(0xFF1976D2);
             btn.setBackground(btnBg);
-            btn.setPadding(16, 0, 16, 0);
-            btn.setMinHeight(52);
+            int dp24 = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
+            int dp48 = (int) (48 * getResources().getDisplayMetrics().density + 0.5f);
+            btn.setPadding(dp24, 0, dp24, 0);
+            btn.setMinHeight(dp48);
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
