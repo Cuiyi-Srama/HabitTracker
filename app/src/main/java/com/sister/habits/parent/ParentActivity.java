@@ -1055,14 +1055,25 @@ public class ParentActivity extends AppCompatActivity {
                 tvDesc.setPadding(0, 4, 0, 8);
                 card.addView(tvDesc);
 
-                // 下载按钮 — MATCH_PARENT全宽，48dp便于点击
+                // 下载按钮 — MATCH_PARENT全宽，自适应高度
                 Button btnDownload = new Button(this);
                 btnDownload.setText("📥 下载并预览");
                 btnDownload.setTextSize(14);
                 btnDownload.setAllCaps(false);
+                btnDownload.setTextColor(0xFFFFFFFF);
+                btnDownload.setBackgroundColor(0xFF1976D2);
+                android.graphics.drawable.GradientDrawable btnDlBg = new android.graphics.drawable.GradientDrawable();
+                btnDlBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                btnDlBg.setCornerRadius(8);
+                btnDlBg.setColor(0xFF1976D2);
+                btnDownload.setBackground(btnDlBg);
+                int dp12dl = (int) (12 * getResources().getDisplayMetrics().density + 0.5f);
+                int dp48dl = (int) (48 * getResources().getDisplayMetrics().density + 0.5f);
+                btnDownload.setPadding(dp12dl, 0, dp12dl, 0);
+                btnDownload.setMinHeight(dp48dl);
                 btnDownload.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
                         android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        48));
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
                 btnDownload.setOnClickListener(v -> downloadAndPreview(source));
                 card.addView(btnDownload);
 
