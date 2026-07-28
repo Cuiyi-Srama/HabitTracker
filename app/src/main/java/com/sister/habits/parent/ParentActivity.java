@@ -869,7 +869,8 @@ public class ParentActivity extends AppCompatActivity {
                 String json = s.hasNext() ? s.next() : "";
                 is.close();
                 com.google.gson.Gson gson = new com.google.gson.Gson();
-                java.util.Map<String, Object> release = gson.fromJson(json, java.util.Map.class);
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> release = (java.util.Map<String, Object>) gson.fromJson(json, java.util.Map.class);
                 String latestTag = (String) release.get("tag_name");
                 String currentVer = "v1.5.0";
                 java.util.List<Object> assets = (java.util.List<Object>) release.get("assets");
@@ -894,10 +895,7 @@ public class ParentActivity extends AppCompatActivity {
                     if (isNewer && fApkUrl != null) {
                         new AlertDialog.Builder(this)
                                 .setTitle("🔄 发现新版本")
-                                .setMessage("当前: " + currentVer + "
-最新: " + fTag + "
-
-是否下载更新？")
+                                .setMessage("当前: " + currentVer + "\n最新: " + fTag + "\n\n是否下载更新？")
                                 .setPositiveButton("📥 下载更新", (d, w) -> downloadUpdate(fApkUrl))
                                 .setNegativeButton("☮ 稍后", null)
                                 .show();
