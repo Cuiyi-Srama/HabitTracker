@@ -107,17 +107,25 @@ public class DatabaseInitializer {
     }
 
     private static List<Vocabulary> filterByGrade(List<Vocabulary> words, SharedPreferences prefs) {
-        // 收集选中的年级
-        Set<String> selectedGrades = new HashSet<>();
-        if (prefs.getBoolean("grade1", true)) selectedGrades.add("grade1");
-        if (prefs.getBoolean("grade2", true)) selectedGrades.add("grade2");
-        if (prefs.getBoolean("grade3", true)) selectedGrades.add("grade3");
-        if (prefs.getBoolean("grade4", true)) selectedGrades.add("grade4");
-        if (prefs.getBoolean("grade5", true)) selectedGrades.add("grade5");
-        if (prefs.getBoolean("grade_junior", false)) selectedGrades.add("junior");
+        // 收集选中的学段
+        boolean selectPrimary = prefs.getBoolean("grade_primary", true);
+        boolean selectJunior = prefs.getBoolean("grade_junior", true);
+        boolean selectSenior = prefs.getBoolean("grade_senior", false);
 
-        // 如果没选任何年级，返回全部
-        if (selectedGrades.isEmpty()) return words;
+        // 如果全没选，返回全部
+        if (!selectPrimary && !selectJunior && !selectSenior) return words;
+
+        // 构建选中年级的集合（兼容新旧gradeLevel值）
+        Set<String> selectedGrades = new HashSet<>();
+        if (selectPrimary) {
+            selectedGrades.addAll(Arrays.asList("grade1", "grade2", "grade3", "grade4", "grade5", "primary"));
+        }
+        if (selectJunior) {
+            selectedGrades.add("junior");
+        }
+        if (selectSenior) {
+            selectedGrades.add("senior");
+        }
 
         List<Vocabulary> result = new ArrayList<>();
         for (Vocabulary v : words) {
