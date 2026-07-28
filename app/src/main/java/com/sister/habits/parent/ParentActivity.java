@@ -1371,11 +1371,9 @@ public class ParentActivity extends AppCompatActivity {
                 .setItems(actions, (d, which) -> {
                     switch (which) {
                         case 0:
-                            // 扫描QR码
                             com.sister.habits.utils.QRCodeHelper.startScan(this);
                             break;
                         case 1:
-                            // 展示本机QR码
                             String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
                             android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
                             if (qrBitmap != null) {
@@ -1406,3 +1404,4 @@ public class ParentActivity extends AppCompatActivity {
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
     }
+}
