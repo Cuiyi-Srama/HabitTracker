@@ -198,6 +198,12 @@ public class ParentActivity extends AppCompatActivity {
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(30000);
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/1.5.0");
+                conn.setInstanceFollowRedirects(true);
+                int responseCode = conn.getResponseCode();
+                if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
+                    throw new java.io.IOException("HTTP " + responseCode);
+                }
                 java.io.InputStream is = conn.getInputStream();
                 java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
                 byte[] buf = new byte[8192];
