@@ -35,17 +35,7 @@ import fi.iki.elonen.NanoHTTPD.Response;
  * - 两者可以共存：有Hub时走Hub，没Hub时走P2P
  */
 
-// ==================== 回调接口 ====================
-/** 同步操作回调 */
-interface SyncCallback {
-    void onStatusUpdate(String status);
-    void onHubFound(String ip, String deviceId);
-    void onSyncComplete(boolean success, String message);
-    void onScanProgress(int scanned, int total);
-}
-
-public class HubSync {
-    // ==================== 状态追踪 ====================
+// ==================== 状态追踪 ====================
     private long lastSyncTime = 0;
     private boolean lastSyncSuccess = false;
     private String lastSyncMessage = "";
