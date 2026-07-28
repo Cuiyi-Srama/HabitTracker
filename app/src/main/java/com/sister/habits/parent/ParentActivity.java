@@ -1048,14 +1048,14 @@ public class ParentActivity extends AppCompatActivity {
                 tvDesc.setPadding(0, 4, 0, 8);
                 card.addView(tvDesc);
 
-                // 下载按钮
+                // 下载按钮 — MATCH_PARENT全宽，48dp便于点击
                 Button btnDownload = new Button(this);
                 btnDownload.setText("📥 下载并预览");
-                btnDownload.setTextSize(13);
+                btnDownload.setTextSize(14);
                 btnDownload.setAllCaps(false);
                 btnDownload.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                        36));
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        48));
                 btnDownload.setOnClickListener(v -> downloadAndPreview(source));
                 card.addView(btnDownload);
 
@@ -1433,58 +1433,101 @@ public class ParentActivity extends AppCompatActivity {
         String nickname = profile.getNickname();
         String model = android.os.Build.MODEL;
 
-        String status = "👤 本机: " + nickname + " (" + model + ")\n" +
-                "🆔 设备Key: " + (shortKey != null ? shortKey : "未知") + "\n" +
-                "🏠 Hub中枢: " + (hubEnabled ? "🟢 已开启" : "🔴 已关闭") + "\n" +
-                "📡 局域网同步: 点击「同步」按钮触发\n\n" +
-                "💡 同步方式:\n" +
-                "① 开启Hub中枢 → 自动同步\n" +
-                "② 扫码QR配对 → 快速数据交换\n" +
-                "③ 手动点击主页「同步」按钮";
+        // 自定义可滚布局：状态信息+按钮列表，保证所有内容可见
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        scrollView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+        scrollView.setFillViewport(false);
 
-        String[] actions = {
-            "📷 扫描设备QR码配对",
-            "📱 展示本机QR码（给对方扫）",
-            "🏠 切换Hub中枢",
-            "🔄 手动触发同步"
-        };
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setPadding(24, 16, 24, 16);
+
+        // 设备状态信息
+        TextView tvStatus = new TextView(this);
+        tvStatus.setText("👤 " + nickname + " (" + model + ")\n" +
+                "🆔 Key: " + (shortKey != null ? shortKey : "未知") + "\n" +
+                "🏠 Hub: " + (hubEnabled ? "🟢 已开启" : "🔴 已关闭"));
+        tvStatus.setTextSize(14);
+        tvStatus.setTextColor(0xFF666666);
+        tvStatus.setPadding(0, 0, 0, 16);
+        container.addView(tvStatus);
+
+        // 分隔线
+        View divider = new View(this);
+        divider.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        divider.setBackgroundColor(0xFFE0E0E0);
+        container.addView(divider);
+
+        // 四个操作按钮
+        for (int i = 0; i < 4; i++) {
+            final int idx = i;
+            Button btn = new Button(this);
+            String[] labels = {
+                "📷 扫描设备QR码配对",
+                "📱 展示本机QR码（给对方扫）",
+                "🏠 切换Hub中枢（当前: " + (hubEnabled ? "🟢开" : "🔴关") + "）",
+                "🔄 手动触发同步"
+            };
+            btn.setText(labels[i]);
+            btn.setTextSize(14);
+            btn.setAllCaps(false);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 48);
+            if (i > 0) lp.topMargin = 8;
+            btn.setLayoutParams(lp);
+            btn.setOnClickListener(v -> {
+                switch (idx) {
+                    case 0: {
+                        ScanOptions options = new ScanOptions();
+                        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+                        options.setPrompt("扫描对方设备的配对码");
+                        options.setBeepEnabled(true);
+                        options.setOrientationLocked(true);
+                        qrScanLauncher.launch(options);
+                        break;
+                    }
+                    case 1: {
+                        String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
+                        android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
+                        if (qrBitmap != null) {
+                            android.widget.ImageView iv = new android.widget.ImageView(this);
+                            iv.setImageBitmap(qrBitmap);
+                            iv.setPadding(32, 32, 32, 32);
+                            new AlertDialog.Builder(this)
+                                    .setTitle("📱 本机配对码")
+                                    .setMessage("让对方扫描此码进行配对\n昵称: " + nickname + " | 设备: " + model)
+                                    .setView(iv)
+                                    .setPositiveButton("关闭", null)
+                                    .show();
+                        } else {
+                            Toast.makeText(this, "❌ QR码生成失败", Toast.LENGTH_SHORT).show();
+                        }
+                        break;
+                    }
+                    case 2: {
+                        syncManager.setHubModeEnabled(!hubEnabled);
+                        Toast.makeText(this, "🏠 Hub中枢: " + (!hubEnabled ? "已开启" : "已关闭"), Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                    case 3: {
+                        syncManager.triggerRemoteSync();
+                        syncManager.triggerLanSync();
+                        Toast.makeText(this, "🔄 同步已触发", Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                }
+            });
+            container.addView(btn);
+        }
+
+        scrollView.addView(container);
 
         new AlertDialog.Builder(this)
                 .setTitle("📡 设备同步中心")
-                .setMessage(status)
-                .setItems(actions, (d, which) -> {
-                    switch (which) {
-                        case 0:
-                            ScanOptions options = new ScanOptions(); options.setDesiredBarcodeFormats(ScanOptions.QR_CODE); options.setPrompt("扫描对方设备的配对码"); options.setBeepEnabled(true); options.setOrientationLocked(true); qrScanLauncher.launch(options);
-                            break;
-                        case 1:
-                            String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
-                            android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
-                            if (qrBitmap != null) {
-                                android.widget.ImageView iv = new android.widget.ImageView(this);
-                                iv.setImageBitmap(qrBitmap);
-                                iv.setPadding(32, 32, 32, 32);
-                                new AlertDialog.Builder(this)
-                                        .setTitle("📱 本机配对码")
-                                        .setMessage("让对方扫描此码进行配对\n昵称: " + nickname + " | 设备: " + model)
-                                        .setView(iv)
-                                        .setPositiveButton("关闭", null)
-                                        .show();
-                            } else {
-                                Toast.makeText(this, "❌ QR码生成失败", Toast.LENGTH_SHORT).show();
-                            }
-                            break;
-                        case 2:
-                            syncManager.setHubModeEnabled(!hubEnabled);
-                            Toast.makeText(this, "🏠 Hub中枢: " + (!hubEnabled ? "已开启" : "已关闭"), Toast.LENGTH_SHORT).show();
-                            break;
-                        case 3:
-                            syncManager.triggerRemoteSync();
-                            syncManager.triggerLanSync();
-                            Toast.makeText(this, "🔄 同步已触发", Toast.LENGTH_SHORT).show();
-                            break;
-                    }
-                })
+                .setView(scrollView)
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
     }
