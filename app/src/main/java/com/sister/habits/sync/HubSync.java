@@ -37,7 +37,7 @@ import fi.iki.elonen.NanoHTTPD.Response;
 
 // ==================== 回调接口 ====================
 /** 同步操作回调 */
-public interface SyncCallback {
+interface SyncCallback {
     void onStatusUpdate(String status);
     void onHubFound(String ip, String deviceId);
     void onSyncComplete(boolean success, String message);
