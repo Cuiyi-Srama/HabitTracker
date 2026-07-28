@@ -21,22 +21,19 @@
             android:textColor="@color/text_primary"
             android:layout_marginBottom="12dp" />
 
-        <!-- 年级选择 -->
+        <!-- 年级选择（小学/初中/高中） -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="选择要学习的年级"
+            android:text="选择学段（可多选）"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
             android:layout_marginBottom="4dp" />
 
-        <CheckBox android:id="@+id/cb_grade1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="一年级" android:textSize="14sp" />
-        <CheckBox android:id="@+id/cb_grade2" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="二年级" android:textSize="14sp" />
-        <CheckBox android:id="@+id/cb_grade3" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="三年级（推荐）" android:textSize="14sp" />
-        <CheckBox android:id="@+id/cb_grade4" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="四年级" android:textSize="14sp" />
-        <CheckBox android:id="@+id/cb_grade5" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="五年级" android:textSize="14sp" />
-        <CheckBox android:id="@+id/cb_grade_junior" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="初中（拓展）" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade_primary" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="小学（基础英语词汇）" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade_junior" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="初中" android:textSize="14sp" />
+        <CheckBox android:id="@+id/cb_grade_senior" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="高中" android:textSize="14sp" />
 
         <!-- 每日单词量 -->
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="每日单词量" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginTop="16dp" android:layout_marginBottom="4dp" />
