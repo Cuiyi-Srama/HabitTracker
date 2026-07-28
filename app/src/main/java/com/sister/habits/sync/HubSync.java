@@ -34,13 +34,7 @@ import fi.iki.elonen.NanoHTTPD.Response;
  * - HubSync 是 中心化存储，适合 24/7 持续同步
  * - 两者可以共存：有Hub时走Hub，没Hub时走P2P
  */
-
-// ==================== 状态追踪 ====================
-    private long lastSyncTime = 0;
-    private boolean lastSyncSuccess = false;
-    private String lastSyncMessage = "";
-    private final java.util.List<String> discoveredHubs = new java.util.ArrayList<>();
-    private volatile boolean scanning = false;
+public class HubSync {
 
     private static final String TAG = "HubSync";
     private static final int HUB_PORT = 18081;
@@ -58,7 +52,25 @@ import fi.iki.elonen.NanoHTTPD.Response;
     private String cachedHubIp = null;
     private long lastHubDiscovery = 0;
 
+    // ==================== 状态追踪 ====================
+    private long lastSyncTime = 0;
+    private boolean lastSyncSuccess = false;
+    private String lastSyncMessage = "";
+    private final java.util.List<String> discoveredHubs = new java.util.ArrayList<>();
+    private volatile boolean scanning = false;
+
     public HubSync(Context context, AppDatabase db, DataMerger merger, Gson gson) {
+        this.context = context.getApplicationContext();
+        this.db = db;
+        this.merger = merger;
+        this.gson = gson;
+    }
+
+
+
+
+    // 缓存的Hub IP地址
+
         this.context = context.getApplicationContext();
         this.db = db;
         this.merger = merger;
@@ -543,4 +555,5 @@ import fi.iki.elonen.NanoHTTPD.Response;
         long serverTime;
         String hubDeviceId;
     }
+}
 }
