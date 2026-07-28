@@ -751,7 +751,9 @@ public class ParentActivity extends AppCompatActivity {
         String[] items = {
                 "👤 个人信息（昵称/头像/标题）",
                 "🏠 启动模式 & Hub中枢",
-                "💰 完整经济参数"
+                "💰 完整经济参数",
+                "🔐 数据导出备份",
+                "📡 设备同步 & QR配对"
         };
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 系统设置")
@@ -760,6 +762,8 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showProfileSettings(); break;
                         case 1: showHubSettings(); break;
                         case 2: showEconomySettings(); break;
+                        case 3: showBackupRestoreDialog(); break;
+                        case 4: showSyncDashboardDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -1230,4 +1234,175 @@ public class ParentActivity extends AppCompatActivity {
             ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
         }
     }
-}
+
+    // ==================== 数据导出备份 ====================
+    private void showBackupRestoreDialog() {
+        String[] items = {
+            "📤 导出加密备份（AES-256-GCM）",
+            "📥 从备份文件恢复",
+            "📂 查看已有备份文件"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 数据备份与恢复")
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0: doExportBackup(); break;
+                        case 1: doImportBackup(); break;
+                        case 2: listBackupFiles(); break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
+                .show();
+    }
+
+    private void doExportBackup() {
+        android.widget.EditText etPwd = new android.widget.EditText(this);
+        etPwd.setHint("设置备份密码（用于加密保护）");
+        etPwd.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        new AlertDialog.Builder(this)
+                .setTitle("📤 导出加密备份")
+                .setMessage("将导出所有数据为 .habitbak 加密备份文件\n保存到 /Download 目录")
+                .setView(etPwd)
+                .setPositiveButton("导出", (d, w) -> {
+                    String pwd = etPwd.getText().toString();
+                    if (pwd.length() < 4) { Toast.makeText(this, "密码至少4位", Toast.LENGTH_SHORT).show(); return; }
+                    new Thread(() -> {
+                        try {
+                            com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
+                            java.io.File f = helper.exportBackup(pwd);
+                            runOnUiThread(() -> Toast.makeText(this, "✅ 备份成功: " + f.getName(), Toast.LENGTH_LONG).show());
+                        } catch (Exception e) {
+                            runOnUiThread(() -> Toast.makeText(this, "❌ 备份失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        }
+                    }).start();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void doImportBackup() {
+        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles();
+        if (backups == null || backups.length == 0) {
+            Toast.makeText(this, "❌ 未在 Download 目录找到 .habitbak 备份文件", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[backups.length];
+        for (int i = 0; i < backups.length; i++) {
+            names[i] = backups[i].getName();
+        }
+        final java.io.File[] finalBackups = backups;
+        new AlertDialog.Builder(this)
+                .setTitle("📥 选择备份文件恢复")
+                .setItems(names, (d, which) -> {
+                    java.io.File selected = finalBackups[which];
+                    android.widget.EditText etPwd = new android.widget.EditText(this);
+                    etPwd.setHint("输入备份密码");
+                    etPwd.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    new AlertDialog.Builder(this)
+                            .setTitle("恢复: " + selected.getName())
+                            .setMessage("⚠️ 恢复将覆盖当前所有数据！确定继续？")
+                            .setView(etPwd)
+                            .setPositiveButton("恢复", (d2, w2) -> {
+                                String pwd = etPwd.getText().toString();
+                                new Thread(() -> {
+                                    try {
+                                        com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
+                                        helper.importBackup(selected, pwd);
+                                        runOnUiThread(() -> {
+                                            Toast.makeText(this, "✅ 恢复成功！请重启App", Toast.LENGTH_LONG).show();
+                                            refreshAll();
+                                        });
+                                    } catch (Exception e) {
+                                        runOnUiThread(() -> Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                                    }
+                                }).start();
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void listBackupFiles() {
+        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles();
+        if (backups == null || backups.length == 0) {
+            Toast.makeText(this, "📂 Download 目录下暂无 .habitbak 备份文件", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder("📂 找到 " + backups.length + " 个备份文件:\n\n");
+        for (java.io.File f : backups) {
+            sb.append("• ").append(f.getName()).append("\n  (").append(f.length() / 1024).append(" KB)\n");
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("📂 已有备份")
+                .setMessage(sb.toString())
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    // ==================== 设备同步 & QR配对 ====================
+    private void showSyncDashboardDialog() {
+        String deviceKey = com.sister.habits.utils.DeviceIdentity.getDeviceKey(this);
+        String shortKey = deviceKey != null && deviceKey.length() >= 19 ? deviceKey.substring(0, 19) : deviceKey;
+        boolean hubEnabled = syncManager.isHubModeEnabled();
+        String nickname = profile.getNickname();
+        String model = android.os.Build.MODEL;
+
+        String status = "👤 本机: " + nickname + " (" + model + ")\n" +
+                "🆔 设备Key: " + (shortKey != null ? shortKey : "未知") + "\n" +
+                "🏠 Hub中枢: " + (hubEnabled ? "🟢 已开启" : "🔴 已关闭") + "\n" +
+                "📡 局域网同步: 点击「同步」按钮触发\n\n" +
+                "💡 同步方式:\n" +
+                "① 开启Hub中枢 → 自动同步\n" +
+                "② 扫码QR配对 → 快速数据交换\n" +
+                "③ 手动点击主页「同步」按钮";
+
+        String[] actions = {
+            "📷 扫描设备QR码配对",
+            "📱 展示本机QR码（给对方扫）",
+            "🏠 切换Hub中枢",
+            "🔄 手动触发同步"
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("📡 设备同步中心")
+                .setMessage(status)
+                .setItems(actions, (d, which) -> {
+                    switch (which) {
+                        case 0:
+                            // 扫描QR码
+                            com.sister.habits.utils.QRCodeHelper.startScan(this);
+                            break;
+                        case 1:
+                            // 展示本机QR码
+                            String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
+                            android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
+                            if (qrBitmap != null) {
+                                android.widget.ImageView iv = new android.widget.ImageView(this);
+                                iv.setImageBitmap(qrBitmap);
+                                iv.setPadding(32, 32, 32, 32);
+                                new AlertDialog.Builder(this)
+                                        .setTitle("📱 本机配对码")
+                                        .setMessage("让对方扫描此码进行配对\n昵称: " + nickname + " | 设备: " + model)
+                                        .setView(iv)
+                                        .setPositiveButton("关闭", null)
+                                        .show();
+                            } else {
+                                Toast.makeText(this, "❌ QR码生成失败", Toast.LENGTH_SHORT).show();
+                            }
+                            break;
+                        case 2:
+                            syncManager.setHubModeEnabled(!hubEnabled);
+                            Toast.makeText(this, "🏠 Hub中枢: " + (!hubEnabled ? "已开启" : "已关闭"), Toast.LENGTH_SHORT).show();
+                            break;
+                        case 3:
+                            syncManager.triggerRemoteSync();
+                            syncManager.triggerLanSync();
+                            Toast.makeText(this, "🔄 同步已触发", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
+                .show();
+    }
