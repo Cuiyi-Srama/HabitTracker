@@ -44,7 +44,7 @@ public class SyncManager {
         this.db = AppDatabase.getInstance(context);
         this.gson = new GsonBuilder().create();
 
-        this.merger = new DataMerger(
+        this.merger = new DataMerger(db,
                 db.checkInDao(), db.coinTransactionDao(),
                 db.taskDao(), db.redemptionDao()
         );
