@@ -34,7 +34,24 @@ import fi.iki.elonen.NanoHTTPD.Response;
  * - HubSync 是 中心化存储，适合 24/7 持续同步
  * - 两者可以共存：有Hub时走Hub，没Hub时走P2P
  */
+
+// ==================== 回调接口 ====================
+/** 同步操作回调 */
+public interface SyncCallback {
+    void onStatusUpdate(String status);
+    void onHubFound(String ip, String deviceId);
+    void onSyncComplete(boolean success, String message);
+    void onScanProgress(int scanned, int total);
+}
+
 public class HubSync {
+    // ==================== 状态追踪 ====================
+    private long lastSyncTime = 0;
+    private boolean lastSyncSuccess = false;
+    private String lastSyncMessage = "";
+    private final java.util.List<String> discoveredHubs = new java.util.ArrayList<>();
+    private volatile boolean scanning = false;
+
     private static final String TAG = "HubSync";
     private static final int HUB_PORT = 18081;
 
@@ -247,11 +264,17 @@ public class HubSync {
             }
 
             Log.d(TAG, "✅ Hub同步成功: " + hubIp);
+            lastSyncTime = System.currentTimeMillis();
+            lastSyncSuccess = true;
+            lastSyncMessage = "来自 " + hubIp;
             return true;
 
         } catch (Exception e) {
             Log.d(TAG, "Hub同步失败: " + e.getMessage());
-            cachedHubIp = null; // 清除缓存，下次重新发现
+            cachedHubIp = null;
+            lastSyncTime = System.currentTimeMillis();
+            lastSyncSuccess = false;
+            lastSyncMessage = e.getMessage();
             return false;
         }
     }
@@ -355,7 +378,168 @@ public class HubSync {
         return bodyMap.get("postData");
     }
 
-    // ===================== 内部数据类 =====================
+    
+    // ==================== 状态查询 ====================
+    /** 获取Hub服务器运行状态 */
+    public String getServerStatus() {
+        if (server != null && running) return "🟢 运行中 (端口 " + HUB_PORT + ")";
+        return "🔴 已停止";
+    }
+    /** 获取上次同步时间 */
+    public String getLastSyncInfo() {
+        if (lastSyncTime == 0) return "⏳ 尚未同步";
+        String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                .format(new java.util.Date(lastSyncTime));
+        return (lastSyncSuccess ? "✅ " : "❌ ") + time + " - " + lastSyncMessage;
+    }
+    /** 获取已发现的Hub设备列表 */
+    public java.util.List<String> getDiscoveredHubs() {
+        return new java.util.ArrayList<>(discoveredHubs);
+    }
+    /** 清除发现的Hub缓存 */
+    public void clearDiscoveredHubs() {
+        discoveredHubs.clear();
+    }
+
+    // ==================== 并行网络扫描 ====================
+    /**
+     * 快速扫描局域网内的Hub设备（并行批量扫描）
+     * 将254个IP分为多批并行连接，大幅缩短扫描时间
+     */
+    public void scanNetwork(final int timeoutMsPerHost, final SyncCallback callback) {
+        if (scanning) {
+            if (callback != null) callback.onStatusUpdate("⏳ 正在扫描中，请稍候...");
+            return;
+        }
+        scanning = true;
+        discoveredHubs.clear();
+        final int[] scannedCount = {0};
+        final int totalHosts = 254;
+        final java.util.List<String> foundHubs = new java.util.ArrayList<>();
+        
+        if (callback != null) callback.onStatusUpdate("🔍 正在扫描局域网设备...");
+        
+        new Thread(() -> {
+            try {
+                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                if (wifiManager == null) { scanning = false; return; }
+                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                if (wifiInfo == null) { scanning = false; return; }
+                
+                int ipInt = wifiInfo.getIpAddress();
+                String myIp = String.format("%d.%d.%d.%d",
+                        (ipInt & 0xff), (ipInt >> 8 & 0xff),
+                        (ipInt >> 16 & 0xff), (ipInt >> 24 & 0xff));
+                String subnet = myIp.substring(0, myIp.lastIndexOf('.') + 1);
+                
+                // 分批并行扫描（每批10个）
+                final int BATCH_SIZE = 10;
+                for (int batchStart = 1; batchStart <= totalHosts; batchStart += BATCH_SIZE) {
+                    final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(
+                            Math.min(BATCH_SIZE, totalHosts - batchStart + 1));
+                    
+                    for (int offset = 0; offset < BATCH_SIZE && batchStart + offset <= totalHosts; offset++) {
+                        final int i = batchStart + offset;
+                        final String targetIp = subnet + i;
+                        
+                        if (targetIp.equals(myIp)) {
+                            latch.countDown();
+                            synchronized (scannedCount) { scannedCount[0]++; }
+                            continue;
+                        }
+                        
+                        final int finalI = i;
+                        new Thread(() -> {
+                            try {
+                                Socket socket = new Socket();
+                                socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 
+                                        Math.min(timeoutMsPerHost, 200));
+                                socket.close();
+                                
+                                // 验证是否是Hub
+                                URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
+                                HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
+                                conn.setConnectTimeout(200);
+                                conn.setReadTimeout(200);
+                                if (conn.getResponseCode() == 200) {
+                                    String respBody;
+                                    try (java.util.Scanner s = new java.util.Scanner(conn.getInputStream()).useDelimiter("\\A")) {
+                                        respBody = s.hasNext() ? s.next() : "";
+                                    }
+                                    String devId = "";
+                                    if (respBody.contains("device")) {
+                                        try {
+                                            java.util.Map<String, Object> map = new com.google.gson.GsonBuilder().create()
+                                                    .fromJson(respBody, java.util.Map.class);
+                                            if (map.get("device") != null) devId = (String) map.get("device");
+                                        } catch (Exception e) { }
+                                    }
+                                    synchronized (foundHubs) {
+                                        foundHubs.add(targetIp);
+                                        discoveredHubs.add(targetIp);
+                                    }
+                                    if (callback != null) callback.onHubFound(targetIp, devId);
+                                }
+                                conn.disconnect();
+                            } catch (Exception e) {
+                                // 不可达，忽略
+                            } finally {
+                                latch.countDown();
+                                synchronized (scannedCount) {
+                                    scannedCount[0]++;
+                                    if (callback != null && scannedCount[0] % 10 == 0)
+                                        callback.onScanProgress(scannedCount[0], totalHosts);
+                                }
+                            }
+                        }).start();
+                    }
+                    
+                    try { latch.await(3, java.util.concurrent.TimeUnit.SECONDS); } 
+                    catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                }
+                
+                // 扫描完成
+                scanning = false;
+                final int found = foundHubs.size();
+                if (callback != null) {
+                    if (found > 0) {
+                        callback.onStatusUpdate("✅ 扫描完成，发现 " + found + " 台Hub设备");
+                    } else {
+                        callback.onStatusUpdate("❌ 未发现其他Hub设备\n请确保另一台设备已开启「Hub中枢」并连接同一WiFi");
+                    }
+                    callback.onScanProgress(totalHosts, totalHosts);
+                }
+            } catch (Exception e) {
+                scanning = false;
+                if (callback != null)
+                    callback.onStatusUpdate("❌ 扫描失败: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    /** 同步到Hub（带回调版本） */
+    public void syncToHub(final SyncCallback callback) {
+        if (callback != null) callback.onStatusUpdate("🔍 正在发现Hub...");
+        new Thread(() -> {
+            boolean result = syncToHub();
+            if (callback != null) {
+                if (result) {
+                    callback.onStatusUpdate("✅ 同步成功");
+                    callback.onSyncComplete(true, "数据已同步到中枢");
+                } else {
+                    String msg = discoveredHubs.isEmpty() 
+                            ? "未发现任何Hub设备\n请先扫描网络或确认其他设备已开启Hub中枢"
+                            : "连接Hub失败，请重试";
+                    callback.onStatusUpdate("❌ " + msg);
+                    callback.onSyncComplete(false, msg);
+                }
+            }
+        }).start();
+    }
+
+    // 在 syncToHub() 成功后记录状态
+    // 重写原有syncToHub方法以记录状态 - 但保持签名兼容
+// ===================== 内部数据类 =====================
 
     private static class SyncPayload {
         String deviceId;
