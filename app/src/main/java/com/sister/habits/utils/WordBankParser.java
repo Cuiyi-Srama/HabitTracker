@@ -19,6 +19,7 @@ import java.util.UUID;
  * 1. 自有格式：[{"w":"cat","m":"猫","g":"grade1","c":"animal","p":"/kæt/","l":1}]
  * 2. KyleBing格式：[{"word":"ability","translations":[{"translation":"能力","type":"n"}],"phrases":[...]}]
  * 3. 通用格式：[{"word":"cat","meaning":"猫","phonetic":"/kæt/"}]
+ * 4. 纯词表格式(endict_wordlist)：["word1","word2","phrase with space",...]
  * <p>
  * 自动检测：根据第一个词条包含哪些 key 来判断
  */
@@ -48,28 +49,63 @@ public class WordBankParser {
             // 先尝试解析成通用 List<Map>
             Type mapType = new TypeToken<List<Map<String, Object>>>() {}.getType();
             List<Map<String, Object>> rawList = new Gson().fromJson(json, mapType);
-            if (rawList == null || rawList.isEmpty()) return new ArrayList<>();
+            if (rawList != null && !rawList.isEmpty()) {
+                Map<String, Object> first = rawList.get(0);
 
-            Map<String, Object> first = rawList.get(0);
+                // === 格式检测 ===
+                if (first.containsKey("word") && (first.containsKey("translations") || first.containsKey("translation"))) {
+                    // KyleBing 格式
+                    return parseKyleBing(rawList, gradeLevel);
+                } else if (first.containsKey("w") && first.containsKey("m")) {
+                    // 自有格式
+                    return parseNative(rawList, gradeLevel);
+                } else if (first.containsKey("word") && first.containsKey("meaning")) {
+                    // 通用格式
+                    return parseGeneric(rawList, gradeLevel);
+                } else {
+                    Log.w(TAG, "未知格式，尝试作为自有格式解析。keys: " + first.keySet());
+                    return parseNative(rawList, gradeLevel);
+                }
+            }
+        } catch (Exception ignored) {
+            // 解析为Map失败，尝试纯词表格式
+        }
 
-            // === 格式检测 ===
-            if (first.containsKey("word") && (first.containsKey("translations") || first.containsKey("translation"))) {
-                // KyleBing 格式
-                return parseKyleBing(rawList, gradeLevel);
-            } else if (first.containsKey("w") && first.containsKey("m")) {
-                // 自有格式
-                return parseNative(rawList, gradeLevel);
-            } else if (first.containsKey("word") && first.containsKey("meaning")) {
-                // 通用格式
-                return parseGeneric(rawList, gradeLevel);
-            } else {
-                Log.w(TAG, "未知格式，尝试作为自有格式解析。keys: " + first.keySet());
-                return parseNative(rawList, gradeLevel);
+        // 尝试解析为纯词表格式 [string, string, ...]
+        try {
+            Type stringType = new TypeToken<List<String>>() {}.getType();
+            List<String> wordList = new Gson().fromJson(json, stringType);
+            if (wordList != null && !wordList.isEmpty()) {
+                return parseWordlist(wordList, gradeLevel);
             }
         } catch (Exception e) {
-            Log.e(TAG, "JSON解析失败", e);
-            return new ArrayList<>();
+            Log.e(TAG, "纯词表格式解析也失败", e);
         }
+
+        return new ArrayList<>();
+    }
+
+    /** 纯词表格式解析 (endict_wordlist)：["word1", "word2", ...] */
+    private static List<Vocabulary> parseWordlist(List<String> wordList, String gradeLevel) {
+        List<Vocabulary> result = new ArrayList<>();
+        for (String word : wordList) {
+            try {
+                Vocabulary v = new Vocabulary();
+                v.id = UUID.randomUUID().toString();
+                v.word = word;
+                v.meaning = word;  // 无翻译时退化为显示单词本身
+                v.phonetic = "";
+                v.category = word.contains(" ") ? "phrase" : "word";
+                v.gradeLevel = gradeLevel;
+                v.level = word.contains(" ") ? 2 : 1;
+                v.mastered = false;
+                v.active = true;
+                result.add(v);
+            } catch (Exception e) {
+                Log.w(TAG, "跳过异常词条", e);
+            }
+        }
+        return result;
     }
 
     /** KyleBing 格式解析（含短语） */
