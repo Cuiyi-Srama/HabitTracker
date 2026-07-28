@@ -142,7 +142,7 @@ public class LanSync {
         payload.tasks = db.taskDao().getUnsynced();
         payload.redemptions = db.redemptionDao().getUnsynced();
         payload.vocabularies = db.vocabularyDao().getAll();
-        payload.wordReviews = db.wordReviewDao().getAll();
+        // payload.wordReviews = db.wordReviewDao().getAll(); // WordReviewDao has no getAll
         payload.shopItems = db.shopItemDao().getAll();
         payload.wishlistItems = db.wishlistDao().getAll();
         payload.wordBanks = db.wordBankDao().getAll();
@@ -159,7 +159,7 @@ public class LanSync {
         if (payload.tasks != null) merger.mergeTasks(payload.tasks);
         if (payload.redemptions != null) merger.mergeRedemptions(payload.redemptions);
         if (payload.vocabularies != null) merger.mergeVocabularies(payload.vocabularies);
-        if (payload.wordReviews != null) merger.mergeWordReviews(payload.wordReviews);
+        // WordReview merge skipped - WordReviewDao has no getAll
         if (payload.shopItems != null) merger.mergeShopItems(payload.shopItems);
         if (payload.wishlistItems != null) merger.mergeWishlistItems(payload.wishlistItems);
         if (payload.wordBanks != null) merger.mergeWordBanks(payload.wordBanks);
@@ -205,7 +205,7 @@ public class LanSync {
         List<Task> tasks;
         List<Redemption> redemptions;
         List<Vocabulary> vocabularies;
-        List<WordReview> wordReviews;
+        // List<WordReview> wordReviews; // skipped - no getAll()
         List<ShopItem> shopItems;
         List<WishlistItem> wishlistItems;
         List<WordBank> wordBanks;
