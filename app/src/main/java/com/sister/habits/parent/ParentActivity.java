@@ -28,6 +28,8 @@ import com.sister.habits.data.models.EconomyConfig;
 import com.sister.habits.data.models.Redemption;
 import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.data.models.Task;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.NotificationHelper;
@@ -161,6 +163,28 @@ public class ParentActivity extends AppCompatActivity {
                 }
             });
 
+    /** QR扫码配对启动器 */
+    private final ActivityResultLauncher<ScanOptions> qrScanLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                if (result != null && result.getContents() != null) {
+                    String qrContent = result.getContents();
+                    String deviceKey = com.sister.habits.utils.QRCodeHelper.parseDeviceKey(qrContent);
+                    String deviceName = com.sister.habits.utils.QRCodeHelper.parseDeviceName(qrContent);
+                    if (deviceKey != null) {
+                        Toast.makeText(this, "📡 已配对: " + deviceName + "\nKey: " + deviceKey, Toast.LENGTH_LONG).show();
+                        // 把配对设备信息存到SharedPreferences
+                        getSharedPreferences("paired_devices", MODE_PRIVATE)
+                                .edit()
+                                .putString("paired_" + deviceKey, deviceName)
+                                .apply();
+                    } else {
+                        Toast.makeText(this, "❌ 无效的配对码: " + qrContent.substring(0, Math.min(30, qrContent.length())), Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(this, "❌ 扫码取消或失败", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     private static class JsonImportWord {
         String g; String c; String w; String m; String p; int l;
     }
@@ -187,47 +211,101 @@ public class ParentActivity extends AppCompatActivity {
         soundHelper.playClickSound();
         android.app.ProgressDialog progress = new android.app.ProgressDialog(this);
         progress.setTitle("📥 下载词库中...");
-        progress.setMessage("正在下载: " + source.name);
-        progress.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+        progress.setMessage("正在连接: " + source.name);
+        progress.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL);
+        progress.setMax(100);
+        progress.setProgress(0);
         progress.setCancelable(false);
         progress.show();
 
+        final int MAX_RETRIES = 2;
         new Thread(() -> {
-            try {
-                // ★ Fix 1: 使用URI处理URL中的非ASCII字符编码
-                java.net.URI uri = new java.net.URI(source.url);
-                java.net.URL url = uri.toURL();
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(30000);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/1.5.0");
-                conn.setInstanceFollowRedirects(true);
-                int responseCode = conn.getResponseCode();
-                if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
-                    throw new java.io.IOException("HTTP " + responseCode);
-                }
-                java.io.InputStream is = conn.getInputStream();
-                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                byte[] buf = new byte[8192];
-                int len;
-                while ((len = is.read(buf)) != -1) {
-                    baos.write(buf, 0, len);
-                }
-                is.close();
-                String json = baos.toString("UTF-8");
+            byte[] rawData = null;
+            String errorMsg = null;
 
-                // 自动解析
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    final int currentAttempt = attempt;
+                    runOnUiThread(() -> progress.setMessage("正在下载: " + source.name + " (第" + currentAttempt + "次)"));
+
+                    java.net.URI uri = new java.net.URI(source.url);
+                    java.net.URL url = uri.toURL();
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(30000);
+                    conn.setReadTimeout(60000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/1.5.0");
+                    conn.setInstanceFollowRedirects(true);
+
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
+                        throw new java.io.IOException("HTTP " + responseCode);
+                    }
+
+                    int contentLength = conn.getContentLength();
+                    java.io.InputStream is = conn.getInputStream();
+                    java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(contentLength > 0 ? contentLength : 65536);
+                    byte[] buf = new byte[8192];
+                    int len;
+                    long totalRead = 0;
+                    long lastUpdate = 0;
+
+                    while ((len = is.read(buf)) != -1) {
+                        baos.write(buf, 0, len);
+                        totalRead += len;
+                        // 每200ms更新一次进度
+                        long now = System.currentTimeMillis();
+                        if (now - lastUpdate > 200) {
+                            lastUpdate = now;
+                            final long read = totalRead;
+                            final int pct = contentLength > 0 ? (int) (read * 100 / contentLength) : -1;
+                            runOnUiThread(() -> {
+                                if (pct >= 0) {
+                                    progress.setProgress(Math.min(pct, 99));
+                                    progress.setMessage("下载中: " + (read / 1024) + "KB / " + (contentLength / 1024) + "KB");
+                                } else {
+                                    progress.setMessage("下载中: " + (read / 1024) + "KB...");
+                                }
+                            });
+                        }
+                    }
+                    is.close();
+                    rawData = baos.toByteArray();
+                    break; // 成功，跳出重试循环
+
+                } catch (java.net.SocketException e) {
+                    errorMsg = "连接中断: " + e.getMessage() + " (尝试 " + attempt + "/" + MAX_RETRIES + ")";
+                    android.util.Log.e("Download", errorMsg);
+                    if (attempt < MAX_RETRIES) {
+                        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    }
+                } catch (Exception e) {
+                    errorMsg = e.getMessage();
+                    break; // 非Socket异常，不重试
+                }
+            }
+
+            if (rawData == null) {
+                final String msg = errorMsg;
+                runOnUiThread(() -> {
+                    progress.dismiss();
+                    Toast.makeText(this, "❌ 下载失败: " + msg, Toast.LENGTH_LONG).show();
+                });
+                return;
+            }
+
+            // 解析JSON
+            try {
+                String json = new String(rawData, "UTF-8");
                 String grade = source.gradeLabel != null ? source.gradeLabel : "external";
                 java.util.List<com.sister.habits.data.models.Vocabulary> words = com.sister.habits.utils.WordBankParser.parse(json, grade);
 
                 runOnUiThread(() -> {
                     progress.dismiss();
                     if (words.isEmpty()) {
-                        Toast.makeText(this, "❌ 词库为空或格式不兼容", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "❌ 词库解析失败：格式不兼容或为空", Toast.LENGTH_LONG).show();
                         return;
                     }
 
-                    // 构建预览消息
                     StringBuilder samples = new StringBuilder();
                     int sampleCount = Math.min(5, words.size());
                     for (int i = 0; i < sampleCount; i++) {
@@ -239,9 +317,8 @@ public class ParentActivity extends AppCompatActivity {
                             .setTitle("📖 预览词库")
                             .setMessage("来源: " + source.name + "\n" +
                                     "共 " + words.size() + " 个单词\n" +
-                                    "格式: " + source.format.toUpperCase() + "（自动兼容）\n\n" +
-                                    "📝 示例:\n" + samples.toString() + "\n" +
-                                    "💡 下载后学习进度独立保存，不影响现有词库进度。")
+                                    "格式: " + source.format + "\n\n" +
+                                    "📝 示例:\n" + samples.toString())
                             .setPositiveButton("✅ 确认使用", (d, w) -> applyExternalWordbank(words, source))
                             .setNegativeButton("取消", null)
                             .show();
@@ -249,7 +326,7 @@ public class ParentActivity extends AppCompatActivity {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     progress.dismiss();
-                    Toast.makeText(this, "❌ 下载失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "❌ 解析失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
@@ -1378,7 +1455,7 @@ public class ParentActivity extends AppCompatActivity {
                 .setItems(actions, (d, which) -> {
                     switch (which) {
                         case 0:
-                            com.sister.habits.utils.QRCodeHelper.startScan(this);
+                            ScanOptions options = new ScanOptions(); options.setDesiredBarcodeFormats(ScanOptions.QR_CODE); options.setPrompt("扫描对方设备的配对码"); options.setBeepEnabled(true); options.setOrientationLocked(true); qrScanLauncher.launch(options);
                             break;
                         case 1:
                             String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
