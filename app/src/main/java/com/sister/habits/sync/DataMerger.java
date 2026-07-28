@@ -28,9 +28,12 @@ public class DataMerger {
     private final CoinTransactionDao coinDao;
     private final TaskDao taskDao;
     private final RedemptionDao redemptionDao;
+    private final com.sister.habits.data.AppDatabase appDb;
 
-    public DataMerger(CheckInDao checkInDao, CoinTransactionDao coinDao,
+    public DataMerger(com.sister.habits.data.AppDatabase appDb,
+                      CheckInDao checkInDao, CoinTransactionDao coinDao,
                       TaskDao taskDao, RedemptionDao redemptionDao) {
+        this.appDb = appDb;
         this.checkInDao = checkInDao;
         this.coinDao = coinDao;
         this.taskDao = taskDao;
@@ -139,5 +142,77 @@ public class DataMerger {
             }
         }
         Log.d(TAG, "合并兑换完成: 新增 " + added + "/" + remoteList.size());
+    }
+
+    // ==================== 全量数据合并（新增类型） ====================
+    public void mergeVocabularies(List<com.sister.habits.data.models.Vocabulary> remoteList) {
+        com.sister.habits.data.dao.VocabularyDao dao = appDb.vocabularyDao();
+        int added = 0;
+        for (com.sister.habits.data.models.Vocabulary v : remoteList) {
+            try {
+                com.sister.habits.data.models.Vocabulary existing = dao.getById(v.id);
+                if (existing == null) {
+                    dao.insert(v);
+                    added++;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "跳过重复单词");
+            }
+        }
+        Log.d(TAG, "合并单词完成: 新增 " + added + "/" + remoteList.size());
+    }
+
+    public void mergeWordReviews(List<com.sister.habits.data.models.WordReview> remoteList) {
+        com.sister.habits.data.dao.WordReviewDao dao = appDb.wordReviewDao();
+        int added = 0;
+        for (com.sister.habits.data.models.WordReview r : remoteList) {
+            try { dao.insert(r); added++; }
+            catch (Exception e) { Log.d(TAG, "跳过重复复习记录"); }
+        }
+        Log.d(TAG, "合并复习记录完成: 新增 " + added);
+    }
+
+    public void mergeShopItems(List<com.sister.habits.data.models.ShopItem> remoteList) {
+        com.sister.habits.data.dao.ShopItemDao dao = appDb.shopItemDao();
+        int added = 0;
+        for (com.sister.habits.data.models.ShopItem s : remoteList) {
+            try {
+                com.sister.habits.data.models.ShopItem existing = dao.getById(s.id);
+                if (existing == null) { dao.insert(s); added++; }
+            } catch (Exception e) { Log.d(TAG, "跳过重复商品"); }
+        }
+        Log.d(TAG, "合并商品完成: 新增 " + added);
+    }
+
+    public void mergeWishlistItems(List<com.sister.habits.data.models.WishlistItem> remoteList) {
+        com.sister.habits.data.dao.WishlistDao dao = appDb.wishlistDao();
+        int added = 0;
+        for (com.sister.habits.data.models.WishlistItem w : remoteList) {
+            try { dao.insert(w); added++; }
+            catch (Exception e) { Log.d(TAG, "跳过重复心愿单"); }
+        }
+        Log.d(TAG, "合并心愿单完成: 新增 " + added);
+    }
+
+    public void mergeWordBanks(List<com.sister.habits.data.models.WordBank> remoteList) {
+        com.sister.habits.data.dao.WordBankDao dao = appDb.wordBankDao();
+        int added = 0;
+        for (com.sister.habits.data.models.WordBank b : remoteList) {
+            try {
+                com.sister.habits.data.models.WordBank existing = dao.getById(b.id);
+                if (existing == null) { dao.insert(b); added++; }
+            } catch (Exception e) { Log.d(TAG, "跳过重复词库"); }
+        }
+        Log.d(TAG, "合并词库完成: 新增 " + added);
+    }
+
+    public void mergeEconomyConfig(com.sister.habits.data.models.EconomyConfig remote) {
+        com.sister.habits.data.dao.EconomyConfigDao dao = appDb.economyConfigDao();
+        try {
+            com.sister.habits.data.models.EconomyConfig local = dao.getConfig();
+            if (local == null) { dao.insert(remote); }
+        } catch (Exception e) {
+            Log.d(TAG, "合并经济配置失败");
+        }
     }
 }
