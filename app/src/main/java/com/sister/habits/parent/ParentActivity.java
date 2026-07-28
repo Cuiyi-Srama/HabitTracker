@@ -171,12 +171,14 @@ public class ParentActivity extends AppCompatActivity {
                     String deviceKey = com.sister.habits.utils.QRCodeHelper.parseDeviceKey(qrContent);
                     String deviceName = com.sister.habits.utils.QRCodeHelper.parseDeviceName(qrContent);
                     if (deviceKey != null) {
-                        Toast.makeText(this, "📡 已配对: " + deviceName + "\nKey: " + deviceKey, Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "📡 已配对: " + deviceName + "\n正在同步数据...", Toast.LENGTH_LONG).show();
                         // 把配对设备信息存到SharedPreferences
                         getSharedPreferences("paired_devices", MODE_PRIVATE)
                                 .edit()
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
+                        // 配对后主动触发局域网P2P同步，把本机数据推过去
+                        syncManager.triggerLanSync();
                     } else {
                         Toast.makeText(this, "❌ 无效的配对码: " + qrContent.substring(0, Math.min(30, qrContent.length())), Toast.LENGTH_LONG).show();
                     }
@@ -1051,7 +1053,7 @@ private void showProfileSettings() {
                     syncManager.setHubModeEnabled(!syncManager.isHubModeEnabled());
                     Toast.makeText(this, syncManager.isHubModeEnabled() ? "🏠 中枢已开启" : "🏠 中枢已关闭", Toast.LENGTH_SHORT).show();
                 })
-                .setPositiveButton("关闭", null).show();
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
     }
 
     private int parseInt(android.widget.EditText et, int def) {
