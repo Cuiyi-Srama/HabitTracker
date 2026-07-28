@@ -1681,7 +1681,7 @@ private void showProfileSettings() {
                         tvStatus.setTextColor(0xFF1976D2);
                         deviceListContainer.removeAllViews();
                         syncManager.getHubSync().clearDiscoveredHubs();
-                        syncManager.getHubSync().scanNetwork(150, new com.sister.habits.sync.HubSync.SyncCallback() {
+                        syncManager.getHubSync().scanNetwork(150, new com.sister.habits.sync.SyncCallback() {
                             @Override
                             public void onStatusUpdate(String status) {
                                 runOnUiThread(() -> tvStatus.setText(status));
@@ -1727,7 +1727,7 @@ private void showProfileSettings() {
                     case 4: { // 开始同步
                         tvStatus.setText("🔄 正在同步...");
                         tvStatus.setTextColor(0xFF1976D2);
-                        syncManager.getHubSync().syncToHub(new com.sister.habits.sync.HubSync.SyncCallback() {
+                        syncManager.getHubSync().syncToHub(new com.sister.habits.sync.SyncCallback() {
                             @Override
                             public void onStatusUpdate(String status) {
                                 runOnUiThread(() -> tvStatus.setText(status));
