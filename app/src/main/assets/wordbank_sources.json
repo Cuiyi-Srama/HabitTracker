@@ -1,50 +1,50 @@
 [
   {
-    "id": "kylebing_junior",
-    "name": "KyleBing 初中词汇",
-    "description": "约3500词，包含初中阶段全部英语词汇，带音标和翻译",
+    "id": "primary_words",
+    "name": "小学英语词汇（含短语）",
+    "description": "约1026词，基于教育部《义务教育英语课程标准》小学词汇表，含常用短语。来源于ismartcoding/endict开源项目。",
+    "url": "https://raw.githubusercontent.com/ismartcoding/endict/main/vocabulary/xiaoxue.json",
+    "format": "endict_wordlist",
+    "gradeLabel": "primary"
+  },
+  {
+    "id": "junior_words",
+    "name": "初中英语词汇",
+    "description": "约3500词，初中英语全部词汇，带音标和中文释义。来源于KyleBing/english-vocabulary。",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/1-%E5%88%9D%E4%B8%AD-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
     "gradeLabel": "junior"
   },
   {
-    "id": "kylebing_senior",
-    "name": "KyleBing 高中词汇",
-    "description": "约5000词，高中英语进阶词汇",
+    "id": "senior_words",
+    "name": "高中英语词汇",
+    "description": "约5000词，高中英语进阶词汇，带音标和中文释义。来源于KyleBing/english-vocabulary。",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/2-%E9%AB%98%E4%B8%AD-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
     "gradeLabel": "senior"
   },
   {
-    "id": "kylebing_cet4",
-    "name": "KyleBing 四级词汇",
-    "description": "约4600词，大学英语四级(CET4)词汇",
+    "id": "cet4_words",
+    "name": "大学四级英语词汇",
+    "description": "约4600词，大学英语四级(CET4)词汇。来源于KyleBing/english-vocabulary。",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/3-CET4-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
-    "gradeLabel": "CET4"
+    "gradeLabel": "cet4"
   },
   {
-    "id": "kylebing_cet6",
-    "name": "KyleBing 六级词汇",
-    "description": "约4000词，大学英语六级(CET6)词汇",
+    "id": "cet6_words",
+    "name": "大学六级英语词汇",
+    "description": "约4000词，大学英语六级(CET6)词汇。来源于KyleBing/english-vocabulary。",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/4-CET6-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
-    "gradeLabel": "CET6"
+    "gradeLabel": "cet6"
   },
   {
-    "id": "kylebing_kaoyan",
-    "name": "KyleBing 考研词汇",
-    "description": "约6500词，研究生英语考试词汇",
+    "id": "kaoyan_words",
+    "name": "考研英语词汇",
+    "description": "约6500词，研究生英语考试词汇。来源于KyleBing/english-vocabulary。",
     "url": "https://raw.githubusercontent.com/KyleBing/english-vocabulary/master/json/5-%E8%80%83%E7%A0%94-%E9%A1%BA%E5%BA%8F.json",
     "format": "kylebing",
     "gradeLabel": "kaoyan"
-  },
-  {
-    "id": "habit_primary",
-    "name": "HabitTracker 小学词汇（推荐）",
-    "description": "约50词，小学1-6年级基础英语词汇，适合入门学习",
-    "url": "https://raw.githubusercontent.com/Cuiyi-Srama/HabitTracker/main/app/src/main/assets/wordbank_primary.json",
-    "format": "native",
-    "gradeLabel": "primary"
   }
 ]
