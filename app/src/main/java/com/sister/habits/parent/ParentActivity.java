@@ -967,13 +967,10 @@ public class ParentActivity extends AppCompatActivity {
         View view = getLayoutInflater().inflate(R.layout.dialog_wordbank, null);
         SharedPreferences prefs = getSharedPreferences("wordbank_prefs", MODE_PRIVATE);
 
-        // 恢复年级选择状态
-        ((CheckBox) view.findViewById(R.id.cb_grade1)).setChecked(prefs.getBoolean("grade1", true));
-        ((CheckBox) view.findViewById(R.id.cb_grade2)).setChecked(prefs.getBoolean("grade2", true));
-        ((CheckBox) view.findViewById(R.id.cb_grade3)).setChecked(prefs.getBoolean("grade3", true));
-        ((CheckBox) view.findViewById(R.id.cb_grade4)).setChecked(prefs.getBoolean("grade4", false));
-        ((CheckBox) view.findViewById(R.id.cb_grade5)).setChecked(prefs.getBoolean("grade5", false));
-        ((CheckBox) view.findViewById(R.id.cb_grade_junior)).setChecked(prefs.getBoolean("grade_junior", false));
+        // 恢复年级选择状态（小学/初中/高中）
+        ((CheckBox) view.findViewById(R.id.cb_grade_primary)).setChecked(prefs.getBoolean("grade_primary", true));
+        ((CheckBox) view.findViewById(R.id.cb_grade_junior)).setChecked(prefs.getBoolean("grade_junior", true));
+        ((CheckBox) view.findViewById(R.id.cb_grade_senior)).setChecked(prefs.getBoolean("grade_senior", false));
 
         // 恢复每日单词量
         EconomyConfig config = db.economyConfigDao().getConfig();
@@ -1117,20 +1114,14 @@ public class ParentActivity extends AppCompatActivity {
                 .setTitle("📚 词库管理")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
-                    // 保存年级选择
-                    boolean g1 = ((CheckBox) view.findViewById(R.id.cb_grade1)).isChecked();
-                    boolean g2 = ((CheckBox) view.findViewById(R.id.cb_grade2)).isChecked();
-                    boolean g3 = ((CheckBox) view.findViewById(R.id.cb_grade3)).isChecked();
-                    boolean g4 = ((CheckBox) view.findViewById(R.id.cb_grade4)).isChecked();
-                    boolean g5 = ((CheckBox) view.findViewById(R.id.cb_grade5)).isChecked();
-                    boolean gj = ((CheckBox) view.findViewById(R.id.cb_grade_junior)).isChecked();
+                    // 保存学段选择（小学/初中/高中）
+                    boolean gPrimary = ((CheckBox) view.findViewById(R.id.cb_grade_primary)).isChecked();
+                    boolean gJunior = ((CheckBox) view.findViewById(R.id.cb_grade_junior)).isChecked();
+                    boolean gSenior = ((CheckBox) view.findViewById(R.id.cb_grade_senior)).isChecked();
                     prefs.edit()
-                            .putBoolean("grade1", g1)
-                            .putBoolean("grade2", g2)
-                            .putBoolean("grade3", g3)
-                            .putBoolean("grade4", g4)
-                            .putBoolean("grade5", g5)
-                            .putBoolean("grade_junior", gj)
+                            .putBoolean("grade_primary", gPrimary)
+                            .putBoolean("grade_junior", gJunior)
+                            .putBoolean("grade_senior", gSenior)
                             // 自增版本号，触发DatabaseInitializer重新加载
                             .putInt("grade_version", prefs.getInt("grade_version", 0) + 1)
                             .apply();
