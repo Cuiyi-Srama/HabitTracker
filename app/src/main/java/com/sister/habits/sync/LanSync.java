@@ -141,6 +141,12 @@ public class LanSync {
         payload.coins = db.coinTransactionDao().getUnsynced();
         payload.tasks = db.taskDao().getUnsynced();
         payload.redemptions = db.redemptionDao().getUnsynced();
+        payload.vocabularies = db.vocabularyDao().getAll();
+        payload.wordReviews = db.wordReviewDao().getAll();
+        payload.shopItems = db.shopItemDao().getAll();
+        payload.wishlistItems = db.wishlistDao().getAll();
+        payload.wordBanks = db.wordBankDao().getAll();
+        payload.economyConfig = db.economyConfigDao().getConfig();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -152,6 +158,12 @@ public class LanSync {
         if (payload.coins != null) merger.mergeCoinTransactions(payload.coins);
         if (payload.tasks != null) merger.mergeTasks(payload.tasks);
         if (payload.redemptions != null) merger.mergeRedemptions(payload.redemptions);
+        if (payload.vocabularies != null) merger.mergeVocabularies(payload.vocabularies);
+        if (payload.wordReviews != null) merger.mergeWordReviews(payload.wordReviews);
+        if (payload.shopItems != null) merger.mergeShopItems(payload.shopItems);
+        if (payload.wishlistItems != null) merger.mergeWishlistItems(payload.wishlistItems);
+        if (payload.wordBanks != null) merger.mergeWordBanks(payload.wordBanks);
+        if (payload.economyConfig != null) merger.mergeEconomyConfig(payload.economyConfig);
         if (payload.checkIns != null)
             for (CheckIn c : payload.checkIns) db.checkInDao().markSynced(c.id);
         if (payload.coins != null)
@@ -192,5 +204,11 @@ public class LanSync {
         List<CoinTransaction> coins;
         List<Task> tasks;
         List<Redemption> redemptions;
+        List<Vocabulary> vocabularies;
+        List<WordReview> wordReviews;
+        List<ShopItem> shopItems;
+        List<WishlistItem> wishlistItems;
+        List<WordBank> wordBanks;
+        com.sister.habits.data.models.EconomyConfig economyConfig;
     }
 }
