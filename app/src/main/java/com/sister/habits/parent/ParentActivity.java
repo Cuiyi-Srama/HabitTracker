@@ -865,7 +865,7 @@ public class ParentActivity extends AppCompatActivity {
                 conn.setRequestProperty("User-Agent", "HabitTracker/1.5.0");
                 conn.setInstanceFollowRedirects(true);
                 java.io.InputStream is = conn.getInputStream();
-                java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\A");
+                java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
                 String json = s.hasNext() ? s.next() : "";
                 is.close();
                 com.google.gson.Gson gson = new com.google.gson.Gson();
