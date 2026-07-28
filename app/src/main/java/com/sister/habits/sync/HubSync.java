@@ -555,5 +555,3 @@ public class HubSync {
         long serverTime;
         String hubDeviceId;
     }
-}
-}
