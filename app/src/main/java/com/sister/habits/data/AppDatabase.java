@@ -21,9 +21,10 @@ import com.sister.habits.data.models.*;
         EconomyConfig.class,
         WordReview.class,
         WordBank.class,
-        WishlistItem.class
+        WishlistItem.class,
+        CoinEarning.class
     },
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -40,6 +41,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract WordReviewDao wordReviewDao();
     public abstract WordBankDao wordBankDao();
     public abstract WishlistDao wishlistDao();
+    public abstract CoinEarningDao coinEarningDao();
 
     /**
      * 数据库迁移 1→2：
@@ -120,7 +122,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build();
                 }
             }
@@ -214,4 +216,27 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `coin_earnings` (" +
+                "`id` TEXT NOT NULL, " +
+                "`userId` TEXT NOT NULL DEFAULT 'sister', " +
+                "`amount` INTEGER NOT NULL, " +
+                "`sourceType` TEXT, " +
+                "`sourceId` TEXT, " +
+                "`description` TEXT, " +
+                "`status` TEXT NOT NULL DEFAULT 'pending', " +
+                "`requestedAt` INTEGER NOT NULL, " +
+                "`confirmedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`rejectedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`deviceId` TEXT, " +
+                "`synced` INTEGER NOT NULL DEFAULT 0, " +
+                "`syncTimestamp` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+            );
+        }
+    };
 }
