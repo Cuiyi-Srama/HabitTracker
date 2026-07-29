@@ -205,7 +205,10 @@ public class WordFragment extends Fragment {
             return;
         }
 
+        Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
+        if (btnNewWords != null) btnNewWords.setEnabled(false);
+        if (btnReview != null) btnReview.setEnabled(false);
         updateStats();
         showNextWord();
     }
