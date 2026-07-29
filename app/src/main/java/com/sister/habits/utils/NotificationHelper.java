@@ -67,4 +67,25 @@ public class NotificationHelper {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         nm.notify(2000 + taskId.hashCode(), builder.build());
     }
+
+    /** 📝 孩子提交作业通知家长 */
+    public static void notifyGateSubmission(Context ctx, String date) {
+        Intent intent = new Intent(ctx, ParentActivity.class);
+        intent.putExtra("open_approval", "gate");
+        intent.putExtra("gate_date", date);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pi = PendingIntent.getActivity(ctx, 3000 + date.hashCode(),
+            intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("📝 作业提交")
+            .setContentText("孩子已提交今日作业，请审核")
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.notify(3000 + date.hashCode(), builder.build());
+    }
 }
