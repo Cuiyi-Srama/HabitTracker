@@ -208,4 +208,15 @@ public class DataMerger {
             Log.d(TAG, "合并经济配置失败");
         }
     }
+    public void mergeCoinEarnings(List<com.sister.habits.data.models.CoinEarning> remoteList) {
+        com.sister.habits.data.dao.CoinEarningDao dao = appDb.coinEarningDao();
+        int added = 0;
+        for (com.sister.habits.data.models.CoinEarning ce : remoteList) {
+            try {
+                com.sister.habits.data.models.CoinEarning existing = dao.getById(ce.id);
+                if (existing == null) { dao.insert(ce); added++; }
+            } catch (Exception e) { Log.d(TAG, "跳过重复积分审批"); }
+        }
+        Log.d(TAG, "合并积分审批完成: 新增 " + added);
+    }
 }
