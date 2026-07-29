@@ -222,6 +222,8 @@ public class WordFragment extends Fragment {
                     tvPhonetic.setText("");
                     tvPrompt.setText("太棒了！全部答对 💪 继续加油～");
                     for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+                    if (btnNewWords != null) btnNewWords.setEnabled(true);
+                    if (btnReview != null) btnReview.setEnabled(true);
                     updateStats();
                     return;
                 } else {
@@ -242,6 +244,9 @@ public class WordFragment extends Fragment {
             tvPhonetic.setText("");
             tvPrompt.setText("点击「📚新词」或「🔄复习」继续");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+            // 恢复按钮
+            if (btnNewWords != null) btnNewWords.setEnabled(true);
+            if (btnReview != null) btnReview.setEnabled(true);
             updateStats();
             return;
         }
