@@ -729,7 +729,7 @@ public class ParentActivity extends AppCompatActivity {
         soundHelper.playClickSound();
         int pendingTotal = db.redemptionDao().getByStatus("pending").size()
             + db.taskDao().getByStatus("pending").size();
-        String[] mainMenu = {
+        String[] mainLabels = {
                 "📊 数据总览",
                 "✅ 审批中心" + (pendingTotal > 0 ? "（" + pendingTotal + "项待处理）" : ""),
                 "📚 学习管理",
@@ -737,22 +737,14 @@ public class ParentActivity extends AppCompatActivity {
                 "📋 任务管理",
                 "⚙️ 系统设置"
         };
-        new AlertDialog.Builder(this)
-                .setTitle("📱 家长管理中心")
-                .setItems(mainMenu, (d, which) -> {
-                    switch (which) {
-                        case 0: showDashboardMenu(); break;
-                        case 1:
-                            showApprovalCenterDialog(null, -1);
-                            break;
-                        case 2: showLearningMenu(); break;
-                        case 3: showShopMenu(); break;
-                        case 4: showTaskMenu(); break;
-                        case 5: showSystemMenu(); break;
-                    }
-                })
-                .setNegativeButton("关闭", null)
-                .show();
+        com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
+                this::showDashboardMenu,
+                () -> showApprovalCenterDialog(null, -1),
+                this::showLearningMenu,
+                this::showShopMenu,
+                this::showTaskMenu,
+                this::showSystemMenu
+        );
     }
 
     /** 二级菜单：📊 总览与审批 */
@@ -785,22 +777,17 @@ public class ParentActivity extends AppCompatActivity {
         EconomyConfig config = db.economyConfigDao().getConfig();
         int dailyWords = config != null ? config.maxDailyWords : 10;
         int dailyReview = config != null ? config.maxDailyReview : 20;
-        String[] items = {
+        String[] learnLabels = {
                 "📖 词库管理（年级/下载/切换）",
                 "📝 每日学习限额（新词:" + dailyWords + " 复习:" + dailyReview + "）",
                 "💰 学习奖励参数"
         };
-        new AlertDialog.Builder(this)
-                .setTitle("📚 学习管理")
-                .setItems(items, (d, which) -> {
-                    switch (which) {
-                        case 0: showWordbankDialog(); break;
-                        case 1: showLearningLimitDialog(); break;
-                        case 2: showLearningRewardDialog(); break;
-                    }
-                })
-                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
-                .show();
+        com.sister.habits.utils.MenuHelper.showWithBack(this, "📚 学习管理", learnLabels,
+                this::showSettingsDialog,
+                this::showWordbankDialog,
+                this::showLearningLimitDialog,
+                this::showLearningRewardDialog
+        );
     }
 
     /** 📝 每日学习限额 */
