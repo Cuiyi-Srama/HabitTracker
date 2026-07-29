@@ -27,6 +27,7 @@ import com.sister.habits.sync.AcceleratorService;
 import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.BindKeyManager;
 import com.sister.habits.data.models.DailyGate;
+import com.sister.habits.data.models.LaundryTask;
 import com.sister.habits.utils.GateHelper;
 import com.sister.habits.utils.NotificationHelper;
 
@@ -299,6 +300,86 @@ public class ChildActivity extends AppCompatActivity {
                 .show();
     }
 
+
+    /** 🧺 洗衣任务 - 选择衣物类型和件数提交 */
+    private void showLaundryDialog() {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
+        
+        // 先检查是否已开启
+        SharedPreferences prefs = getSharedPreferences("laundry_prefs", MODE_PRIVATE);
+        if (!prefs.getBoolean("laundry_enabled", true)) {
+            Toast.makeText(this, "🚫 洗衣任务暂未开启，请联系家长", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // 显示衣物类型选择
+        String[][] types = LaundryTask.CLOTHING_TYPES;
+        String[] labels = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            // 检查今天该类型是否已提交
+            LaundryTask existing = db.laundryDao().getByDateAndType(today, types[i][0]);
+            String mark = existing != null ? " (今日已提交)" : "";
+            labels[i] = types[i][0] + " — " + types[i][1] + mark;
+        }
+        
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("🧺 洗衣任务")
+                .setMessage("选择你今天洗的衣物类型：")
+                .setItems(labels, (dialog, which) -> {
+                    LaundryTask existing = db.laundryDao().getByDateAndType(today, types[which][0]);
+                    if (existing != null) {
+                        Toast.makeText(this, "今天已提交过「" + types[which][0] + "」啦！", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    showLaundryQuantityDialog(types[which][0], LaundryTask.getPointsForType(types[which][0]));
+                })
+                .setNegativeButton("关闭", null)
+                .show();
+    }
+    
+    /** 选择件数 */
+    private void showLaundryQuantityDialog(String clothingType, int pointsPerItem) {
+        String[] quantities = {"1件", "2件", "3件", "4件", "5件"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("🧺 " + clothingType + " (" + pointsPerItem + "分/件)")
+                .setItems(quantities, (dialog, which) -> {
+                    int qty = which + 1;
+                    int total = pointsPerItem * qty;
+                    submitLaundryTask(clothingType, qty, pointsPerItem, total);
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+    
+    /** 提交洗衣任务 */
+    private void submitLaundryTask(String clothingType, int quantity, int pointsPerItem, int totalPoints) {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
+        
+        // 再次检查是否已提交
+        LaundryTask existing = db.laundryDao().getByDateAndType(today, clothingType);
+        if (existing != null) {
+            Toast.makeText(this, "今天已提交过啦！", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // 打折系统影响
+        double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
+        int finalPoints = (int) Math.round(totalPoints * multiplier);
+        
+        LaundryTask task = new LaundryTask();
+        task.date = today;
+        task.clothingType = clothingType;
+        task.quantity = quantity;
+        task.points = pointsPerItem;
+        task.totalPoints = finalPoints;
+        task.deviceId = syncManager.getDeviceId();
+        db.laundryDao().insert(task);
+        
+        String info = multiplier < 1.0 ? " (打折后: " + finalPoints + "分)" : "";
+        Toast.makeText(this, "✅ 已提交！" + clothingType + "×" + quantity + " = " + finalPoints + "分" + info, Toast.LENGTH_SHORT).show();
+        
+        refreshEarningEstimate();
+    }
     /** 📝 提交今日作业 */
     private void submitTodayHomework() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
