@@ -292,7 +292,7 @@ public class WordFragment extends Fragment {
             Button btn = optionButtons.get(i);
             btn.setVisibility(View.VISIBLE);
             btn.setEnabled(true);
-            btn.setText(options.get(i));
+            btn.setText(opts.get(i));
             btn.setBackgroundColor(0xFFF5F5F5);
             btn.setTextColor(0xFF333333);
         }
