@@ -312,7 +312,7 @@ public class ParentActivity extends AppCompatActivity {
                 String json = new String(rawData, "UTF-8");
                 String grade = source.gradeLabel != null ? source.gradeLabel : "external";
                 java.util.List<com.sister.habits.data.models.Vocabulary> words = com.sister.habits.utils.WordBankParser.parse(json, grade);
-
+                for (com.sister.habits.data.models.Vocabulary w : words) { w.bankId = bankId; w.active = true; }
                 runOnUiThread(() -> {
                     progress.dismiss();
                     if (words.isEmpty()) {
@@ -507,6 +507,15 @@ public class ParentActivity extends AppCompatActivity {
         if (approved) {
             // 确认 → 发金币
             db.taskDao().confirmTask(task.id, System.currentTimeMillis());
+            // 同步更新对应的CoinEarning状态
+            java.util.List<com.sister.habits.data.models.CoinEarning> earnings = db.coinEarningDao().getBySource("task", task.id);
+            for (com.sister.habits.data.models.CoinEarning e : earnings) {
+                if ("pending".equals(e.status)) {
+                    e.status = "confirmed";
+                    e.confirmedAt = System.currentTimeMillis();
+                    db.coinEarningDao().update(e);
+                }
+            }
             Integer balance = db.coinTransactionDao().getBalance("sister");
             int newBalance = (balance != null ? balance : 0) + task.rewardCoins;
             com.sister.habits.data.models.CoinTransaction ct =
@@ -728,7 +737,8 @@ public class ParentActivity extends AppCompatActivity {
     private void showSettingsDialog() {
         soundHelper.playClickSound();
         int pendingTotal = db.redemptionDao().getByStatus("pending").size()
-            + db.taskDao().getByStatus("pending").size();
+            + db.taskDao().getByStatus("pending").size()
+            + db.coinEarningDao().getPendingCount();
         String[] mainLabels = {
                 "📊 数据总览",
                 "✅ 审批中心" + (pendingTotal > 0 ? "（" + pendingTotal + "项待处理）" : ""),
