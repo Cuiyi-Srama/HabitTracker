@@ -15,6 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.Task;
+import com.sister.habits.data.models.CoinEarning;
+import com.sister.habits.sync.EarningService;
+import com.sister.habits.sync.SyncManager;
 import com.sister.habits.utils.NotificationHelper;
 
 import java.util.ArrayList;
