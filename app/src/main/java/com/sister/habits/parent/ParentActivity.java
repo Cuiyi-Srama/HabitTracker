@@ -1072,6 +1072,79 @@ private void showProfileSettings() {
 
                         /** 🚀 加速器管理：双倍积分日、加速器开关 */
 
+    /** 管理所有已发布的任务（编辑/删除） */
+    private void showManageTasksDialog() {
+        java.util.List<com.sister.habits.data.models.Task> all = db.taskDao().getAll();
+        if (all == null || all.isEmpty()) {
+            Toast.makeText(this, "暂无已发布任务", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] names = new String[all.size()];
+        for (int i = 0; i < all.size(); i++) {
+            com.sister.habits.data.models.Task t = all.get(i);
+            names[i] = ("active".equals(t.status) ? "🟢" : "confirmed".equals(t.status) ? "✅" : "⏳") + " " + t.title + " (" + t.rewardCoins + "分)";
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("📝 管理已发布任务 (" + all.size() + "个)")
+                .setItems(names, (d, which) -> {
+                    com.sister.habits.data.models.Task task = all.get(which);
+                    new AlertDialog.Builder(this)
+                            .setTitle(task.title)
+                            .setMessage("状态: " + task.status + " | 积分: " + task.rewardCoins + " | 类型: " + task.recurrenceType)
+                            .setPositiveButton("✏️ 编辑", (d2, w2) -> showEditTaskDialog(task))
+                            .setNeutralButton("🗑️ 删除", (d2, w2) -> {
+                                new AlertDialog.Builder(this)
+                                        .setTitle("确认删除")
+                                        .setMessage("确定删除任务「" + task.title + "」吗？此操作不可恢复。")
+                                        .setPositiveButton("确认删除", (d3, w3) -> {
+                                            db.taskDao().delete(task);
+                                            Toast.makeText(this, "已删除: " + task.title, Toast.LENGTH_SHORT).show();
+                                            refreshAll();
+                                        })
+                                        .setNegativeButton("取消", null).show();
+                            })
+                            .setNegativeButton("← 返回", null).show();
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showTaskMenu()).show();
+    }
+    /** 编辑已有任务 */
+    private void showEditTaskDialog(com.sister.habits.data.models.Task task) {
+        android.widget.EditText etTitle = new android.widget.EditText(this);
+        etTitle.setText(task.title);
+        etTitle.setHint("任务名称");
+        android.widget.EditText etReward = new android.widget.EditText(this);
+        etReward.setText(String.valueOf(task.rewardCoins));
+        etReward.setHint("奖励积分");
+        etReward.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        String[] types = {"一次性", "每日", "每周", "每月", "常驻", "限时"};
+        String[] typeCodes = {"once", "daily", "weekly", "monthly", "permanent", "timed"};
+        int selIdx = java.util.Arrays.asList(typeCodes).indexOf(task.recurrenceType);
+        if (selIdx < 0) selIdx = 0;
+        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
+        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
+        ll.setPadding(32,16,32,16);
+        ll.addView(etTitle);
+        ll.addView(etReward);
+        new AlertDialog.Builder(this)
+                .setTitle("编辑任务")
+                .setView(ll)
+                .setSingleChoiceItems(types, selIdx, (d2, w2) -> selIdx = w2)
+                .setPositiveButton("保存", (d2, w2) -> {
+                    String title = etTitle.getText().toString().trim();
+                    String rewardStr = etReward.getText().toString().trim();
+                    if (title.isEmpty() || rewardStr.isEmpty()) {
+                        Toast.makeText(this, "请填写完整", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    task.title = title;
+                    task.rewardCoins = Integer.parseInt(rewardStr);
+                    task.recurrenceType = typeCodes[selIdx];
+                    db.taskDao().update(task);
+                    Toast.makeText(this, "✅ 已更新: " + title, Toast.LENGTH_SHORT).show();
+                    refreshAll();
+                })
+                .setNegativeButton("取消", null).show();
+    }
     private void showTaskTemplates() {
         String[] templates = {
             "H01-整理床铺 (3分)", "H02-玩具归位 (3分)", "H03-擦拭餐桌 (5分)",
@@ -1082,32 +1155,40 @@ private void showProfileSettings() {
             "S06-写日记小作文 (10分)", "S09-错题5道整理 (5分)", "C01-主动帮小事 (5分)",
             "C03-连续三天不挑食 (5分)", "C06-教妹妹学习15min (8分)"
         };
+        final boolean[] checked = new boolean[templates.length];
         new AlertDialog.Builder(this)
-                .setTitle("任务模板库(20个)点击添加")
-                .setItems(templates, (d, which) -> {
-                    String t = templates[which];
-                    String[] p = t.split("-", 2);
-                    String code = p[0];
-                    String desc = p.length > 1 ? p[1] : "";
-                    int reward = 5;
-                    if (desc.contains("(") && desc.contains("分")) {
-                        try {
-                            reward = Integer.parseInt(desc.substring(desc.indexOf("(")+1, desc.indexOf("分")));
-                        } catch (Exception e) {}
+                .setTitle("任务模板库(20个)-多选后一键添加")
+                .setMultiChoiceItems(templates, checked, (d, which, isChecked) -> {})
+                .setPositiveButton("✅ 批量添加选中项", (d, which) -> {
+                    int added = 0;
+                    for (int i = 0; i < templates.length; i++) {
+                        if (!checked[i]) continue;
+                        String t = templates[i];
+                        String[] p = t.split("-", 2);
+                        String code = p[0];
+                        String desc = p.length > 1 ? p[1] : "";
+                        int reward = 5;
+                        if (desc.contains("(") && desc.contains("分")) {
+                            try {
+                                reward = Integer.parseInt(desc.substring(desc.indexOf("(")+1, desc.indexOf("分")));
+                            } catch (Exception e) {}
+                        }
+                        String title = desc.contains("(") ? desc.substring(0, desc.indexOf("(")).trim() : desc;
+                        com.sister.habits.data.models.Task task = new com.sister.habits.data.models.Task();
+                        task.id = code + "_" + System.currentTimeMillis() + "_" + i;
+                        task.title = title;
+                        task.description = code + " " + title;
+                        task.rewardCoins = reward;
+                        task.recurrenceType = "daily";
+                        task.status = "active";
+                        task.createdAt = System.currentTimeMillis();
+                        db.taskDao().insert(task);
+                        added++;
                     }
-                    String title = desc.contains("(") ? desc.substring(0, desc.indexOf("(")).trim() : desc;
-                    com.sister.habits.data.models.Task task = new com.sister.habits.data.models.Task();
-                    task.id = code + "_" + System.currentTimeMillis();
-                    task.title = title;
-                    task.description = code + " " + title;
-                    task.rewardCoins = reward;
-                    task.recurrenceType = "daily";
-                    task.status = "active";
-                    task.createdAt = System.currentTimeMillis();
-                    db.taskDao().insert(task);
-                    Toast.makeText(this, "已添加: " + title + " (+" + reward + "分)", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "✅ 已添加 " + added + " 个任务", Toast.LENGTH_SHORT).show();
+                    refreshAll();
                 })
-                .setNegativeButton("返回上级", (d, w) -> showSystemMenu()).show();
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
     }
 
 
