@@ -166,14 +166,14 @@ public abstract class AppDatabase extends RoomDatabase {
                 "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                 "`date` TEXT, " +
                 "`clothingType` TEXT, " +
-                "`quantity` INTEGER NOT NULL DEFAULT 1, " +
+                "`quantity` INTEGER NOT NULL, " +
                 "`points` INTEGER NOT NULL, " +
                 "`totalPoints` INTEGER NOT NULL, " +
-                "`status` TEXT NOT NULL DEFAULT 'pending', " +
+                "`status` TEXT, " +
                 "`submittedAt` INTEGER NOT NULL, " +
-                "`reviewedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`reviewedAt` INTEGER NOT NULL, " +
                 "`deviceId` TEXT, " +
-                "`synced` INTEGER NOT NULL DEFAULT 0, " +
+                "`synced` INTEGER NOT NULL, " +
                 "`syncTimestamp` INTEGER NOT NULL" +
                 ")"
             );
