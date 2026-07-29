@@ -449,8 +449,8 @@ public class ParentActivity extends AppCompatActivity {
                 "\uD83D\uDCB0 \u91D1\u5E01\u4F59\u989D: " + (balance != null ? balance : 0) + "\n" +
                 "\uD83D\uDDE5 \u4ECA\u65E5\u6536\u5165: +" + todayEarned + "  |  \u4ECA\u65E5\u6D88\u8D39: -" + todaySpent + "\n" +
                 "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
-                "\u5F85\u5BA1\u6279\u5151\u6362: " + pendingCount + " \u9879  |  \u5F85\u786E\u8BA4\u4EFB\u52A1: " + pendingTaskCount + " \u9879
-\uD83D\uDCB0 \u5F85\u5BA1\u79EF\u5206: " + pendingEarningCount + " \u9879"
+                "\u5F85\u5BA1\u6279\u5151\u6362: " + pendingCount + " \u9879  |  \u5F85\u786E\u8BA4\u4EFB\u52A1: " + pendingTaskCount + " \u9879\n" +
+                "\uD83D\uDCB0 \u5F85\u5BA1\u79EF\u5206: " + pendingEarningCount + " \u9879"
         );
     }
 
