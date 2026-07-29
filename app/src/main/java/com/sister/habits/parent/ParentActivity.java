@@ -41,6 +41,12 @@ import com.sister.habits.data.models.GateConfig;
 import com.sister.habits.data.models.DailyGate;
 import com.sister.habits.utils.GateHelper;
 import com.sister.habits.utils.PinHelper;
+import android.app.KeyguardManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.biometric.BiometricManager;
+import androidx.core.content.ContextCompat;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -71,6 +77,24 @@ public class ParentActivity extends AppCompatActivity {
     private String selectedShopImagePath;
     // 当前打开的商品对话框View（用于图片预览更新）
     private View currentShopDialogView;
+
+    // 设备锁验证启动器
+    private final ActivityResultLauncher<android.content.Intent> deviceLockLauncher =
+            registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        // 设备锁验证成功
+                        if (deviceLockSuccessCallback != null) {
+                            deviceLockSuccessCallback.run();
+                            deviceLockSuccessCallback = null;
+                        }
+                    } else {
+                        Toast.makeText(this, "\u274c 设备锁验证失败", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
+    private Runnable deviceLockSuccessCallback = null;
 
     // 相册选图启动器
     private final ActivityResultLauncher<String> pickShopImageLauncher =
@@ -390,11 +414,11 @@ public class ParentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parent);
 
-        // 🔐 PIN安全防护
-        if (!PinHelper.isPinSet(this)) {
-            showPinSetupDialog();
+        // 🔐 安全防护（PIN/指纹/设备锁）
+        if (!PinHelper.isEnabled(this)) {
+            showAuthSetupDialog();
         } else {
-            showPinVerifyDialog(null);
+            showAuthVerifyDialog(null);
         }
 
         db = AppDatabase.getInstance(this);
@@ -436,8 +460,68 @@ public class ParentActivity extends AppCompatActivity {
         SoundHelper.releaseInstance();
     }
 
-    // ========== 🔐 PIN安全防护 ==========
+    // ========== 🔐 安全防护（PIN/指纹/设备锁） ==========
 
+    /** 首次设置：三选一 */
+    private void showAuthSetupDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 家长安全设置")
+                .setMessage("选择一种验证方式来保护家长界面：")
+                .setItems(new String[]{
+                        "🔢 PIN码（4~6位数字）",
+                        "👆 指纹识别",
+                        "🔒 设备锁屏密码"
+                }, (d, w) -> {
+                    switch (w) {
+                        case 0:
+                            showPinSetupDialog();
+                            break;
+                        case 1:
+                            // 检查指纹硬件
+                            BiometricManager bm = BiometricManager.from(this);
+                            if (bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                                    == BiometricManager.BIOMETRIC_SUCCESS) {
+                                PinHelper.setAuthMode(this, PinHelper.MODE_FINGERPRINT);
+                                Toast.makeText(this, "✅ 已选择指纹验证", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(this, "⚠️ 设备不支持指纹，请选择其他方式", Toast.LENGTH_SHORT).show();
+                                showAuthSetupDialog();
+                            }
+                            break;
+                        case 2:
+                            KeyguardManager kgm = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+                            if (kgm != null && kgm.isKeyguardSecure()) {
+                                PinHelper.setAuthMode(this, PinHelper.MODE_DEVICE_LOCK);
+                                Toast.makeText(this, "✅ 已选择设备锁验证", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(this, "⚠️ 设备未设置锁屏密码，请选择其他方式", Toast.LENGTH_SHORT).show();
+                                showAuthSetupDialog();
+                            }
+                            break;
+                    }
+                })
+                .setCancelable(false)
+                .setNegativeButton("退出", (d2, w2) -> finish())
+                .show();
+    }
+
+    /** 根据已选模式进入验证 */
+    private void showAuthVerifyDialog(Runnable onSuccess) {
+        String mode = PinHelper.getAuthMode(this);
+        switch (mode) {
+            case PinHelper.MODE_FINGERPRINT:
+                startFingerprintAuth(onSuccess);
+                break;
+            case PinHelper.MODE_DEVICE_LOCK:
+                startDeviceLockAuth(onSuccess);
+                break;
+            default:
+                showPinVerifyDialog(onSuccess);
+                break;
+        }
+    }
+
+    /** PIN码设置 */
     private void showPinSetupDialog() {
         final android.widget.EditText etPin1 = new android.widget.EditText(this);
         etPin1.setHint("请设置4~6位数字PIN码");
@@ -471,6 +555,7 @@ public class ParentActivity extends AppCompatActivity {
                         return;
                     }
                     if (PinHelper.setPin(this, p1)) {
+                        PinHelper.setAuthMode(this, PinHelper.MODE_PIN);
                         Toast.makeText(this, "✅ PIN码设置成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(this, "⚠️ PIN码格式错误（需4~6位数字）", Toast.LENGTH_SHORT).show();
@@ -481,6 +566,7 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** PIN码验证 */
     private void showPinVerifyDialog(Runnable onSuccess) {
         final android.widget.EditText etPin = new android.widget.EditText(this);
         etPin.setHint("请输入PIN码");
@@ -507,6 +593,56 @@ public class ParentActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("退出", (d, w) -> finish())
                 .show();
+    }
+
+    /** 指纹验证 */
+    private void startFingerprintAuth(Runnable onSuccess) {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt prompt = new BiometricPrompt(this, executor,
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                        if (onSuccess != null) onSuccess.run();
+                    }
+                    @Override
+                    public void onAuthenticationFailed() {
+                        Toast.makeText(ParentActivity.this, "❌ 指纹不匹配", Toast.LENGTH_SHORT).show();
+                    }
+                    @Override
+                    public void onAuthenticationError(int errorCode, CharSequence errString) {
+                        if (errorCode != BiometricPrompt.ERROR_USER_CANCELED
+                                && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                            Toast.makeText(ParentActivity.this, "⚠️ " + errString, Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                    }
+                });
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("🔐 家长验证")
+                .setSubtitle("请验证指纹以进入家长管理")
+                .setNegativeButtonText("使用PIN码")
+                .build();
+        // 如果按了"使用PIN码"，回退到PIN验证
+        prompt.authenticate(info);
+    }
+
+    /** 设备锁验证 */
+    private void startDeviceLockAuth(Runnable onSuccess) {
+        KeyguardManager kgm = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (kgm == null || !kgm.isKeyguardSecure()) {
+            Toast.makeText(this, "⚠️ 设备未设置锁屏密码", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        deviceLockSuccessCallback = onSuccess;
+        android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent(
+                "🔐 家长验证", "请验证设备锁屏密码以进入家长管理");
+        if (intent != null) {
+            deviceLockLauncher.launch(intent);
+        } else {
+            Toast.makeText(this, "⚠️ 无法启动设备锁验证", Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 
 
@@ -2578,28 +2714,43 @@ private void showProfileSettings() {
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
     }
-    /** 🔐 PIN码管理 */
+    /** 🔐 安全防护管理 */
     private void showPinManageDialog() {
-        boolean hasPin = PinHelper.isPinSet(this);
-        String[] opts;
-        if (hasPin) {
-            opts = new String[]{"🔄 修改PIN码", "🗑️ 关闭PIN保护"};
-        } else {
-            opts = new String[]{"🔐 设置PIN码"};
+        boolean enabled = PinHelper.isEnabled(this);
+        String mode = PinHelper.getAuthMode(this);
+        String modeLabel;
+        switch (mode) {
+            case PinHelper.MODE_FINGERPRINT: modeLabel = "指纹"; break;
+            case PinHelper.MODE_DEVICE_LOCK: modeLabel = "设备锁"; break;
+            default: modeLabel = "PIN码"; break;
         }
+        java.util.List<String> optList = new java.util.ArrayList<>();
+        optList.add("🔄 切换验证方式（当前：" + modeLabel + "）");
+        if (PinHelper.MODE_PIN.equals(mode) && PinHelper.isPinSet(this)) {
+            optList.add("✏️ 修改PIN码");
+        }
+        if (PinHelper.MODE_PIN.equals(mode) && !PinHelper.isPinSet(this)) {
+            optList.add("🔢 设置PIN码");
+        }
+        optList.add("🗑️ 关闭安全防护");
+        String[] opts = optList.toArray(new String[0]);
+
         new AlertDialog.Builder(this)
-                .setTitle("🔐 PIN码管理")
+                .setTitle("🔐 安全防护管理")
+                .setMessage("当前方式：" + modeLabel)
                 .setItems(opts, (d, which) -> {
-                    if (!hasPin) {
-                        showPinSetupDialog();
-                    } else if (which == 0) {
-                        // 修改PIN：先验证旧PIN
-                        showPinVerifyDialog(() -> showPinSetupDialog());
-                    } else if (which == 1) {
-                        // 关闭PIN
-                        showPinVerifyDialog(() -> {
-                            PinHelper.disablePin(ParentActivity.this);
-                            Toast.makeText(ParentActivity.this, "✅ PIN保护已关闭", Toast.LENGTH_SHORT).show();
+                    String chosen = opts[which];
+                    if (chosen.startsWith("🔄")) {
+                        // 切换方式
+                        showAuthSetupDialog();
+                    } else if (chosen.startsWith("✏️") || chosen.startsWith("🔢")) {
+                        // 修改/设置PIN
+                        showAuthVerifyDialog(() -> showPinSetupDialog());
+                    } else if (chosen.startsWith("🗑️")) {
+                        // 关闭
+                        showAuthVerifyDialog(() -> {
+                            PinHelper.disableAll(ParentActivity.this);
+                            Toast.makeText(ParentActivity.this, "✅ 安全防护已关闭", Toast.LENGTH_SHORT).show();
                         });
                     }
                 })
