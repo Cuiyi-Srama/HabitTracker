@@ -201,7 +201,7 @@ public class TaskFragment extends Fragment {
                 actionHint = "已完成";
             }
             holder.text1.setText(prefix + " " + task.title + "  🪙+" + task.rewardCoins);
-            String ml = com.sister.habits.utils.GateHelper.getMultiplierLabel(v.getContext());
+            String ml = com.sister.habits.utils.GateHelper.getMultiplierLabel(holder.itemView.getContext());
             holder.text2.setText(task.description + "  |  " + actionHint + extraInfo + ml);
             holder.itemView.setOnClickListener(v -> listener.onAction(task));
         }
