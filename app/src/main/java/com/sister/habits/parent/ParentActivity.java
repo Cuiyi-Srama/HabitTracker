@@ -967,11 +967,12 @@ public class ParentActivity extends AppCompatActivity {
     /** ⚙️ 假期配置对话框 */
     private void showGateConfigDialog() {
         soundHelper.playClickSound();
-        com.sister.habits.data.models.GateConfig config = db.gateConfigDao().getConfig();
-        if (config == null) {
-            config = new com.sister.habits.data.models.GateConfig();
-            db.gateConfigDao().insert(config);
+        com.sister.habits.data.models.GateConfig cfg = db.gateConfigDao().getConfig();
+        if (cfg == null) {
+            cfg = new com.sister.habits.data.models.GateConfig();
+            db.gateConfigDao().insert(cfg);
         }
+        final com.sister.habits.data.models.GateConfig config = cfg;
 
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -1058,13 +1059,14 @@ public class ParentActivity extends AppCompatActivity {
     private void showTodayGateReviewDialog() {
         soundHelper.playClickSound();
         String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(new java.util.Date());
-        com.sister.habits.data.models.DailyGate gate = db.dailyGateDao().getByDate(today);
-        if (gate == null) {
-            gate = new com.sister.habits.data.models.DailyGate();
-            gate.date = today;
-            gate.status = com.sister.habits.data.models.DailyGate.STATUS_PENDING;
-            db.dailyGateDao().insert(gate);
+        com.sister.habits.data.models.DailyGate gt = db.dailyGateDao().getByDate(today);
+        if (gt == null) {
+            gt = new com.sister.habits.data.models.DailyGate();
+            gt.date = today;
+            gt.status = com.sister.habits.data.models.DailyGate.STATUS_PENDING;
+            db.dailyGateDao().insert(gt);
         }
+        final com.sister.habits.data.models.DailyGate gate = gt;
 
         String currentStatus = "⏳ 待审核";
         switch (gate.status) {
