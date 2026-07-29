@@ -40,6 +40,7 @@ import com.sister.habits.utils.ProfileManager;
 import com.sister.habits.data.models.GateConfig;
 import com.sister.habits.data.models.DailyGate;
 import com.sister.habits.utils.GateHelper;
+import com.sister.habits.utils.PinHelper;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -389,6 +390,13 @@ public class ParentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parent);
 
+        // 🔐 PIN安全防护
+        if (!PinHelper.isPinSet(this)) {
+            showPinSetupDialog();
+        } else {
+            showPinVerifyDialog(null);
+        }
+
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
         soundHelper = SoundHelper.getInstance(this);
@@ -427,6 +435,81 @@ public class ParentActivity extends AppCompatActivity {
         super.onDestroy();
         SoundHelper.releaseInstance();
     }
+
+    // ========== 🔐 PIN安全防护 ==========
+
+    private void showPinSetupDialog() {
+        final android.widget.EditText etPin1 = new android.widget.EditText(this);
+        etPin1.setHint("请设置4~6位数字PIN码");
+        etPin1.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        final android.widget.EditText etPin2 = new android.widget.EditText(this);
+        etPin2.setHint("再次输入确认");
+        etPin2.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 0);
+        layout.addView(etPin1);
+        layout.addView(etPin2);
+
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 设置家长PIN码")
+                .setMessage("首次进入家长模式，请设置一个PIN码。
+孩子不知道PIN码就无法进入家长界面。")
+                .setView(layout)
+                .setCancelable(false)
+                .setPositiveButton("确认设置", (d, w) -> {
+                    String p1 = etPin1.getText().toString().trim();
+                    String p2 = etPin2.getText().toString().trim();
+                    if (p1.isEmpty() || p2.isEmpty()) {
+                        Toast.makeText(this, "⚠️ PIN码不能为空", Toast.LENGTH_SHORT).show();
+                        showPinSetupDialog();
+                        return;
+                    }
+                    if (!p1.equals(p2)) {
+                        Toast.makeText(this, "⚠️ 两次输入不一致", Toast.LENGTH_SHORT).show();
+                        showPinSetupDialog();
+                        return;
+                    }
+                    if (PinHelper.setPin(this, p1)) {
+                        Toast.makeText(this, "✅ PIN码设置成功", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "⚠️ PIN码格式错误（需4~6位数字）", Toast.LENGTH_SHORT).show();
+                        showPinSetupDialog();
+                    }
+                })
+                .setNegativeButton("退出", (d, w) -> finish())
+                .show();
+    }
+
+    private void showPinVerifyDialog(Runnable onSuccess) {
+        final android.widget.EditText etPin = new android.widget.EditText(this);
+        etPin.setHint("请输入PIN码");
+        etPin.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 0);
+        layout.addView(etPin);
+
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 验证PIN码")
+                .setMessage("请输入家长PIN码以进入管理界面")
+                .setView(layout)
+                .setCancelable(false)
+                .setPositiveButton("确认", (d, w) -> {
+                    String pin = etPin.getText().toString().trim();
+                    if (PinHelper.verifyPin(this, pin)) {
+                        if (onSuccess != null) onSuccess.run();
+                    } else {
+                        Toast.makeText(this, "❌ PIN码错误", Toast.LENGTH_SHORT).show();
+                        showPinVerifyDialog(onSuccess);
+                    }
+                })
+                .setNegativeButton("退出", (d, w) -> finish())
+                .show();
+    }
+
 
     private void refreshAll() {
         refreshStats();
@@ -1155,7 +1238,8 @@ public class ParentActivity extends AppCompatActivity {
                 "🔑 绑定管理（家长/孩子Key）",
                 "🔐 数据导出备份",
                 "📡 设备同步 & QR配对",
-                "🔄 检查更新"
+                "🔄 检查更新",
+                "🔐 PIN码管理"
         };
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 系统设置")
@@ -1171,6 +1255,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 7: showBackupRestoreDialog(); break;
                         case 8: showSyncDashboardDialog(); break;
                         case 9: checkForUpdate(); break;
+                        case 10: showPinManageDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -2516,3 +2601,32 @@ private void showProfileSettings() {
                 .show();
     }
 }
+
+    /** 🔐 PIN码管理 */
+    private void showPinManageDialog() {
+        boolean hasPin = PinHelper.isPinSet(this);
+        String[] opts;
+        if (hasPin) {
+            opts = new String[]{"🔄 修改PIN码", "🗑️ 关闭PIN保护"};
+        } else {
+            opts = new String[]{"🔐 设置PIN码"};
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 PIN码管理")
+                .setItems(opts, (d, which) -> {
+                    if (!hasPin) {
+                        showPinSetupDialog();
+                    } else if (which == 0) {
+                        // 修改PIN：先验证旧PIN
+                        showPinVerifyDialog(() -> showPinSetupDialog());
+                    } else if (which == 1) {
+                        // 关闭PIN
+                        showPinVerifyDialog(() -> {
+                            PinHelper.disablePin(ParentActivity.this);
+                            Toast.makeText(ParentActivity.this, "✅ PIN保护已关闭", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                })
+                .setNegativeButton("← 返回上级", (d2, w2) -> showSystemMenu())
+                .show();
+    }
