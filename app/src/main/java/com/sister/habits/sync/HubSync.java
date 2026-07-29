@@ -337,15 +337,6 @@ public class HubSync {
         }
         return null;
     }
-                } catch (Exception e) {
-                        Log.d(TAG, "Hub扫描跳过: " + targetIp);
-                    }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Hub发现失败", e);
-        }
-        return null;
-    }
 
     /** 清除Hub缓存（强制重新发现） */
     public void clearHubCache() {
