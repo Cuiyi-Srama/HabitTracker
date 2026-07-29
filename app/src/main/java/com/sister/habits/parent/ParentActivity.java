@@ -887,17 +887,17 @@ public class ParentActivity extends AppCompatActivity {
     private void showTaskMenu() {
         int pendingCount = db.taskDao().getByStatus("pending").size();
         String[] taskLabels = {
-                "➕ 添加新任务",
+                "📋 任务列表（管理/删除任务）",
+                "➕ 发布新任务",
                 "⏳ 待确认任务（" + pendingCount + "项）",
-                "📋 任务模板库",
-                "📝 管理已发布任务"
+                "📋 任务模板库"
         };
         com.sister.habits.utils.MenuHelper.showWithBack(this, "📋 任务管理", taskLabels,
                 this::showSettingsDialog,
+                this::showManageTasksDialog,
                 this::showAddTaskDialog,
                 () -> { loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); },
-                this::showTaskTemplates,
-                this::showManageTasksDialog
+                this::showTaskTemplates
         );
     }
 
