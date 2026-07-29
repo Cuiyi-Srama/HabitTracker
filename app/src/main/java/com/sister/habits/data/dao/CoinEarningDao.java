@@ -16,7 +16,7 @@ public interface CoinEarningDao {
     @Query("SELECT * FROM coin_earnings WHERE userId = :userId ORDER BY requestedAt DESC")
     List<CoinEarning> getByUser(String userId);
     @Query("SELECT * FROM coin_earnings WHERE sourceType = :sourceType AND sourceId = :sourceId")
-    List<CoinEarning> getBySource(String sourceType, long sourceId);
+    List<CoinEarning> getBySource(String sourceType, String sourceId);
 
     @Query("SELECT * FROM coin_earnings WHERE userId = :userId AND requestedAt >= :dayStart AND requestedAt < :dayEnd ORDER BY requestedAt ASC")
     List<CoinEarning> getByUserAndDate(String userId, long dayStart, long dayEnd);
