@@ -26,6 +26,9 @@ import com.sister.habits.sync.EarningService;
 import com.sister.habits.sync.AcceleratorService;
 import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.BindKeyManager;
+import com.sister.habits.data.models.DailyGate;
+import com.sister.habits.utils.GateHelper;
+import com.sister.habits.utils.NotificationHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -206,6 +209,7 @@ public class ChildActivity extends AppCompatActivity {
                         "👤 查看我的统计",
                         "🔊 朗读速度(正常/慢速)",
                         "📖 今日单词进度",
+                        "📝 提交今日作业",
                         "🔑 我的Key",
                         "🔐 进入家长管理"
                 }, (dialog, which) -> {
@@ -238,6 +242,9 @@ public class ChildActivity extends AppCompatActivity {
                             Toast.makeText(this, speedText, Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
+                            submitTodayHomework();
+                            break;
+                        case 3:
                             String bankId2 = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
                             int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis(), bankId2);
                             int totalLearning = db.wordReviewDao().getTotalLearningCount(bankId2);
@@ -251,7 +258,7 @@ public class ChildActivity extends AppCompatActivity {
                                     .setPositiveButton("继续加油 💪", null)
                                     .show();
                             break;
-                        case 3:
+                        case 4:
                             // 显示我的Child Key
                             String childKey = BindKeyManager.generateChildKey(this);
                             java.util.Set<String> parents = BindKeyManager.getBoundParents(this);
@@ -279,7 +286,7 @@ public class ChildActivity extends AppCompatActivity {
                                 .setNegativeButton("关闭", null)
                                 .show();
                             break;
-                        case 4:
+                        case 5:
                             // 进入家长管理（需要验证）
                             Intent intent = new Intent(this, com.sister.habits.MainActivity.class);
                             intent.putExtra("force_parent_mode", true);
@@ -289,6 +296,53 @@ public class ChildActivity extends AppCompatActivity {
                     }
                 })
                 .setNegativeButton("关闭", null)
+                .show();
+    }
+
+    /** 📝 提交今日作业 */
+    private void submitTodayHomework() {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
+        
+        // 检查是否今天已提交
+        DailyGate existing = db.dailyGateDao().getByDate(today);
+        if (existing != null) {
+            String statusText;
+            switch (existing.status) {
+                case DailyGate.STATUS_PENDING: statusText = "⏳ 待审核"; break;
+                case DailyGate.STATUS_COMPLETED: statusText = "✅ 已完成"; break;
+                case DailyGate.STATUS_INCOMPLETE: statusText = "❌ 未完成"; break;
+                case DailyGate.STATUS_AI_DETECTED: statusText = "🤖 AI作弊"; break;
+                case DailyGate.STATUS_SKIPPED: statusText = "⏭️ 免检"; break;
+                default: statusText = existing.status;
+            }
+            new android.app.AlertDialog.Builder(this)
+                    .setTitle("📝 今日作业")
+                    .setMessage("今日已提交作业\n状态：" + statusText + "\n\n如需重新提交请联系家长")
+                    .setPositiveButton("好的", null)
+                    .show();
+            return;
+        }
+        
+        // 创建新提交
+        DailyGate gate = new DailyGate();
+        gate.date = today;
+        gate.status = DailyGate.STATUS_PENDING;
+        gate.submittedAt = System.currentTimeMillis();
+        gate.deviceId = syncManager.getDeviceId();
+        db.dailyGateDao().insert(gate);
+        
+        // 通知家长
+        NotificationHelper.notifyGateSubmission(this, today);
+        
+        // 检查是否假期模式（提示孩子）
+        com.sister.habits.data.models.GateConfig gConfig = db.gateConfigDao().getConfig();
+        boolean isHoliday = gConfig != null && GateHelper.isDiscountMode(gConfig);
+        String tip = isHoliday ? "\n\n⚠️ 当前为假期打折模式，完成任务积分可能打折哦" : "";
+        
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("📝 作业已提交")
+                .setMessage("今日作业已提交，等待家长审核！" + tip)
+                .setPositiveButton("知道了", null)
                 .show();
     }
 }
