@@ -39,6 +39,7 @@ import com.sister.habits.utils.NotificationHelper;
 import com.sister.habits.utils.ProfileManager;
 import com.sister.habits.data.models.GateConfig;
 import com.sister.habits.data.models.DailyGate;
+import com.sister.habits.data.models.LaundryTask;
 import com.sister.habits.utils.GateHelper;
 import com.sister.habits.utils.PinHelper;
 import android.app.KeyguardManager;
@@ -964,7 +965,8 @@ public class ParentActivity extends AppCompatActivity {
         soundHelper.playClickSound();
         int pendingTotal = db.redemptionDao().getByStatus("pending").size()
             + db.taskDao().getByStatus("pending").size()
-            + db.coinEarningDao().getPendingCount();
+            + db.coinEarningDao().getPendingCount()
+            + db.laundryDao().getPending().size();
         String[] mainLabels = {
                 "📊 数据总览",
                 "✅ 审批中心" + (pendingTotal > 0 ? "（" + pendingTotal + "项待处理）" : ""),
@@ -972,6 +974,7 @@ public class ParentActivity extends AppCompatActivity {
                 "🏪 商城管理",
                 "📋 任务管理",
                 "📋 作业管理（关卡打折）",
+                "🧺 洗衣任务",
             "⚙️ 系统设置"
         };
         com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
@@ -981,6 +984,7 @@ public class ParentActivity extends AppCompatActivity {
                 this::showShopMenu,
                 this::showTaskMenu,
                 this::showGateManageDialog,
+                this::showLaundryManageDialog,
                 this::showSystemMenu
         );
     }
@@ -1421,6 +1425,116 @@ public class ParentActivity extends AppCompatActivity {
             .show();
     }
 
+
+    /** 🧺 洗衣任务管理 */
+    private void showLaundryManageDialog() {
+        soundHelper.playClickSound();
+        SharedPreferences prefs = getSharedPreferences("laundry_prefs", MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("laundry_enabled", true);
+        
+        List<LaundryTask> pending = db.laundryDao().getPending();
+        int pendingCount = pending.size();
+        int todayApproved = db.laundryDao().getApprovedCountForDate(
+            new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date()));
+        
+        String[] items = {
+            "📊 今日已通过: " + todayApproved + " 项",
+            "📋 待审核: " + pendingCount + " 项",
+            enabled ? "🔴 关闭洗衣功能" : "🟢 开启洗衣功能"
+        };
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🧺 洗衣任务管理")
+            .setItems(items, (d, which) -> {
+                switch (which) {
+                    case 0:
+                        Toast.makeText(this, "今日已通过 " + todayApproved + " 项洗衣任务", Toast.LENGTH_SHORT).show();
+                        break;
+                    case 1:
+                        showLaundryReviewDialog(pending);
+                        break;
+                    case 2:
+                        prefs.edit().putBoolean("laundry_enabled", !enabled).apply();
+                        String msg = !enabled ? "✅ 洗衣功能已开启" : "🚫 洗衣功能已关闭";
+                        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showSettingsDialog())
+            .show();
+    }
+    
+    /** 洗衣任务审核 */
+    private void showLaundryReviewDialog(List<LaundryTask> pending) {
+        if (pending.isEmpty()) {
+            Toast.makeText(this, "没有待审核的洗衣任务", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String[] labels = new String[pending.size()];
+        for (int i = 0; i < pending.size(); i++) {
+            LaundryTask t = pending.get(i);
+            labels[i] = "🧺 " + t.clothingType + " ×" + t.quantity + " = " + t.totalPoints + "分 (" + t.date + ")";
+        }
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🧺 洗衣任务审核 (" + pending.size() + "项)")
+            .setItems(labels, (dialog, which) -> {
+                LaundryTask task = pending.get(which);
+                showLaundryApproveDialog(task);
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showLaundryManageDialog())
+            .show();
+    }
+    
+    /** 单项审核：通过/拒绝 */
+    private void showLaundryApproveDialog(LaundryTask task) {
+        new AlertDialog.Builder(this)
+            .setTitle("审核: " + task.clothingType + " ×" + task.quantity)
+            .setMessage(
+                "衣物类型: " + task.clothingType + "
+" +
+                "件数: " + task.quantity + "件
+" +
+                "积分: " + task.totalPoints + "分
+" +
+                "提交时间: " + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(task.submittedAt)))
+            .setPositiveButton("✅ 通过", (d, w) -> {
+                task.status = LaundryTask.STATUS_APPROVED;
+                task.reviewedAt = System.currentTimeMillis();
+                db.laundryDao().update(task);
+                
+                // 发放积分
+                Integer balance = db.coinTransactionDao().getBalance("sister");
+                int newBalance = (balance != null ? balance : 0) + task.totalPoints;
+                com.sister.habits.data.models.CoinTransaction tx = new com.sister.habits.data.models.CoinTransaction(
+                    "sister", task.totalPoints, newBalance, "laundry",
+                    task.clothingType + "×" + task.quantity, syncManager.getDeviceId());
+                db.coinTransactionDao().insert(tx);
+                syncManager.onDataChanged();
+                
+                Toast.makeText(this, "✅ 已通过！+ " + task.totalPoints + "分", Toast.LENGTH_SHORT).show();
+                
+                // 刷新列表
+                List<LaundryTask> remaining = db.laundryDao().getPending();
+                if (!remaining.isEmpty()) {
+                    showLaundryReviewDialog(remaining);
+                }
+            })
+            .setNegativeButton("❌ 拒绝", (d, w) -> {
+                task.status = LaundryTask.STATUS_REJECTED;
+                task.reviewedAt = System.currentTimeMillis();
+                db.laundryDao().update(task);
+                Toast.makeText(this, "已拒绝", Toast.LENGTH_SHORT).show();
+                
+                List<LaundryTask> remaining = db.laundryDao().getPending();
+                if (!remaining.isEmpty()) {
+                    showLaundryReviewDialog(remaining);
+                }
+            })
+            .setNeutralButton("取消", null)
+            .show();
+    }
     /** 二级菜单：⚙️ 系统设置 */
     private void showSystemMenu() {
         String[] items = {
