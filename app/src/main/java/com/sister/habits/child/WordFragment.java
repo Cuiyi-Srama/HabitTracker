@@ -52,6 +52,7 @@ public class WordFragment extends Fragment {
     private int dailyWordLimit = 10;
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
+    private final java.util.Map<String, java.util.List<String> > wordOptions = new java.util.HashMap<>();
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
@@ -201,11 +202,17 @@ public class WordFragment extends Fragment {
                     ? "所有单词都检测通过了！去逛逛商城吧 🏪"
                     : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+            if (btnNewWords != null) btnNewWords.setEnabled(true);
+            if (btnReview != null) btnReview.setEnabled(true);
             updateStats();
             return;
         }
 
+        Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
+        wordOptions.clear();
+        if (btnNewWords != null) btnNewWords.setEnabled(false);
+        if (btnReview != null) btnReview.setEnabled(false);
         updateStats();
         showNextWord();
     }
@@ -258,12 +265,14 @@ public class WordFragment extends Fragment {
         // 自动朗读单词
         soundHelper.speakWord(currentWord.word);
 
-        // 生成选项：1正确 + 3干扰
-        List<String> options = new ArrayList<>();
-        options.add(currentWord.meaning);
+        // 生成选项：1正确 + 3固定干扰（缓存避免复习重考时变化）
+        java.util.List<String> options = wordOptions.get(currentWord.id);
+        if (options == null) {
+            options = new java.util.ArrayList<>();
+            options.add(currentWord.meaning);
 
-        List<Vocabulary> distractors = db.vocabularyDao().getRandom(8, getCurrentBankId());
-        Collections.shuffle(distractors);
+            java.util.List<Vocabulary> distractors = db.vocabularyDao().getRandom(8, getCurrentBankId());
+            java.util.Collections.shuffle(distractors);
         for (Vocabulary v : distractors) {
             if (!v.meaning.equals(currentWord.meaning) && !options.contains(v.meaning)) {
                 options.add(v.meaning);
