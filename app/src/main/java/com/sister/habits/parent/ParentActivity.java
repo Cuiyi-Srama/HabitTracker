@@ -1100,24 +1100,24 @@ private void showProfileSettings() {
                 .setTitle("💰 经济参数")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
-                    db.economyConfigDao().updateAll(
-                            parseInt(etCheckinBase, 10),
-                            parseInt(etStreak3, 5),
-                            parseInt(etStreak7, 15),
-                            parseInt(etStreak14, 30),
-                            parseInt(etStreak30, 100),
-                            parseInt(etWordLearn, 2),
-                            parseInt(etReviewPass, 2),
-                            parseInt(etTaskDailyMin, 5),
-                            parseInt(etTaskDailyMax, 15),
-                            parseInt(etTaskChallengeMin, 20),
-                            parseInt(etTaskChallengeMax, 50),
-                            parseInt(etScreen15, 10),
-                            parseInt(etScreen30, 18),
-                            parseInt(etScreen60, 30),
-                            parseInt(etMaxDailyCoins, 500),
-                            parseInt(etMaxWords, 10),
-                            parseInt(etMaxReview, 30));
+                    finalConfig.checkInBaseReward = parseInt(etCheckinBase, 10);
+                    finalConfig.streak3Bonus = parseInt(etStreak3, 5);
+                    finalConfig.streak7Bonus = parseInt(etStreak7, 15);
+                    finalConfig.streak14Bonus = parseInt(etStreak14, 30);
+                    finalConfig.streak30Bonus = parseInt(etStreak30, 100);
+                    finalConfig.wordLearnReward = parseInt(etWordLearn, 2);
+                    finalConfig.reviewPassReward = parseInt(etReviewPass, 2);
+                    finalConfig.taskDailyMin = parseInt(etTaskDailyMin, 5);
+                    finalConfig.taskDailyMax = parseInt(etTaskDailyMax, 15);
+                    finalConfig.taskChallengeMin = parseInt(etTaskChallengeMin, 20);
+                    finalConfig.taskChallengeMax = parseInt(etTaskChallengeMax, 50);
+                    finalConfig.screenTime15min = parseInt(etScreen15, 10);
+                    finalConfig.screenTime30min = parseInt(etScreen30, 18);
+                    finalConfig.screenTime60min = parseInt(etScreen60, 30);
+                    finalConfig.maxDailyCoins = parseInt(etMaxDailyCoins, 500);
+                    finalConfig.maxDailyWords = parseInt(etMaxWords, 10);
+                    finalConfig.maxDailyReview = parseInt(etMaxReview, 30);
+                    db.economyConfigDao().setConfig(finalConfig);
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
