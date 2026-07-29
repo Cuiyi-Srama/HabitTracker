@@ -48,4 +48,17 @@ public interface CoinEarningDao {
 
     @Query("UPDATE coin_earnings SET synced = 1 WHERE id = :id")
     void markSynced(String id);
+
+    /** 按sourceId和类型查询（用于防止重复发加速器） */
+    @androidx.room.Query("SELECT * FROM coin_earnings WHERE userId = :userId AND sourceId = :sourceId AND sourceType = :type LIMIT 1")
+    CoinEarning getBySourceIdAndType(String userId, String sourceId, String type);
+
+    /** 按类型和时间范围汇总 */
+    @androidx.room.Query("SELECT COALESCE(SUM(amount), 0) FROM coin_earnings WHERE userId = :userId AND sourceType LIKE :typePattern AND requestedAt >= :startTime AND requestedAt < :endTime")
+    int getTotalByTypeSince(String userId, String typePattern, long startTime, long endTime);
+
+    /** 按类型前缀和时间范围查询列表 */
+    @androidx.room.Query("SELECT * FROM coin_earnings WHERE userId = :userId AND sourceType LIKE :typePattern AND requestedAt >= :startTime AND requestedAt < :endTime ORDER BY requestedAt DESC")
+    java.util.List<CoinEarning> getByTypeRange(String userId, String typePattern, long startTime, long endTime);
+
 }
