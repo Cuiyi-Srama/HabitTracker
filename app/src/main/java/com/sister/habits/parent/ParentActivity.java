@@ -1491,7 +1491,7 @@ private void showProfileSettings() {
                                         .setPositiveButton("确认删除", (d3, w3) -> {
                                             db.taskDao().delete(task);
                                             Toast.makeText(this, "已删除: " + task.title, Toast.LENGTH_SHORT).show();
-                                            refreshAll();
+                                            showManageTasksDialog();
                                         })
                                         .setNegativeButton("取消", null).show();
                             })
@@ -1533,7 +1533,7 @@ private void showProfileSettings() {
                     task.recurrenceType = typeCodes[sel[0]];
                     db.taskDao().update(task);
                     Toast.makeText(this, "✅ 已更新: " + title, Toast.LENGTH_SHORT).show();
-                    refreshAll();
+                    showManageTasksDialog();
                 })
                 .setNegativeButton("取消", null).show();
     }
@@ -1578,7 +1578,7 @@ private void showProfileSettings() {
                         added++;
                     }
                     Toast.makeText(this, "✅ 已添加 " + added + " 个任务", Toast.LENGTH_SHORT).show();
-                    refreshAll();
+                    showManageTasksDialog();
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
     }
