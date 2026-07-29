@@ -40,6 +40,18 @@ public class EconomyConfig {
     public int maxDailyWords = 10;            // 每日新词上限
     public int maxDailyReview = 30;           // 每日复习上限
 
+
+    // ===== 加速器 =====
+    public boolean doublePointsEnabled = false;  // 双倍积分日开关
+    public String doublePointDate = null;        // 双倍积分日日期 (yyyy-MM-dd)
+    public int boostStreak7 = 15;                // 连续打卡7天奖励
+    public int boostWeek = 30;                   // 周勤勉奖
+    public int boostMonth = 80;                  // 月度全勤奖
+    public int boostBirthday = 100;              // 生日礼包
+    public int boostHoliday = 50;                // 节日礼包
+    public int softLimitWeekday = 60;            // 平日积分软上限
+    public int softLimitWeekend = 100;           // 周末积分软上限
+
     public EconomyConfig() {
         this.id = 1;
     }
