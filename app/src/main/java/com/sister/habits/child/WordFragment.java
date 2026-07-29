@@ -201,11 +201,18 @@ public class WordFragment extends Fragment {
                     ? "所有单词都检测通过了！去逛逛商城吧 🏪"
                     : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+            // 恢复按钮可用状态
+            if (btnNewWords != null) btnNewWords.setEnabled(true);
+            if (btnReview != null) btnReview.setEnabled(true);
             updateStats();
             return;
         }
 
+        Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
+        // 答题中禁用模式切换按钮，防止刷新选项作弊
+        if (btnNewWords != null) btnNewWords.setEnabled(false);
+        if (btnReview != null) btnReview.setEnabled(false);
         updateStats();
         showNextWord();
     }
