@@ -19,6 +19,7 @@ import com.sister.habits.data.models.CoinEarning;
 import com.sister.habits.sync.EarningService;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.utils.NotificationHelper;
+import com.sister.habits.utils.GateHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,15 +125,19 @@ public class TaskFragment extends Fragment {
             return;
         }
         // 检查积分上限
-        if (!EarningService.isWithinLimit(getContext(), task.rewardCoins)) {
+        if (!EarningService.isWithinLimit(getContext(), actualReward)) {
             Toast.makeText(getContext(), "⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)", Toast.LENGTH_SHORT).show();
             return;
         }
         // 标记为"待家长确认"
         db.taskDao().markPending(task.id, System.currentTimeMillis());
+        // 计算打折乘数
+        double multiplier = GateHelper.getTodayMultiplier(getContext());
+        int actualReward = (int) Math.round(task.rewardCoins * multiplier);
+
         // 提交积分申请
         CoinEarning earning = new CoinEarning();
-        earning.amount = task.rewardCoins;
+        earning.amount = actualReward;
         earning.sourceType = "task";
         earning.sourceId = task.id;
         earning.description = task.title;
@@ -141,7 +146,12 @@ public class TaskFragment extends Fragment {
         // 发送通知给家长
         NotificationHelper.createChannel(requireContext());
         NotificationHelper.notifyTaskCompleted(requireContext(), task.title, task.id);
-        Toast.makeText(getContext(), "✅ 任务已完成！等待家长确认中～", Toast.LENGTH_SHORT).show();
+        String msg = "✅ 任务已完成！等待家长确认中～";
+        if (multiplier < 1.0) {
+            msg += "\n⚠️ 今日积分 ×" + String.format("%.0f%%", multiplier * 100) + "（原" + task.rewardCoins + "→" + actualReward + "）";
+        }
+        final String finalMsg = msg;
+        Toast.makeText(getContext(), finalMsg, Toast.LENGTH_SHORT).show();
         loadTasks();
         // 通知父Activity刷新积分预估
         if (getActivity() instanceof com.sister.habits.child.ChildActivity) {
@@ -190,7 +200,8 @@ public class TaskFragment extends Fragment {
                 actionHint = "已完成";
             }
             holder.text1.setText(prefix + " " + task.title + "  🪙+" + task.rewardCoins);
-            holder.text2.setText(task.description + "  |  " + actionHint + extraInfo);
+            String ml = com.sister.habits.utils.GateHelper.getMultiplierLabel(v.getContext());
+            holder.text2.setText(task.description + "  |  " + actionHint + extraInfo + ml);
             holder.itemView.setOnClickListener(v -> listener.onAction(task));
         }
 
