@@ -25,9 +25,12 @@ import com.sister.habits.data.models.*;
         CoinEarning.class,
         GateConfig.class,
         DailyGate.class,
-        LaundryTask.class
+        LaundryTask.class,
+        LotteryPrize.class,
+        LotteryRecord.class,
+        SchoolReward.class
     },
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -48,6 +51,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract GateConfigDao gateConfigDao();
     public abstract DailyGateDao dailyGateDao();
     public abstract LaundryDao laundryDao();
+    public abstract LotteryDao lotteryDao();
+    public abstract SchoolRewardDao schoolRewardDao();
 
     /**
      * 数据库迁移 1→2：
@@ -202,6 +207,51 @@ public abstract class AppDatabase extends RoomDatabase {
             );
         }
     };
+    static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `lottery_prizes` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`name` TEXT, " +
+                "`icon` TEXT, " +
+                "`cost` INTEGER NOT NULL, " +
+                "`probability` INTEGER NOT NULL, " +
+                "`stock` INTEGER NOT NULL, " +
+                "`enabled` INTEGER NOT NULL, " +
+                "`createdAt` INTEGER NOT NULL" +
+                ")"
+            );
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `lottery_records` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`prizeName` TEXT, " +
+                "`prizeIcon` TEXT, " +
+                "`cost` INTEGER NOT NULL, " +
+                "`wonAt` INTEGER NOT NULL, " +
+                "`deviceId` TEXT" +
+                ")"
+            );
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `school_rewards` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`name` TEXT, " +
+                "`date` TEXT, " +
+                "`points` INTEGER NOT NULL, " +
+                "`note` TEXT, " +
+                "`badge` TEXT, " +
+                "`createdAt` INTEGER NOT NULL, " +
+                "`deviceId` TEXT" +
+                ")"
+            );
+            // 插入默认奖品
+            database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (1, '⭐ 星星贴纸', '⭐', 10, 40, -1, 1, 0)");
+            database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (2, '🍬 糖果', '🍬', 10, 30, -1, 1, 0)");
+            database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (3, '📺 看电视30分钟', '📺', 10, 15, -1, 1, 0)");
+            database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (4, '🎮 游戏15分钟', '🎮', 10, 10, -1, 1, 0)");
+            database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (5, '🌟 神秘大奖', '🌟', 10, 5, -1, 1, 0)");
+        }
+    };
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -213,7 +263,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .build();
                 }
             }
