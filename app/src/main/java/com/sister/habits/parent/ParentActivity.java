@@ -312,7 +312,7 @@ public class ParentActivity extends AppCompatActivity {
                 String json = new String(rawData, "UTF-8");
                 String grade = source.gradeLabel != null ? source.gradeLabel : "external";
                 java.util.List<com.sister.habits.data.models.Vocabulary> words = com.sister.habits.utils.WordBankParser.parse(json, grade);
-                for (com.sister.habits.data.models.Vocabulary w : words) { w.bankId = bankId; w.active = true; }
+                for (com.sister.habits.data.models.Vocabulary w : words) { w.bankId = source.id; w.active = true; }
                 runOnUiThread(() -> {
                     progress.dismiss();
                     if (words.isEmpty()) {
