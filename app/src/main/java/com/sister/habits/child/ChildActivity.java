@@ -386,10 +386,7 @@ public class ChildActivity extends AppCompatActivity {
         
         new android.app.AlertDialog.Builder(this)
             .setTitle("🎉 恭喜中奖！")
-            .setMessage(won.icon + " " + won.name + "
-
-消耗: " + cost + "分
-余额: " + newBalance + "分")
+            .setMessage(won.icon + " " + won.name + "\n\n消耗: " + cost + "分\n余额: " + newBalance + "分")
             .setPositiveButton("🎉 太棒了", null)
             .show();
     }
@@ -424,9 +421,7 @@ public class ChildActivity extends AppCompatActivity {
             return;
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("累计学校奖励: ").append(totalPoints).append("分
-
-");
+        sb.append("累计学校奖励: ").append(totalPoints).append("分\n\n");
         for (SchoolReward r : rewards) {
             sb.append(r.badge).append(" ").append(r.name)
               .append(" +" + r.points + "分")
