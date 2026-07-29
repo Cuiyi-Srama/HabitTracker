@@ -1,6 +1,7 @@
 package com.sister.habits.data.models;
 
 import androidx.room.Entity;
+import androidx.annotation.NonNull;
 import androidx.room.PrimaryKey;
 
 /**
@@ -10,6 +11,7 @@ import androidx.room.PrimaryKey;
 @Entity(tableName = "daily_gates")
 public class DailyGate {
     @PrimaryKey
+    @NonNull
     public String date;           // 日期 yyyy-MM-dd
 
     /**
