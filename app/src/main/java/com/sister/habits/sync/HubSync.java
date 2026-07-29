@@ -210,8 +210,8 @@ public class HubSync {
             HttpURLConnection conn = (HttpURLConnection) syncUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(3000);
-            conn.setReadTimeout(3000);
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
 
             String localData = buildSyncPayload();
             OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
@@ -293,13 +293,13 @@ public class HubSync {
 
                 try {
                     Socket socket = new Socket();
-                    socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 150);
+                    socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 500);
                     socket.close();
 
                     // 发现Hub！验证一下
                     URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
                     HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
-                    conn.setConnectTimeout(300);
+                    conn.setConnectTimeout(1500);
                     if (conn.getResponseCode() == 200) {
                         cachedHubIp = targetIp;
                         lastHubDiscovery = System.currentTimeMillis();
