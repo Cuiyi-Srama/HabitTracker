@@ -1318,7 +1318,7 @@ public class ParentActivity extends AppCompatActivity {
                     for (int i = 0; i < finalHolidayList.size(); i++) {
                         if (i > 0) sb.append(",");
                         String[] range = finalHolidayList.get(i);
-                        sb.append("{"start":"").append(range[0]).append("","end":"").append(range[1]).append(""}");
+                        sb.append("{\"start\":\"").append(range[0]).append("\",\"end\":\"").append(range[1]).append("\"}");
                     }
                     sb.append("]");
                     config.holidayRanges = sb.toString();
@@ -2826,8 +2826,7 @@ private void showProfileSettings() {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < list.size(); i++) {
                 String[] r = list.get(i);
-                sb.append(i+1).append(". ").append(r[0]).append(" ~ ").append(r[1]).append("
-");
+                sb.append(i+1).append(". ").append(r[0]).append(" ~ ").append(r[1]).append("\n");
             }
             tv.setText(sb.toString().trim());
         }
