@@ -504,8 +504,9 @@ public class ParentActivity extends AppCompatActivity {
             return;
         }
         rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
-   
-    /** 加载待审批积分（CoinEarning + Task approval） */
+    }
+
+    /** 加载待审批积分 */
     private void loadPendingEarnings() {
         java.util.List<com.sister.habits.data.models.CoinEarning> pendingEarnings = db.coinEarningDao().getPending();
         if (pendingEarnings.isEmpty()) {
@@ -513,7 +514,6 @@ public class ParentActivity extends AppCompatActivity {
             return;
         }
         rvPendingEarnings.setVisibility(View.VISIBLE);
-        // 简单列表适配器
         java.util.List<String> items = new java.util.ArrayList<>();
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
         for (com.sister.habits.data.models.CoinEarning ce : pendingEarnings) {
@@ -523,7 +523,7 @@ public class ParentActivity extends AppCompatActivity {
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, items);
         rvPendingEarnings.setAdapter(adapter);
-    }
+    }}
  }
 
     private void processTaskApproval(Task task, boolean approved) {
