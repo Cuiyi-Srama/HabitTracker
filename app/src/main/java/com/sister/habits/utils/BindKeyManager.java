@@ -108,11 +108,11 @@ public class BindKeyManager {
 
     /** 验证Child Key格式 */
     public static boolean isValidChildKey(String key) {
-        return key != null && key.startsWith("HABIT-C-") && key.length() == 17;
+        return key != null && key.startsWith("HABIT-C-") && key.length() == 16;
     }
 
     /** 验证Parent Key格式 */
     public static boolean isValidParentKey(String key) {
-        return key != null && key.startsWith("HABIT-P-") && key.length() == 17;
+        return key != null && key.startsWith("HABIT-P-") && key.length() == 16;
     }
 }
