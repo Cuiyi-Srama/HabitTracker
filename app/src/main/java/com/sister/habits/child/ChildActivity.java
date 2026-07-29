@@ -28,6 +28,9 @@ import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.BindKeyManager;
 import com.sister.habits.data.models.DailyGate;
 import com.sister.habits.data.models.LaundryTask;
+import com.sister.habits.data.models.LotteryPrize;
+import com.sister.habits.data.models.LotteryRecord;
+import com.sister.habits.data.models.SchoolReward;
 import com.sister.habits.utils.GateHelper;
 import com.sister.habits.utils.NotificationHelper;
 
@@ -301,6 +304,141 @@ public class ChildActivity extends AppCompatActivity {
     }
 
 
+
+    /** 🎰 抽奖 */
+    private void showLotteryDialog() {
+        List<LotteryPrize> prizes = db.lotteryDao().getEnabledPrizes();
+        if (prizes.isEmpty()) {
+            Toast.makeText(this, "🎰 暂无可用奖品，请联系家长添加", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // 获取抽奖消耗（取第一个奖品的cost作为统一价格）
+        int costPerDraw = prizes.get(0).cost;
+        Integer balance = db.coinTransactionDao().getBalance("sister");
+        int currentBalance = balance != null ? balance : 0;
+        
+        String[] items = new String[prizes.size() + 2];
+        for (int i = 0; i < prizes.size(); i++) {
+            LotteryPrize p = prizes.get(i);
+            items[i] = p.icon + " " + p.name + " (概率" + p.probability + "%)";
+        }
+        items[prizes.size()] = "📋 查看抽奖记录";
+        items[prizes.size() + 1] = "🏆 荣誉墙（学校奖励）";
+        
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("🎰 积分抽奖 (余额: " + currentBalance + "分, " + costPerDraw + "分/次)")
+            .setItems(items, (dialog, which) -> {
+                if (which < prizes.size()) {
+                    // 抽奖
+                    if (currentBalance < costPerDraw) {
+                        Toast.makeText(this, "积分不足！需要 " + costPerDraw + " 分", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    performLottery(prizes, costPerDraw);
+                } else if (which == prizes.size()) {
+                    showLotteryRecords();
+                } else {
+                    showHonorWall();
+                }
+            })
+            .setNegativeButton("关闭", null)
+            .show();
+    }
+    
+    /** 执行抽奖 */
+    private void performLottery(List<LotteryPrize> prizes, int cost) {
+        // 加权随机：按probability权重抽取
+        int totalWeight = 0;
+        for (LotteryPrize p : prizes) totalWeight += p.probability;
+        int rand = new java.util.Random().nextInt(totalWeight);
+        int cumulative = 0;
+        LotteryPrize won = prizes.get(0);
+        for (LotteryPrize p : prizes) {
+            cumulative += p.probability;
+            if (rand < cumulative) { won = p; break; }
+        }
+        
+        // 扣积分
+        Integer balance = db.coinTransactionDao().getBalance("sister");
+        int newBalance = (balance != null ? balance : 0) - cost;
+        com.sister.habits.data.models.CoinTransaction tx = new com.sister.habits.data.models.CoinTransaction(
+            "sister", -cost, newBalance, "lottery", "🎰抽奖 → " + won.name, syncManager.getDeviceId());
+        db.coinTransactionDao().insert(tx);
+        
+        // 记录
+        LotteryRecord record = new LotteryRecord();
+        record.prizeName = won.name;
+        record.prizeIcon = won.icon;
+        record.cost = cost;
+        record.deviceId = syncManager.getDeviceId();
+        db.lotteryDao().insertRecord(record);
+        
+        // 库存减1
+        if (won.stock > 0) {
+            won.stock--;
+            if (won.stock == 0) won.enabled = false;
+            db.lotteryDao().updatePrize(won);
+        }
+        
+        refreshCoinBalance();
+        soundHelper.playCheckInSound();
+        
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("🎉 恭喜中奖！")
+            .setMessage(won.icon + " " + won.name + "
+
+消耗: " + cost + "分
+余额: " + newBalance + "分")
+            .setPositiveButton("🎉 太棒了", null)
+            .show();
+    }
+    
+    /** 抽奖记录 */
+    private void showLotteryRecords() {
+        List<LotteryRecord> records = db.lotteryDao().getRecentRecords();
+        if (records.isEmpty()) {
+            Toast.makeText(this, "还没有抽奖记录哦~", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.CHINA);
+        for (LotteryRecord r : records) {
+            sb.append(r.prizeIcon).append(" ").append(r.prizeName)
+              .append(" (").append(sdf.format(new Date(r.wonAt))).append(")
+");
+        }
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("📋 抽奖记录")
+            .setMessage(sb.toString())
+            .setPositiveButton("好的", null)
+            .show();
+    }
+    
+    /** 🏆 荣誉墙 */
+    private void showHonorWall() {
+        List<SchoolReward> rewards = db.schoolRewardDao().getAll();
+        int totalPoints = db.schoolRewardDao().getTotalPoints();
+        if (rewards.isEmpty()) {
+            Toast.makeText(this, "🏆 还没有学校奖励记录哦~", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("累计学校奖励: ").append(totalPoints).append("分
+
+");
+        for (SchoolReward r : rewards) {
+            sb.append(r.badge).append(" ").append(r.name)
+              .append(" +" + r.points + "分")
+              .append(" (").append(r.date).append(")
+");
+        }
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("🏆 荣誉墙")
+            .setMessage(sb.toString())
+            .setPositiveButton("继续努力 💪", null)
+            .show();
+    }
     /** 🧺 洗衣任务 - 选择衣物类型和件数提交 */
     private void showLaundryDialog() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
