@@ -114,7 +114,7 @@ public class ChildActivity extends AppCompatActivity {
         refreshEarningEstimate();
     }
 
-    private void refreshEarningEstimate() {
+    public void refreshEarningEstimate() {
         int confirmed = com.sister.habits.sync.EarningService.calculateTodayConfirmed(this);
         int pending = com.sister.habits.sync.EarningService.calculateTodayPending(this);
         int totalExpected = confirmed + pending;
