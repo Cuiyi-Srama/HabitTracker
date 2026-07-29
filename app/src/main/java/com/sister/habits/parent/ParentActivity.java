@@ -868,9 +868,6 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** 预览孩子心愿单 */
-        
-
     /** ⚙️ 检查更新 */
     private void checkForUpdate() {
         new Thread(() -> {
@@ -970,8 +967,27 @@ private void showProfileSettings() {
         android.widget.EditText etNickname = view.findViewById(R.id.et_nickname);
         android.widget.EditText etAppTitle = view.findViewById(R.id.et_app_title);
         Button btnPickAvatar = view.findViewById(R.id.btn_pick_avatar);
+        android.widget.TextView tvBirthday = view.findViewById(R.id.tv_birthday);
         etNickname.setText(profile.getNickname());
         etAppTitle.setText(profile.getAppTitle());
+        // 生日显示
+        String bday = profile.getBirthday();
+        tvBirthday.setText(bday.isEmpty() ? "🎂 点击设置孩子生日" : "🎂 生日: " + bday);
+        tvBirthday.setOnClickListener(v -> {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            // 如果已有生日，用已有的日期
+            if (!bday.isEmpty()) {
+                try {
+                    String[] parts = bday.split("-");
+                    cal.set(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])-1, Integer.parseInt(parts[2]));
+                } catch (Exception e) {}
+            }
+            new android.app.DatePickerDialog(this, (datePicker, year, month, day) -> {
+                String picked = year + "-" + (month+1) + "-" + day;
+                tvBirthday.setText("🎂 生日: " + picked);
+                profile.setBirthday(picked);
+            }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show();
+        });
         btnPickAvatar.setOnClickListener(v -> pickShopImageLauncher.launch("image/*"));
         new AlertDialog.Builder(this)
                 .setTitle("👤 个人信息")
