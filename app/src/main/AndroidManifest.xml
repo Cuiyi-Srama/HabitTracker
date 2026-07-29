@@ -12,6 +12,7 @@
     <!-- QR码扫描需相机权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 存储备份 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
