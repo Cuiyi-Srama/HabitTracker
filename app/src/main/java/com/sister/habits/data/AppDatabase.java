@@ -22,9 +22,11 @@ import com.sister.habits.data.models.*;
         WordReview.class,
         WordBank.class,
         WishlistItem.class,
-        CoinEarning.class
+        CoinEarning.class,
+        GateConfig.class,
+        DailyGate.class
     },
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -42,6 +44,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract WordBankDao wordBankDao();
     public abstract WishlistDao wishlistDao();
     public abstract CoinEarningDao coinEarningDao();
+    public abstract GateConfigDao gateConfigDao();
+    public abstract DailyGateDao dailyGateDao();
 
     /**
      * 数据库迁移 1→2：
@@ -111,6 +115,47 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `gate_config` (" +
+                "`id` INTEGER NOT NULL, " +
+                "`holidayRanges` TEXT, " +
+                "`weekendMode` INTEGER NOT NULL DEFAULT 1, " +
+                "`completionReward` INTEGER NOT NULL DEFAULT 5, " +
+                "`defaultPenaltyPercent` INTEGER NOT NULL DEFAULT 50, " +
+                "`makeupPercent` INTEGER NOT NULL DEFAULT 80, " +
+                "`deadlineTime` TEXT, " +
+                "`enabled` INTEGER NOT NULL DEFAULT 1, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "`deviceId` TEXT, " +
+                "`synced` INTEGER NOT NULL DEFAULT 0, " +
+                "`syncTimestamp` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+            );
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `daily_gates` (" +
+                "`date` TEXT NOT NULL, " +
+                "`status` TEXT, " +
+                "`isLateSubmission` INTEGER NOT NULL DEFAULT 0, " +
+                "`reviewedAt` INTEGER NOT NULL, " +
+                "`submittedAt` INTEGER NOT NULL, " +
+                "`note` TEXT, " +
+                "`deviceId` TEXT, " +
+                "`synced` INTEGER NOT NULL DEFAULT 0, " +
+                "`syncTimestamp` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`date`))"
+            );
+            // 插入默认配置
+            database.execSQL("INSERT OR IGNORE INTO gate_config (" +
+                "id, holidayRanges, weekendMode, completionReward, " +
+                "defaultPenaltyPercent, makeupPercent, deadlineTime, enabled, " +
+                "updatedAt, deviceId, synced, syncTimestamp" +
+                ") VALUES (1, '[]', 1, 5, 50, 80, '12:00', 1, 0, '', 0, 0)");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -122,7 +167,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build();
                 }
             }
