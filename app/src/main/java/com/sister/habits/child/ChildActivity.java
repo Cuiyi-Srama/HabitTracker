@@ -84,18 +84,6 @@ public class ChildActivity extends AppCompatActivity {
                 case 2: tab.setText("📖 单词"); break;
             }
         }).attach();
-        // 监听页面切换 — 当切换到单词Tab时强制刷新
-        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                if (position == 2) {
-                    Fragment frag = getSupportFragmentManager().findFragmentByTag("f" + position);
-                    if (frag instanceof WordFragment) {
-                        ((WordFragment) frag).refreshWordBank();
-                    }
-                }
-            }
-        });
 
         // Tab 点击震动反馈
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
