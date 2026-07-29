@@ -1044,7 +1044,7 @@ private void showProfileSettings() {
 
 
     private void showEarningApprovals() {
-        java.util.List<com.sister.habits.data.models.CoinEarning> pendings = db.coinEarningDao().getPending("sister");
+        java.util.List<com.sister.habits.data.models.CoinEarning> pendings = db.coinEarningDao().getPending();
         if (pendings == null || pendings.isEmpty()) {
             Toast.makeText(this, "无待审积分", Toast.LENGTH_SHORT).show();
             return;
