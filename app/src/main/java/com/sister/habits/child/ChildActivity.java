@@ -71,6 +71,10 @@ public class ChildActivity extends AppCompatActivity {
         TextView btnSettings = findViewById(R.id.btn_child_settings);
         btnSettings.setOnClickListener(v -> showChildSettings());
 
+        // 📝 作业提交按钮
+        TextView btnHomework = findViewById(R.id.btn_submit_homework);
+        btnHomework.setOnClickListener(v -> submitTodayHomework());
+
         // 刷新金币余额
         refreshCoinBalance();
 
@@ -209,7 +213,6 @@ public class ChildActivity extends AppCompatActivity {
                         "👤 查看我的统计",
                         "🔊 朗读速度(正常/慢速)",
                         "📖 今日单词进度",
-                        "📝 提交今日作业",
                         "🔑 我的Key",
                         "🔐 进入家长管理"
                 }, (dialog, which) -> {
@@ -242,9 +245,6 @@ public class ChildActivity extends AppCompatActivity {
                             Toast.makeText(this, speedText, Toast.LENGTH_SHORT).show();
                             break;
                         case 2:
-                            submitTodayHomework();
-                            break;
-                        case 3:
                             String bankId2 = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
                             int dueCount = db.wordReviewDao().getDueCount(System.currentTimeMillis(), bankId2);
                             int totalLearning = db.wordReviewDao().getTotalLearningCount(bankId2);
@@ -258,7 +258,7 @@ public class ChildActivity extends AppCompatActivity {
                                     .setPositiveButton("继续加油 💪", null)
                                     .show();
                             break;
-                        case 4:
+                        case 3:
                             // 显示我的Child Key
                             String childKey = BindKeyManager.generateChildKey(this);
                             java.util.Set<String> parents = BindKeyManager.getBoundParents(this);
@@ -286,7 +286,7 @@ public class ChildActivity extends AppCompatActivity {
                                 .setNegativeButton("关闭", null)
                                 .show();
                             break;
-                        case 5:
+                        case 4:
                             // 进入家长管理（需要验证）
                             Intent intent = new Intent(this, com.sister.habits.MainActivity.class);
                             intent.putExtra("force_parent_mode", true);
