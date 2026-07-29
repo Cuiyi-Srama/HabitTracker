@@ -61,4 +61,9 @@ public interface CoinEarningDao {
     @androidx.room.Query("SELECT * FROM coin_earnings WHERE userId = :userId AND sourceType LIKE :typePattern AND requestedAt >= :startTime AND requestedAt < :endTime ORDER BY requestedAt DESC")
     java.util.List<CoinEarning> getByTypeRange(String userId, String typePattern, long startTime, long endTime);
 
+
+    /** 按类型删除（清理无效加速器） */
+    @androidx.room.Query("DELETE FROM coin_earnings WHERE userId = :userId AND sourceType = :sourceType")
+    void deleteBySourceType(String userId, String sourceType);
+
 }
