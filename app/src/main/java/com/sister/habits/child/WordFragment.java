@@ -15,6 +15,8 @@ import androidx.fragment.app.Fragment;
 import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.CoinTransaction;
+import com.sister.habits.data.models.CoinEarning;
+import com.sister.habits.sync.EarningService;
 import com.sister.habits.data.models.EconomyConfig;
 import com.sister.habits.data.models.Vocabulary;
 import com.sister.habits.data.models.WordReview;
@@ -314,23 +316,28 @@ public class WordFragment extends Fragment {
                 tvPrompt.setText("✅ 答对了！继续加油 💪");
                 soundHelper.playCorrectSound();
             } else {
-                // 学习模式：每个词一次机会，答对得2金币
+                // 学习模式：每个词一次机会，答对得2积分（提交家长审批）
                 int coinReward = 2;
-                Integer balance = db.coinTransactionDao().getBalance("sister");
-                int newBalance = (balance != null ? balance : 0) + coinReward;
-                CoinTransaction ct = new CoinTransaction(
-                        "sister", coinReward, newBalance,
-                        "word_learn_pass", "新词学习: " + currentWord.word,
-                        syncManager.getDeviceId());
-                db.coinTransactionDao().insert(ct);
+                if (!EarningService.isWithinLimit(getContext(), coinReward)) {
+                    tvPrompt.setText("⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)");
+                    soundHelper.playClickSound();
+                } else {
+                    CoinEarning earning = new CoinEarning();
+                    earning.amount = coinReward;
+                    earning.sourceType = "word_learn";
+                    earning.sourceId = currentWord.id;
+                    earning.description = "新词学习: " + currentWord.word;
+                    earning.deviceId = com.sister.habits.sync.SyncManager.getInstance(getContext()).getDeviceId();
+                    db.coinEarningDao().insert(earning);
 
-                // 实时刷新金币
-                if (getActivity() instanceof ChildActivity) {
-                    ((ChildActivity) getActivity()).refreshCoinBalance();
+                    // 实时刷新预估
+                    if (getActivity() instanceof ChildActivity) {
+                        ((ChildActivity) getActivity()).refreshCoinBalance();
+                    }
+
+                    tvPrompt.setText("📖 已记住: " + currentWord.word + "  +" + coinReward + "分（待家长审批）");
+                    soundHelper.playClickSound();
                 }
-
-                tvPrompt.setText("📖 已记住: " + currentWord.word + "  +" + coinReward + "金币 🪙");
-                soundHelper.playClickSound();
             }
 
             // 答对更新复习状态
@@ -421,13 +428,12 @@ public class WordFragment extends Fragment {
     /** 复习模式全通关后统一发放积分奖励 */
     private void grantReviewReward(int totalBonus) {
         if (totalBonus <= 0) return;
-        Integer balance = db.coinTransactionDao().getBalance("sister");
-        int newBalance = (balance != null ? balance : 0) + totalBonus;
-        CoinTransaction ct = new CoinTransaction(
-                "sister", totalBonus, newBalance,
-                "word_review_pass", "复习通关: 全对" + currentReviewTotal + "词",
-                syncManager.getDeviceId());
-        db.coinTransactionDao().insert(ct);
+        CoinEarning earning = new CoinEarning();
+        earning.amount = totalBonus;
+        earning.sourceType = "word_learn";
+        earning.description = "复习通关: 全对" + (currentReviewTotal > 0 ? currentReviewTotal + "词" : "");
+        earning.deviceId = com.sister.habits.sync.SyncManager.getInstance(getContext()).getDeviceId();
+        db.coinEarningDao().insert(earning);
 
         if (getActivity() instanceof ChildActivity) {
             ((ChildActivity) getActivity()).refreshCoinBalance();
