@@ -97,24 +97,35 @@ public class AcceleratorService {
             }
         }
 
-        // 4. 生日礼包
+        // 4. 生日礼包（从ProfileManager读取生日）
         Calendar cal = Calendar.getInstance();
         int month = cal.get(Calendar.MONTH) + 1;
         int day = cal.get(Calendar.DAY_OF_MONTH);
-        // 用profile中的生日字段（如果存在）
-        String bdayKey = month + "-" + day;
-        CoinEarning existingBday = db.coinEarningDao().getBySourceIdAndType("sister", "birthday_" + bdayKey, "boost_birthday");
-        if (existingBday == null) {
-            CoinEarning boost = new CoinEarning();
-            boost.userId = "sister";
-            boost.amount = 100;
-            boost.sourceType = "boost_birthday";
-            boost.sourceId = "birthday_" + bdayKey;
-            boost.description = "🎂 生日礼包: 生日快乐! 今天+100分!";
-            boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
-            boost.status = "pending";
-            boost.requestedAt = System.currentTimeMillis();
-            db.coinEarningDao().insert(boost);
+        String birthday = com.sister.habits.utils.ProfileManager.getInstance(ctx).getBirthday();
+        boolean isBirthday = false;
+        if (!birthday.isEmpty()) {
+            try {
+                String[] parts = birthday.split("-");
+                int bMonth = Integer.parseInt(parts[1]);
+                int bDay = Integer.parseInt(parts[2]);
+                isBirthday = (bMonth == month && bDay == day);
+            } catch (Exception e) {}
+        }
+        if (isBirthday) {
+            String bdayKey = month + "-" + day;
+            CoinEarning existingBday = db.coinEarningDao().getBySourceIdAndType("sister", "birthday_" + bdayKey, "boost_birthday");
+            if (existingBday == null) {
+                CoinEarning boost = new CoinEarning();
+                boost.userId = "sister";
+                boost.amount = 100;
+                boost.sourceType = "boost_birthday";
+                boost.sourceId = "birthday_" + bdayKey;
+                boost.description = "🎂 生日礼包: 生日快乐! 今天+100分!";
+                boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
+                boost.status = "pending";
+                boost.requestedAt = System.currentTimeMillis();
+                db.coinEarningDao().insert(boost);
+            }
         }
 
         // 5. 节日礼包
