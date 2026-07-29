@@ -34,6 +34,7 @@ import com.sister.habits.sync.SyncManager;
 import com.sister.habits.sync.EarningService;
 import com.sister.habits.data.models.CoinEarning;
 import com.sister.habits.utils.SoundHelper;
+import com.sister.habits.utils.BindKeyManager;
 import com.sister.habits.utils.NotificationHelper;
 import com.sister.habits.utils.ProfileManager;
 
@@ -931,6 +932,70 @@ public class ParentActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
                 .show();
+    }
+
+    /** 🔑 绑定管理 */
+    private void showBindKeyDialog() {
+        String parentKey = BindKeyManager.generateParentKey(this);
+        java.util.Set<String> children = BindKeyManager.getBoundChildren(this);
+        StringBuilder sb = new StringBuilder();
+        sb.append("👤 你的家长Key：\n").append(parentKey).append("\n\n");
+        sb.append("📱 已绑定的孩子：\n");
+        if (children.isEmpty()) {
+            sb.append("（暂无）\n");
+        } else {
+            int i = 1;
+            for (String ck : children) {
+                sb.append(i).append(". ").append(ck).append("\n");
+                i++;
+            }
+        }
+        sb.append("\n💡 提示：在孩子端查看Child Key，在此输入即可绑定。");
+        
+        android.widget.EditText etInput = new android.widget.EditText(this);
+        etInput.setHint("输入孩子的Child Key (HABIT-C-XXXX)");
+        etInput.setTextColor(0xFF000000);
+        
+        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
+        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
+        ll.setPadding(48, 24, 48, 24);
+        android.widget.TextView tvInfo = new android.widget.TextView(this);
+        tvInfo.setText(sb.toString());
+        tvInfo.setTextSize(14);
+        tvInfo.setTextColor(0xFF333333);
+        ll.addView(tvInfo);
+        ll.addView(etInput);
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🔑 绑定管理")
+            .setView(ll)
+            .setPositiveButton("➕ 绑定孩子", (d, w) -> {
+                String input = etInput.getText().toString().trim();
+                if (BindKeyManager.isValidChildKey(input)) {
+                    if (BindKeyManager.bindChild(ParentActivity.this, input)) {
+                        Toast.makeText(this, "✅ 绑定成功！孩子Key: " + input, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "⚠️ 该孩子已绑定过", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(this, "❌ Key格式错误（应为 HABIT-C-XXXXXXXX）", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNeutralButton("🗑 解绑全部", (d, w) -> {
+                new AlertDialog.Builder(this)
+                    .setTitle("确认解绑")
+                    .setMessage("确定要解绑所有已绑定的孩子吗？")
+                    .setPositiveButton("确定", (d2, w2) -> {
+                        for (String ck : new java.util.HashSet<>(BindKeyManager.getBoundChildren(ParentActivity.this))) {
+                            BindKeyManager.unbindChild(ParentActivity.this, ck);
+                        }
+                        Toast.makeText(this, "已解绑全部孩子", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+            })
+            .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
+            .show();
     }
 
     /** ⚙️ 检查更新 */
