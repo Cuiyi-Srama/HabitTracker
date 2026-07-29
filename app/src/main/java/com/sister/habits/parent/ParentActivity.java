@@ -46,7 +46,6 @@ import androidx.biometric.BiometricPrompt;
 import androidx.biometric.BiometricManager;
 import androidx.core.content.ContextCompat;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -78,13 +77,14 @@ public class ParentActivity extends AppCompatActivity {
     // 当前打开的商品对话框View（用于图片预览更新）
     private View currentShopDialogView;
 
+    private Runnable deviceLockSuccessCallback = null;
+
     // 设备锁验证启动器
     private final ActivityResultLauncher<android.content.Intent> deviceLockLauncher =
             registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // 设备锁验证成功
                         if (deviceLockSuccessCallback != null) {
                             deviceLockSuccessCallback.run();
                             deviceLockSuccessCallback = null;
@@ -94,7 +94,6 @@ public class ParentActivity extends AppCompatActivity {
                         finish();
                     }
                 });
-    private Runnable deviceLockSuccessCallback = null;
 
     // 相册选图启动器
     private final ActivityResultLauncher<String> pickShopImageLauncher =
