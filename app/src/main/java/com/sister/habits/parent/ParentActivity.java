@@ -454,8 +454,7 @@ public class ParentActivity extends AppCompatActivity {
 
         new AlertDialog.Builder(this)
                 .setTitle("🔐 设置家长PIN码")
-                .setMessage("首次进入家长模式，请设置一个PIN码。
-孩子不知道PIN码就无法进入家长界面。")
+                .setMessage("首次进入家长模式，请设置一个PIN码。\n孩子不知道PIN码就无法进入家长界面。")
                 .setView(layout)
                 .setCancelable(false)
                 .setPositiveButton("确认设置", (d, w) -> {
