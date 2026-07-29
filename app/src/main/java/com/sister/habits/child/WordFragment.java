@@ -114,6 +114,20 @@ public class WordFragment extends Fragment {
         return view;
     }
 
+    /** 由ChildActivity在切换到单词Tab时调用，强制刷新词库 */
+    public void refreshWordBank() {
+        loadConfig();
+        SharedPreferences prefs = requireContext().getSharedPreferences("wordbank_prefs", 0);
+        String newBankId = prefs.getString("active_bank_id", "builtin");
+        android.util.Log.i("WordFragment", "refreshWordBank: current=" + currentBankId + " new=" + newBankId);
+        if (!newBankId.equals(currentBankId)) {
+            currentBankId = newBankId;
+            startQuiz(isReviewMode);
+        } else {
+            updateStats();
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
