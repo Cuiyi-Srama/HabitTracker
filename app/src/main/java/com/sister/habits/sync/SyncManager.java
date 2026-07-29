@@ -92,6 +92,9 @@ public class SyncManager {
     public HubSync getHubSync() {
         return hubSync;
     }
+    public LanSync getLanSync() {
+        return lanSync;
+    }
 
     private boolean getHubModePref() {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
