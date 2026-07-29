@@ -46,6 +46,19 @@
             android:inputType="text"
             android:text="好习惯养成" />
     </com.google.android.material.textfield.TextInputLayout>
+    <TextView
+        android:id="@+id/tv_birthday"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:background="#F5F5F5"
+        android:text="🎂 点击设置孩子生日"
+        android:textSize="14sp"
+        android:textColor="#666"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_marginBottom="8dp" />
     <Button
         android:id="@+id/btn_pick_avatar"
         android:layout_width="match_parent"
