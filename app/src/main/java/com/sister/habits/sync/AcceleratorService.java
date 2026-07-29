@@ -28,6 +28,12 @@ public class AcceleratorService {
         AppDatabase db = AppDatabase.getInstance(ctx);
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) return;
+        
+        // 清理：生日未设置则删除所有历史生日加速器
+        String bday = ProfileManager.getInstance(ctx).getBirthday();
+        if (bday == null || bday.isEmpty()) {
+            db.coinEarningDao().deleteBySourceType("sister", "boost_birthday");
+        }
 
         // 获取当天日期范围
         long[] range = getTodayRange();
