@@ -5,7 +5,7 @@
 > Java 原生开发 · Room 本地数据库 · Material Design 3 · 离线可用
 
 [![构建状态](https://github.com/Cuiyi-Srama/HabitTracker/actions/workflows/build.yml/badge.svg)](https://github.com/Cuiyi-Srama/HabitTracker/actions)
-[![版本](https://img.shields.io/badge/版本-v1.3.1-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
+[![版本](https://img.shields.io/badge/版本-v1.6.0-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
 [![许可](https://img.shields.io/badge/许可-MIT-green)](LICENSE)
 
 ---
@@ -343,7 +343,7 @@ A: 运行 `scripts/update_wordbank.py` 从 Excel 更新，或将 JSON 放入 `re
 
 ## 更新日志
 
-### v1.3.1 (2026-07-29)
+### v1.6.0 (2026-07-29)
 
 **架构重构**
 - MenuHelper 路由表模式替代 switch/case，消除索引脆弱性
