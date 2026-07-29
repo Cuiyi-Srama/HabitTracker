@@ -24,9 +24,10 @@ import com.sister.habits.data.models.*;
         WishlistItem.class,
         CoinEarning.class,
         GateConfig.class,
-        DailyGate.class
+        DailyGate.class,
+        LaundryTask.class
     },
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -46,6 +47,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract CoinEarningDao coinEarningDao();
     public abstract GateConfigDao gateConfigDao();
     public abstract DailyGateDao dailyGateDao();
+    public abstract LaundryDao laundryDao();
 
     /**
      * 数据库迁移 1→2：
@@ -156,6 +158,27 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `laundry_tasks` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`date` TEXT, " +
+                "`clothingType` TEXT, " +
+                "`quantity` INTEGER NOT NULL DEFAULT 1, " +
+                "`points` INTEGER NOT NULL, " +
+                "`totalPoints` INTEGER NOT NULL, " +
+                "`status` TEXT NOT NULL DEFAULT 'pending', " +
+                "`submittedAt` INTEGER NOT NULL, " +
+                "`reviewedAt` INTEGER NOT NULL DEFAULT 0, " +
+                "`deviceId` TEXT, " +
+                "`synced` INTEGER NOT NULL DEFAULT 0, " +
+                "`syncTimestamp` INTEGER NOT NULL" +
+                ")"
+            );
+        }
+    };
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -167,7 +190,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build();
                 }
             }
