@@ -27,7 +27,7 @@ import com.sister.habits.data.models.*;
         DailyGate.class,
         LaundryTask.class
     },
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -179,6 +179,29 @@ public abstract class AppDatabase extends RoomDatabase {
             );
         }
     };
+    static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 修复 v8 的 laundry_tasks 表 schema（MIGRATION_7_8 带了错误的 DEFAULT 值）
+            database.execSQL("DROP TABLE IF EXISTS `laundry_tasks`");
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `laundry_tasks` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`date` TEXT, " +
+                "`clothingType` TEXT, " +
+                "`quantity` INTEGER NOT NULL, " +
+                "`points` INTEGER NOT NULL, " +
+                "`totalPoints` INTEGER NOT NULL, " +
+                "`status` TEXT, " +
+                "`submittedAt` INTEGER NOT NULL, " +
+                "`reviewedAt` INTEGER NOT NULL, " +
+                "`deviceId` TEXT, " +
+                "`synced` INTEGER NOT NULL, " +
+                "`syncTimestamp` INTEGER NOT NULL" +
+                ")"
+            );
+        }
+    };
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
@@ -190,7 +213,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .build();
                 }
             }
