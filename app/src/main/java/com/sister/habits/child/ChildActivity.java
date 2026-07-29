@@ -22,6 +22,7 @@ import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.EconomyConfig;
 import com.sister.habits.data.models.WordReview;
 import com.sister.habits.sync.SyncManager;
+import com.sister.habits.sync.EarningService;
 import com.sister.habits.utils.SoundHelper;
 
 import java.text.SimpleDateFormat;
