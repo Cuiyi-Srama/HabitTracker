@@ -782,7 +782,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: refreshStats(); Toast.makeText(this, tvStats.getText(), Toast.LENGTH_LONG).show(); break;
                         case 1: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
                         case 2: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
-                        case 3: syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); break;
+                        case 3: syncManager.triggerFullSync(); Toast.makeText(this, "全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -911,12 +911,13 @@ public class ParentActivity extends AppCompatActivity {
     /** 二级菜单：⚙️ 系统设置 */
     private void showSystemMenu() {
         String[] items = {
-                "👤 个人信息（昵称/头像/标题）",
+                "👤 孩子信息（昵称/头像/标题）",
                 "🏠 启动模式 & Hub中枢",
                 "💰 完整经济参数",
                 "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
                 "📋 任务模板库（20+预设任务）",
                 "💰 积分审批（待审积分确认）",
+                "🔑 绑定管理（家长/孩子Key）",
                 "🔐 数据导出备份",
                 "📡 设备同步 & QR配对",
                 "🔄 检查更新"
@@ -931,9 +932,10 @@ public class ParentActivity extends AppCompatActivity {
                         case 3: showAcceleratorSettings(); break;
                         case 4: showTaskTemplates(); break;
                         case 5: showEarningApprovals(); break;
-                        case 6: showBackupRestoreDialog(); break;
-                        case 7: showSyncDashboardDialog(); break;
-                        case 8: checkForUpdate(); break;
+                        case 6: showBindKeyDialog(); break;
+                        case 7: showBackupRestoreDialog(); break;
+                        case 8: showSyncDashboardDialog(); break;
+                        case 9: checkForUpdate(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -1126,14 +1128,14 @@ private void showProfileSettings() {
         });
         btnPickAvatar.setOnClickListener(v -> pickShopImageLauncher.launch("image/*"));
         new AlertDialog.Builder(this)
-                .setTitle("👤 个人信息")
+                .setTitle("👤 孩子信息")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
                     String nn = etNickname.getText().toString().trim();
                     if (!nn.isEmpty()) profile.setNickname(nn);
                     String at = etAppTitle.getText().toString().trim();
                     if (!at.isEmpty()) profile.setAppTitle(at);
-                    Toast.makeText(this, "个人信息已更新 ✅", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "孩子信息已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
                 .show();
     }
