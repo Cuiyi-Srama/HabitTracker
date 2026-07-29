@@ -23,6 +23,7 @@ import com.sister.habits.data.models.EconomyConfig;
 import com.sister.habits.data.models.WordReview;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.sync.EarningService;
+import com.sister.habits.sync.EarningService;
 import com.sister.habits.utils.SoundHelper;
 
 import java.text.SimpleDateFormat;
@@ -41,6 +42,7 @@ public class ChildActivity extends AppCompatActivity {
     private SyncManager syncManager;
     private SoundHelper soundHelper;
     private TextView tvCoinBalance;
+    private TextView tvEarningEstimate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,7 @@ public class ChildActivity extends AppCompatActivity {
         soundHelper = SoundHelper.getInstance(this);
 
         tvCoinBalance = findViewById(R.id.tv_coin_balance);
+        tvEarningEstimate = findViewById(R.id.tv_earning_estimate);
         Button btnCheckIn = findViewById(R.id.btn_check_in);
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
