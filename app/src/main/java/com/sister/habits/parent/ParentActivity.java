@@ -37,6 +37,9 @@ import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.BindKeyManager;
 import com.sister.habits.utils.NotificationHelper;
 import com.sister.habits.utils.ProfileManager;
+import com.sister.habits.data.models.GateConfig;
+import com.sister.habits.data.models.DailyGate;
+import com.sister.habits.utils.GateHelper;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -752,7 +755,8 @@ public class ParentActivity extends AppCompatActivity {
                 "📚 学习管理",
                 "🏪 商城管理",
                 "📋 任务管理",
-                "⚙️ 系统设置"
+                "📋 作业管理（关卡打折）",
+            "⚙️ 系统设置"
         };
         com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
                 this::showDashboardMenu,
@@ -906,6 +910,234 @@ public class ParentActivity extends AppCompatActivity {
                 () -> { loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); },
                 this::showTaskTemplates
         );
+    }
+
+    /** 📋 作业管理——关卡打折系统 */
+    private void showGateManageDialog() {
+        soundHelper.playClickSound();
+        com.sister.habits.data.models.GateConfig config = db.gateConfigDao().getConfig();
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(new java.util.Date());
+        com.sister.habits.data.models.DailyGate todayGate = db.dailyGateDao().getByDate(today);
+
+        String todayStatus = "未设置";
+        if (todayGate != null) {
+            switch (todayGate.status) {
+                case "COMPLETED": todayStatus = "✅ 已完成"; break;
+                case "INCOMPLETE": todayStatus = "❌ 未完成（明天打折）"; break;
+                case "AI_DETECTED": todayStatus = "🤖 AI作弊（明天打折）"; break;
+                case "SKIPPED": todayStatus = "🏥 已免检"; break;
+                default: todayStatus = "⏳ 待审核";
+            }
+        }
+
+        double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
+        String ml = "×" + String.format("%.0f%%", multiplier * 100);
+        if (multiplier >= 1.0) ml = "正常";
+
+        String[] items = {
+            "📅 今日状态: " + todayStatus,
+            "📊 今日积分乘数: " + ml,
+            "⚙️ 假期配置（日期范围/周末开关）",
+            "✏️ 审核今日作业",
+            (config != null && config.enabled ? "🔴 关闭打折系统" : "🟢 开启打折系统")
+        };
+
+        new AlertDialog.Builder(this)
+            .setTitle("📋 作业管理")
+            .setItems(items, (d, which) -> {
+                switch (which) {
+                    case 2: showGateConfigDialog(); break;
+                    case 3: showTodayGateReviewDialog(); break;
+                    case 4:
+                        if (config != null) {
+                            config.enabled = !config.enabled;
+                            config.updatedAt = System.currentTimeMillis();
+                            db.gateConfigDao().update(config);
+                            syncManager.onDataChanged();
+                            Toast.makeText(this, config.enabled ? "🟢 打折系统已开启" : "🔴 打折系统已关闭", Toast.LENGTH_SHORT).show();
+                        }
+                        break;
+                }
+            })
+            .setNegativeButton("← 返回上级", (d2, w2) -> showSettingsDialog())
+            .show();
+    }
+
+    /** ⚙️ 假期配置对话框 */
+    private void showGateConfigDialog() {
+        soundHelper.playClickSound();
+        com.sister.habits.data.models.GateConfig config = db.gateConfigDao().getConfig();
+        if (config == null) {
+            config = new com.sister.habits.data.models.GateConfig();
+            db.gateConfigDao().insert(config);
+        }
+
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(40, 20, 40, 20);
+
+        // 开关
+        android.widget.CheckBox cbWeekend = new android.widget.CheckBox(this);
+        cbWeekend.setText("🗓 周末启用打折制");
+        cbWeekend.setChecked(config.weekendMode);
+        layout.addView(cbWeekend);
+
+        // 截止时间
+        android.widget.TextView tvDeadline = new android.widget.TextView(this);
+        tvDeadline.setText("⏰ 截止时间（HH:mm）:");
+        tvDeadline.setPadding(0, 20, 0, 4);
+        layout.addView(tvDeadline);
+        android.widget.EditText etDeadline = new android.widget.EditText(this);
+        etDeadline.setText(config.deadlineTime != null ? config.deadlineTime : "12:00");
+        etDeadline.setHint("如 12:00");
+        layout.addView(etDeadline);
+
+        // 完成奖励
+        android.widget.TextView tvReward = new android.widget.TextView(this);
+        tvReward.setText("🎁 完成奖励分:");
+        tvReward.setPadding(0, 20, 0, 4);
+        layout.addView(tvReward);
+        android.widget.EditText etReward = new android.widget.EditText(this);
+        etReward.setText(String.valueOf(config.completionReward));
+        etReward.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        layout.addView(etReward);
+
+        // 惩罚比例
+        android.widget.TextView tvPenalty = new android.widget.TextView(this);
+        tvPenalty.setText("📉 未完成打折（%）:");
+        tvPenalty.setPadding(0, 20, 0, 4);
+        layout.addView(tvPenalty);
+        android.widget.EditText etPenalty = new android.widget.EditText(this);
+        etPenalty.setText(String.valueOf(config.defaultPenaltyPercent));
+        etPenalty.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        layout.addView(etPenalty);
+
+        // 补交减免
+        android.widget.TextView tvMakeup = new android.widget.TextView(this);
+        tvMakeup.setText("🔧 补交减免（%）:");
+        tvMakeup.setPadding(0, 20, 0, 4);
+        layout.addView(tvMakeup);
+        android.widget.EditText etMakeup = new android.widget.EditText(this);
+        etMakeup.setText(String.valueOf(config.makeupPercent));
+        etMakeup.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        layout.addView(etMakeup);
+
+        // 假期范围
+        android.widget.TextView tvHoliday = new android.widget.TextView(this);
+        tvHoliday.setText("📅 假期范围（JSON格式）:");
+        tvHoliday.setPadding(0, 20, 0, 4);
+        layout.addView(tvHoliday);
+        android.widget.EditText etHoliday = new android.widget.EditText(this);
+        etHoliday.setText(config.holidayRanges != null ? config.holidayRanges : "[{"start":"2026-07-01","end":"2026-08-31"}]");
+        etHoliday.setHint("[{"start":"2026-07-01","end":"2026-08-31"}]");
+        etHoliday.setMinLines(3);
+        layout.addView(etHoliday);
+
+        new AlertDialog.Builder(this)
+            .setTitle("⚙️ 假期配置")
+            .setView(layout)
+            .setPositiveButton("💾 保存", (d2, w2) -> {
+                config.weekendMode = cbWeekend.isChecked();
+                config.deadlineTime = etDeadline.getText().toString().trim();
+                try { config.completionReward = Integer.parseInt(etReward.getText().toString()); } catch (Exception e) {}
+                try { config.defaultPenaltyPercent = Integer.parseInt(etPenalty.getText().toString()); } catch (Exception e) {}
+                try { config.makeupPercent = Integer.parseInt(etMakeup.getText().toString()); } catch (Exception e) {}
+                config.holidayRanges = etHoliday.getText().toString().trim();
+                config.updatedAt = System.currentTimeMillis();
+                config.deviceId = syncManager.getDeviceId();
+                db.gateConfigDao().update(config);
+                syncManager.onDataChanged();
+                Toast.makeText(this, "✅ 配置已保存", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
+            .show();
+    }
+
+    /** ✏️ 审核今日作业 */
+    private void showTodayGateReviewDialog() {
+        soundHelper.playClickSound();
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(new java.util.Date());
+        com.sister.habits.data.models.DailyGate gate = db.dailyGateDao().getByDate(today);
+        if (gate == null) {
+            gate = new com.sister.habits.data.models.DailyGate();
+            gate.date = today;
+            gate.status = com.sister.habits.data.models.DailyGate.STATUS_PENDING;
+            db.dailyGateDao().insert(gate);
+        }
+
+        String currentStatus = "⏳ 待审核";
+        switch (gate.status) {
+            case "COMPLETED": currentStatus = "✅ 已完成"; break;
+            case "INCOMPLETE": currentStatus = "❌ 未完成"; break;
+            case "AI_DETECTED": currentStatus = "🤖 AI作弊"; break;
+            case "SKIPPED": currentStatus = "🏥 已免检"; break;
+        }
+
+        String nickname = profile.getNickname();
+        String[] items = {
+            "✅ 确认完成（+" + db.gateConfigDao().getConfig().completionReward + "分）",
+            "❌ 标记未完成（明天打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折）",
+            "🤖 AI作弊（明天打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折，不获得作业分）",
+            "🏥 免检（生病/外出）",
+            "📝 补交（明天减免至" + db.gateConfigDao().getConfig().makeupPercent + "折）"
+        };
+
+        new AlertDialog.Builder(this)
+            .setTitle("✏️ 审核 " + nickname + " 的作业（" + today + "）")
+            .setMessage("当前状态: " + currentStatus)
+            .setItems(items, (d2, which) -> {
+                switch (which) {
+                    case 0: // 确认完成
+                        gate.status = com.sister.habits.data.models.DailyGate.STATUS_COMPLETED;
+                        gate.reviewedAt = System.currentTimeMillis();
+                        gate.isLateSubmission = false;
+                        // 发放作业完成奖
+                        com.sister.habits.data.models.GateConfig cfg = db.gateConfigDao().getConfig();
+                        if (cfg != null && cfg.completionReward > 0) {
+                            Integer bal = db.coinTransactionDao().getBalance("sister");
+                            int newBal = (bal != null ? bal : 0) + cfg.completionReward;
+                            com.sister.habits.data.models.CoinTransaction ct =
+                                new com.sister.habits.data.models.CoinTransaction(
+                                    "sister", cfg.completionReward, newBal,
+                                    "task_reward", "作业完成奖",
+                                    syncManager.getDeviceId());
+                            db.coinTransactionDao().insert(ct);
+                            Toast.makeText(this, "✅ 作业完成！" + nickname + "获得 🪙+" + cfg.completionReward, Toast.LENGTH_SHORT).show();
+                        }
+                        break;
+                    case 1: // 标记未完成
+                        gate.status = com.sister.habits.data.models.DailyGate.STATUS_INCOMPLETE;
+                        gate.reviewedAt = System.currentTimeMillis();
+                        gate.isLateSubmission = false;
+                        Toast.makeText(this, "❌ 已标记未完成，明天积分打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折", Toast.LENGTH_LONG).show();
+                        break;
+                    case 2: // AI作弊
+                        gate.status = com.sister.habits.data.models.DailyGate.STATUS_AI_DETECTED;
+                        gate.reviewedAt = System.currentTimeMillis();
+                        gate.isLateSubmission = false;
+                        Toast.makeText(this, "🤖 已标记AI作弊，明天积分打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折", Toast.LENGTH_LONG).show();
+                        break;
+                    case 3: // 免检
+                        gate.status = com.sister.habits.data.models.DailyGate.STATUS_SKIPPED;
+                        gate.reviewedAt = System.currentTimeMillis();
+                        gate.isLateSubmission = false;
+                        Toast.makeText(this, "🏥 已免检，明天正常积分", Toast.LENGTH_SHORT).show();
+                        break;
+                    case 4: // 补交
+                        gate.status = com.sister.habits.data.models.DailyGate.STATUS_COMPLETED;
+                        gate.isLateSubmission = true;
+                        gate.reviewedAt = System.currentTimeMillis();
+                        Toast.makeText(this, "📝 已标记补交，明天减免至" + db.gateConfigDao().getConfig().makeupPercent + "折", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+                gate.deviceId = syncManager.getDeviceId();
+                gate.synced = false;
+                gate.syncTimestamp = System.currentTimeMillis();
+                db.dailyGateDao().insert(gate);
+                syncManager.onDataChanged();
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
+            .show();
     }
 
     /** 二级菜单：⚙️ 系统设置 */
