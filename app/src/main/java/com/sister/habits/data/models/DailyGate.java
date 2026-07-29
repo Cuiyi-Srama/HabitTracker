@@ -2,6 +2,7 @@ package com.sister.habits.data.models;
 
 import androidx.room.Entity;
 import androidx.annotation.NonNull;
+import androidx.annotation.NonNull;
 import androidx.room.PrimaryKey;
 
 /**
