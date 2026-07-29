@@ -137,6 +137,8 @@ public class HubSync {
                 if (payload.wordBanks != null) merger.mergeWordBanks(payload.wordBanks);
                 if (payload.coinEarnings != null) merger.mergeCoinEarnings(payload.coinEarnings);
                 if (payload.economyConfig != null) merger.mergeEconomyConfig(payload.economyConfig);
+                if (payload.gateConfig != null) merger.mergeGateConfig(payload.gateConfig);
+                if (payload.dailyGates != null) merger.mergeDailyGates(payload.dailyGates);
 
                 // 标记已同步
                 if (payload.checkIns != null)
@@ -242,6 +244,8 @@ public class HubSync {
                 if (hubData.wordBanks != null) merger.mergeWordBanks(hubData.wordBanks);
                 if (hubData.coinEarnings != null) merger.mergeCoinEarnings(hubData.coinEarnings);
                 if (hubData.economyConfig != null) merger.mergeEconomyConfig(hubData.economyConfig);
+                if (hubData.gateConfig != null) merger.mergeGateConfig(hubData.gateConfig);
+                if (hubData.dailyGates != null) merger.mergeDailyGates(hubData.dailyGates);
 
                 // 标记这些数据为已同步
                 if (hubData.checkIns != null)
@@ -360,6 +364,8 @@ public class HubSync {
         payload.wordBanks = db.wordBankDao().getAll();
         payload.coinEarnings = db.coinEarningDao().getUnsynced();
         payload.economyConfig = db.economyConfigDao().getConfig();
+        payload.gateConfig = db.gateConfigDao().getConfig();
+        payload.dailyGates = db.dailyGateDao().getUnsynced();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -377,6 +383,8 @@ public class HubSync {
         payload.wordBanks = db.wordBankDao().getAll();
         payload.coinEarnings = db.coinEarningDao().getUnsynced();
         payload.economyConfig = db.economyConfigDao().getConfig();
+        payload.gateConfig = db.gateConfigDao().getConfig();
+        payload.dailyGates = db.dailyGateDao().getUnsynced();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -574,6 +582,8 @@ public class HubSync {
         List<WordBank> wordBanks;
         List<CoinEarning> coinEarnings;
         com.sister.habits.data.models.EconomyConfig economyConfig;
+        com.sister.habits.data.models.GateConfig gateConfig;
+        List<DailyGate> dailyGates;
     }
 
     private static class PullResponse {
