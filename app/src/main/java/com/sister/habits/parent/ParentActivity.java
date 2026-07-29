@@ -406,7 +406,7 @@ public class ParentActivity extends AppCompatActivity {
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
-        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); syncManager.triggerLanSync(); Toast.makeText(this, "同步已触发", Toast.LENGTH_SHORT).show(); });
+        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerFullSync(); Toast.makeText(this, "全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show(); });
         btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
 
         // 创建通知渠道
@@ -593,6 +593,12 @@ public class ParentActivity extends AppCompatActivity {
 
     /** 从通知直达审批中心 */
     private void showApprovalCenterDialog(String focusType, int focusId) {
+        // 验证家长身份
+        String parentKey = BindKeyManager.generateParentKey(this);
+        if (!BindKeyManager.verifyParentKey(this)) {
+            Toast.makeText(this, "⚠️ 家长身份未确认", Toast.LENGTH_SHORT).show();
+            return;
+        }
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
         int pendingTaskCount = db.taskDao().getByStatus("pending").size();
         int earningPendingCount = db.coinEarningDao().getPendingCount();
