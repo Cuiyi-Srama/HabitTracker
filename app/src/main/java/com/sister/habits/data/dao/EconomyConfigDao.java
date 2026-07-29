@@ -39,5 +39,6 @@ public interface EconomyConfigDao {
                    int taskDailyMin, int taskDailyMax,
                    int taskChallengeMin, int taskChallengeMax,
                    int screenTime15min, int screenTime30min, int screenTime60min,
-                   int maxDailyCoins, int maxDailyWords, int maxDailyReview);
+                   int maxDailyCoins, int maxDailyWords, int maxDailyReview,
+                   boolean doublePointsEnabled, int softLimitWeekday, int softLimitWeekend);
 }
