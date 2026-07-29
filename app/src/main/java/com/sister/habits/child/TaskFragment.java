@@ -124,6 +124,10 @@ public class TaskFragment extends Fragment {
             Toast.makeText(getContext(), "✅ 任务已完成并获得奖励！", Toast.LENGTH_SHORT).show();
             return;
         }
+        // 计算打折乘数
+        double multiplier = GateHelper.getTodayMultiplier(getContext());
+        int actualReward = (int) Math.round(task.rewardCoins * multiplier);
+
         // 检查积分上限
         if (!EarningService.isWithinLimit(getContext(), actualReward)) {
             Toast.makeText(getContext(), "⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)", Toast.LENGTH_SHORT).show();
@@ -131,9 +135,6 @@ public class TaskFragment extends Fragment {
         }
         // 标记为"待家长确认"
         db.taskDao().markPending(task.id, System.currentTimeMillis());
-        // 计算打折乘数
-        double multiplier = GateHelper.getTodayMultiplier(getContext());
-        int actualReward = (int) Math.round(task.rewardCoins * multiplier);
 
         // 提交积分申请
         CoinEarning earning = new CoinEarning();
