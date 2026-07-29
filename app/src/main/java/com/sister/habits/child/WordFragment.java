@@ -52,6 +52,7 @@ public class WordFragment extends Fragment {
     private int dailyWordLimit = 10;
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
+    private final java.util.HashMap<String, String[]> wordOptions = new java.util.HashMap<>();
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
@@ -207,6 +208,7 @@ public class WordFragment extends Fragment {
 
         Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
+        wordOptions.clear();
         if (btnNewWords != null) btnNewWords.setEnabled(false);
         if (btnReview != null) btnReview.setEnabled(false);
         updateStats();
