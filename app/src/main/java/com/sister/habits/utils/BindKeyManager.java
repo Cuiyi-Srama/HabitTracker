@@ -50,7 +50,7 @@ public class BindKeyManager {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_PARENT, null);
     }
 
-    /** 家长端：绑定一个孩子（输入孩子端的Child Key） */
+    /** 家长端：绑定一个孩子（输入孩子端的Child Key），同时双向写入让孩子端可读取 */
     public static boolean bindChild(Context ctx, String childKey) {
         if (childKey == null || !childKey.startsWith("HABIT-C-")) return false;
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -58,6 +58,16 @@ public class BindKeyManager {
         if (children.contains(childKey)) return false; // 已绑定
         children.add(childKey);
         prefs.edit().putStringSet(KEY_BOUND_CHILDREN, children).apply();
+        
+        // 双向绑定：同时把当前家长Key写入KEY_BOUND_PARENTS，让孩子端能读到绑定状态
+        String parentKey = prefs.getString(KEY_PARENT, null);
+        if (parentKey != null) {
+            Set<String> parents = new HashSet<>(prefs.getStringSet(KEY_BOUND_PARENTS, new HashSet<>()));
+            if (!parents.contains(parentKey)) {
+                parents.add(parentKey);
+                prefs.edit().putStringSet(KEY_BOUND_PARENTS, parents).apply();
+            }
+        }
         return true;
     }
 
