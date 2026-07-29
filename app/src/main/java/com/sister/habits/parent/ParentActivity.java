@@ -1115,8 +1115,8 @@ private void showProfileSettings() {
         etReward.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         String[] types = {"一次性", "每日", "每周", "每月", "常驻", "限时"};
         String[] typeCodes = {"once", "daily", "weekly", "monthly", "permanent", "timed"};
-        int selIdx = java.util.Arrays.asList(typeCodes).indexOf(task.recurrenceType);
-        if (selIdx < 0) selIdx = 0;
+        final int[] sel = {java.util.Arrays.asList(typeCodes).indexOf(task.recurrenceType)};
+        if (sel[0] < 0) sel[0] = 0;
         android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
         ll.setOrientation(android.widget.LinearLayout.VERTICAL);
         ll.setPadding(32,16,32,16);
@@ -1125,7 +1125,7 @@ private void showProfileSettings() {
         new AlertDialog.Builder(this)
                 .setTitle("编辑任务")
                 .setView(ll)
-                .setSingleChoiceItems(types, selIdx, (d2, w2) -> selIdx = w2)
+                .setSingleChoiceItems(types, sel[0], (d2, w2) -> sel[0] = w2)
                 .setPositiveButton("保存", (d2, w2) -> {
                     String title = etTitle.getText().toString().trim();
                     String rewardStr = etReward.getText().toString().trim();
@@ -1135,7 +1135,7 @@ private void showProfileSettings() {
                     }
                     task.title = title;
                     task.rewardCoins = Integer.parseInt(rewardStr);
-                    task.recurrenceType = typeCodes[selIdx];
+                    task.recurrenceType = typeCodes[sel[0]];
                     db.taskDao().update(task);
                     Toast.makeText(this, "✅ 已更新: " + title, Toast.LENGTH_SHORT).show();
                     refreshAll();
