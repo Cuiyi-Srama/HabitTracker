@@ -1374,7 +1374,7 @@ public class ParentActivity extends AppCompatActivity {
                 "🔐 数据导出备份",
                 "📡 设备同步 & QR配对",
                 "🔄 检查更新",
-                "🔐 PIN码管理"
+                "🔐 安全防护"
         };
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 系统设置")
