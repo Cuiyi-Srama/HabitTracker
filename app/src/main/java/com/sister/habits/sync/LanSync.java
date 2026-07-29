@@ -147,6 +147,8 @@ public class LanSync {
         payload.wishlistItems = db.wishlistDao().getAll();
         payload.wordBanks = db.wordBankDao().getAll();
         payload.economyConfig = db.economyConfigDao().getConfig();
+        payload.gateConfig = db.gateConfigDao().getConfig();
+        payload.dailyGates = db.dailyGateDao().getUnsynced();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -164,6 +166,11 @@ public class LanSync {
         if (payload.wishlistItems != null) merger.mergeWishlistItems(payload.wishlistItems);
         if (payload.wordBanks != null) merger.mergeWordBanks(payload.wordBanks);
         if (payload.economyConfig != null) merger.mergeEconomyConfig(payload.economyConfig);
+        if (payload.gateConfig != null) merger.mergeGateConfig(payload.gateConfig);
+        if (payload.dailyGates != null) merger.mergeDailyGates(payload.dailyGates);
+        // mark daily gates synced
+        if (payload.dailyGates != null)
+            for (DailyGate g : payload.dailyGates) db.dailyGateDao().markSynced(g.date);
         if (payload.checkIns != null)
             for (CheckIn c : payload.checkIns) db.checkInDao().markSynced(c.id);
         if (payload.coins != null)
@@ -210,5 +217,7 @@ public class LanSync {
         List<WishlistItem> wishlistItems;
         List<WordBank> wordBanks;
         com.sister.habits.data.models.EconomyConfig economyConfig;
+        com.sister.habits.data.models.GateConfig gateConfig;
+        List<DailyGate> dailyGates;
     }
 }
