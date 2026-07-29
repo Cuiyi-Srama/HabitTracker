@@ -1533,10 +1533,12 @@ private void showProfileSettings() {
             externalLayout.addView(tvError);
         }
 
-        // ===== 已下载词库列表（切换功能） =====
+        // ===== 已下载词库列表（切换/删除功能） =====
         LinearLayout installedLayout = view.findViewById(R.id.layout_installed_banks);
         String activeBankId = getSharedPreferences("wordbank_prefs", MODE_PRIVATE).getString("active_bank_id", "builtin");
         java.util.List<com.sister.habits.data.models.WordBank> installedBanks = db.wordBankDao().getAll();
+        final AlertDialog[] dialogHolder = new AlertDialog[1];
+
         if (installedBanks.isEmpty()) {
             TextView tvNoBank = new TextView(this);
             tvNoBank.setText("暂无已下载词库");
@@ -1547,19 +1549,27 @@ private void showProfileSettings() {
         } else {
             for (com.sister.habits.data.models.WordBank bank : installedBanks) {
                 boolean isActive = bank.id.equals(activeBankId);
+                boolean isBuiltin = "builtin".equals(bank.id);
+                final String bankId = bank.id;
+                final String bankName = bank.name;
+
+                android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+                row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                row.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+
                 Button btnBank = new Button(this);
                 String prefix = isActive ? "✅ " : "  ";
-                btnBank.setText(prefix + bank.name + " (" + bank.wordCount + "词)");
+                btnBank.setText(prefix + bankName + " (" + bank.wordCount + "词)");
                 btnBank.setTextSize(13);
                 btnBank.setAllCaps(false);
                 btnBank.setBackgroundColor(isActive ? 0xFFE8F5E9 : 0xFFF5F5F5);
                 android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(0, 3, 0, 3);
+                        isBuiltin ? android.widget.LinearLayout.LayoutParams.MATCH_PARENT : 0,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+                lp.setMargins(0, 3, isBuiltin ? 0 : 4, 3);
                 btnBank.setLayoutParams(lp);
-                final String bankId = bank.id;
-                final String bankName = bank.name;
                 btnBank.setOnClickListener(v -> {
                     if (bankId.equals(activeBankId)) {
                         Toast.makeText(this, "当前已在使用此词库", Toast.LENGTH_SHORT).show();
@@ -1570,16 +1580,52 @@ private void showProfileSettings() {
                     db.wordBankDao().deactivateAll();
                     db.wordBankDao().setActive(bankId);
                     Toast.makeText(this, "✅ 已切换到: " + bankName, Toast.LENGTH_LONG).show();
+                    if (dialogHolder[0] != null) dialogHolder[0].dismiss();
+                    showWordbankDialog();
                 });
-                installedLayout.addView(btnBank);
+                row.addView(btnBank);
+
+                if (!isBuiltin) {
+                    Button btnDelete = new Button(this);
+                    btnDelete.setText("🗑");
+                    btnDelete.setTextSize(13);
+                    btnDelete.setAllCaps(false);
+                    btnDelete.setBackgroundColor(0xFFFFEBEE);
+                    btnDelete.setTextColor(0xFFD32F2F);
+                    int dp48 = (int)(48 * getResources().getDisplayMetrics().density + 0.5f);
+                    android.widget.LinearLayout.LayoutParams dlp = new android.widget.LinearLayout.LayoutParams(dp48,
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                    dlp.setMargins(0, 3, 0, 3);
+                    btnDelete.setLayoutParams(dlp);
+                    btnDelete.setOnClickListener(v -> {
+                        new AlertDialog.Builder(ParentActivity.this)
+                                .setTitle("删除词库")
+                                .setMessage("确定要删除「" + bankName + "」吗？\n\n将同时删除该词库下的所有词汇数据，不可恢复。")
+                                .setPositiveButton("确认删除", (dd, ww) -> {
+                                    db.vocabularyDao().deleteByBankId(bankId);
+                                    db.wordBankDao().deleteById(bankId);
+                                    if (bankId.equals(activeBankId)) {
+                                        getSharedPreferences("wordbank_prefs", MODE_PRIVATE)
+                                                .edit().putString("active_bank_id", "builtin").apply();
+                                        db.wordBankDao().setActive("builtin");
+                                    }
+                                    Toast.makeText(ParentActivity.this, "🗑 已删除: " + bankName, Toast.LENGTH_SHORT).show();
+                                    if (dialogHolder[0] != null) dialogHolder[0].dismiss();
+                                    showWordbankDialog();
+                                })
+                                .setNegativeButton("取消", null)
+                                .show();
+                    });
+                    row.addView(btnDelete);
+                }
+                installedLayout.addView(row);
             }
         }
 
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("📚 词库管理")
                 .setView(view)
                 .setPositiveButton("保存", (d, w) -> {
-                    // 保存学段选择（小学/初中/高中）
                     boolean gPrimary = ((CheckBox) view.findViewById(R.id.cb_grade_primary)).isChecked();
                     boolean gJunior = ((CheckBox) view.findViewById(R.id.cb_grade_junior)).isChecked();
                     boolean gSenior = ((CheckBox) view.findViewById(R.id.cb_grade_senior)).isChecked();
@@ -1587,25 +1633,23 @@ private void showProfileSettings() {
                             .putBoolean("grade_primary", gPrimary)
                             .putBoolean("grade_junior", gJunior)
                             .putBoolean("grade_senior", gSenior)
-                            // 自增版本号，触发DatabaseInitializer重新加载
                             .putInt("grade_version", prefs.getInt("grade_version", 0) + 1)
                             .apply();
-
-                    // 保存每日单词量
                     try {
                         int dailyWords = Integer.parseInt(etDailyWords.getText().toString());
                         if (dailyWords > 0) {
                             db.economyConfigDao().updateMaxDailyWords(dailyWords);
                         }
                     } catch (Exception ignored) {}
-
                     Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("\u2190 返回上级", (d, w) -> showLearningMenu()).show();
+                .setNegativeButton("\u2190 返回上级", (d, w) -> showLearningMenu())
+                .create();
+        dialogHolder[0] = dialog;
+        dialog.show();
     }
 
     
-
     /** 商城管理对话框 — 编辑/下架商品 */
     private void showManageShopDialog() {
         soundHelper.playClickSound();
