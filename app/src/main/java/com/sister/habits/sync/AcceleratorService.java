@@ -165,18 +165,25 @@ public class AcceleratorService {
     }
 
     /** 获取今天应得的加速器列表（用于UI显示） */
-    public static String getTodayBoostSummary(Context ctx) {
+    public static String public static String getTodayBoostSummary(Context ctx) {
         AppDatabase db = AppDatabase.getInstance(ctx);
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) return "";
+
+        // 生日未设置时过滤生日加速器
+        String birthday = ProfileManager.getInstance(ctx).getBirthday();
+        boolean hasBirthday = birthday != null && !birthday.isEmpty();
 
         StringBuilder sb = new StringBuilder();
         long[] range = getTodayRange();
         List<CoinEarning> todayBoosts = db.coinEarningDao().getByTypeRange("sister", "boost_%", range[0], range[1]);
 
         if (todayBoosts != null && !todayBoosts.isEmpty()) {
-            sb.append("🚀 加速器: ");
+            boolean hasValidBoost = false;
             for (CoinEarning e : todayBoosts) {
+                // 生日未设置时跳过生日加速器
+                if ("boost_birthday".equals(e.sourceType) && !hasBirthday) continue;
+                if (!hasValidBoost) { sb.append("🚀 加速器: "); hasValidBoost = true; }
                 sb.append(e.description).append("  ");
             }
         }
@@ -186,7 +193,6 @@ public class AcceleratorService {
             if (sb.length() > 0) sb.append(" | ");
             sb.append("✨ 双倍积分日! 所有积分×2");
         }
-
         return sb.toString();
     }
 
