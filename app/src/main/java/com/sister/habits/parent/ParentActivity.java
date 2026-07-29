@@ -523,8 +523,7 @@ public class ParentActivity extends AppCompatActivity {
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, items);
         rvPendingEarnings.setAdapter(adapter);
-    }}
- }
+    }
 
     private void processTaskApproval(Task task, boolean approved) {
         if (approved) {
@@ -2206,5 +2205,5 @@ private void showProfileSettings() {
                 .setView(scrollView)
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
-    }
+
 }
