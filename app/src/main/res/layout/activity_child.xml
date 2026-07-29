@@ -60,6 +60,18 @@
                 android:focusable="true"
                 android:contentDescription="设置" />
 
+            <TextView
+                android:id="@+id/btn_submit_homework"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="📝"
+                android:textSize="18sp"
+                android:gravity="center"
+                android:layout_marginEnd="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="提交作业" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_check_in"
                 android:layout_width="wrap_content"
