@@ -53,7 +53,7 @@ public class WordFragment extends Fragment {
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
     // 选项缓存：每个词的固定干扰项，防止复习重考时选项变化被孩子投机取巧
-    private final java.util.Map<String, java.util.List<String>> cachedOptions = new java.util.HashMap<>();
+    private final java.util.Map<String, java.util.List<String> > cachedOptions = new java.util.HashMap<>();
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
