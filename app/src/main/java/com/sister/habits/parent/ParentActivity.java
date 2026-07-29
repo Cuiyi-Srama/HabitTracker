@@ -1492,12 +1492,9 @@ public class ParentActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
             .setTitle("审核: " + task.clothingType + " ×" + task.quantity)
             .setMessage(
-                "衣物类型: " + task.clothingType + "
-" +
-                "件数: " + task.quantity + "件
-" +
-                "积分: " + task.totalPoints + "分
-" +
+                "衣物类型: " + task.clothingType + "\n" +
+                "件数: " + task.quantity + "件\n" +
+                "积分: " + task.totalPoints + "分\n" +
                 "提交时间: " + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(task.submittedAt)))
             .setPositiveButton("✅ 通过", (d, w) -> {
                 task.status = LaundryTask.STATUS_APPROVED;
