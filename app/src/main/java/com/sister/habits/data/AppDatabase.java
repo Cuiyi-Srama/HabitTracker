@@ -24,7 +24,7 @@ import com.sister.habits.data.models.*;
         WishlistItem.class,
         CoinEarning.class
     },
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -122,7 +122,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build();
                 }
             }
@@ -237,6 +237,21 @@ public abstract class AppDatabase extends RoomDatabase {
                 "`syncTimestamp` INTEGER NOT NULL, " +
                 "PRIMARY KEY(`id`))"
             );
+        }
+    };
+
+    static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `doublePointsEnabled` INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `doublePointDate` TEXT");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `boostStreak7` INTEGER NOT NULL DEFAULT 15");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `boostWeek` INTEGER NOT NULL DEFAULT 30");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `boostMonth` INTEGER NOT NULL DEFAULT 80");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `boostBirthday` INTEGER NOT NULL DEFAULT 100");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `boostHoliday` INTEGER NOT NULL DEFAULT 50");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `softLimitWeekday` INTEGER NOT NULL DEFAULT 60");
+            database.execSQL("ALTER TABLE `economy_config` ADD COLUMN `softLimitWeekend` INTEGER NOT NULL DEFAULT 100");
         }
     };
 }
