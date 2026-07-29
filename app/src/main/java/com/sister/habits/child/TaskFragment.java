@@ -143,6 +143,10 @@ public class TaskFragment extends Fragment {
         NotificationHelper.notifyTaskCompleted(requireContext(), task.title, task.id);
         Toast.makeText(getContext(), "✅ 任务已完成！等待家长确认中～", Toast.LENGTH_SHORT).show();
         loadTasks();
+        // 通知父Activity刷新积分预估
+        if (getActivity() instanceof com.sister.habits.child.ChildActivity) {
+            ((com.sister.habits.child.ChildActivity) getActivity()).refreshEarningEstimate();
+        }
     }
 
     private static class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.ViewHolder> {
