@@ -1029,8 +1029,8 @@ public class ParentActivity extends AppCompatActivity {
         tvHoliday.setPadding(0, 20, 0, 4);
         layout.addView(tvHoliday);
         android.widget.EditText etHoliday = new android.widget.EditText(this);
-        etHoliday.setText(config.holidayRanges != null ? config.holidayRanges : "[{"start":"2026-07-01","end":"2026-08-31"}]");
-        etHoliday.setHint("[{"start":"2026-07-01","end":"2026-08-31"}]");
+        etHoliday.setText(config.holidayRanges != null ? config.holidayRanges : "[{\"start\":\"2026-07-01\",\"end\":\"2026-08-31\"}]");
+        etHoliday.setHint("[{\"start\":\"2026-07-01\",\"end\":\"2026-08-31\"}]");
         etHoliday.setMinLines(3);
         layout.addView(etHoliday);
 
