@@ -402,8 +402,7 @@ public class ChildActivity extends AppCompatActivity {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.CHINA);
         for (LotteryRecord r : records) {
             sb.append(r.prizeIcon).append(" ").append(r.prizeName)
-              .append(" (").append(sdf.format(new Date(r.wonAt))).append(")
-");
+              .append(" (").append(sdf.format(new Date(r.wonAt))).append(")\n");
         }
         new android.app.AlertDialog.Builder(this)
             .setTitle("📋 抽奖记录")
@@ -425,8 +424,7 @@ public class ChildActivity extends AppCompatActivity {
         for (SchoolReward r : rewards) {
             sb.append(r.badge).append(" ").append(r.name)
               .append(" +" + r.points + "分")
-              .append(" (").append(r.date).append(")
-");
+              .append(" (").append(r.date).append(")\n");
         }
         new android.app.AlertDialog.Builder(this)
             .setTitle("🏆 荣誉墙")
