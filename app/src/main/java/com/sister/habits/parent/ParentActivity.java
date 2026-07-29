@@ -401,8 +401,6 @@ public class ParentActivity extends AppCompatActivity {
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
         rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
-        rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
-        rvPendingEarnings.setLayoutManager(new LinearLayoutManager(this));
 
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
@@ -506,7 +504,6 @@ public class ParentActivity extends AppCompatActivity {
         rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
     }
 
-    /** 加载待审批积分 */
     private void loadPendingEarnings() {
         java.util.List<com.sister.habits.data.models.CoinEarning> pendingEarnings = db.coinEarningDao().getPending();
         if (pendingEarnings.isEmpty()) {
@@ -2205,6 +2202,5 @@ private void showProfileSettings() {
                 .setView(scrollView)
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
-
-}
+    }
 }
