@@ -190,8 +190,8 @@ public class ParentActivity extends AppCompatActivity {
                                 .edit()
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
-                        // 配对后主动触发局域网P2P同步，把本机数据推过去
-                        syncManager.triggerLanSync();
+                        // 配对后主动触发全同步（Hub→局域网→云端）
+                        syncManager.triggerFullSync();
                     } else {
                         Toast.makeText(this, "❌ 无效的配对码: " + qrContent.substring(0, Math.min(30, qrContent.length())), Toast.LENGTH_LONG).show();
                     }
@@ -982,6 +982,8 @@ public class ParentActivity extends AppCompatActivity {
                 if (BindKeyManager.isValidChildKey(input)) {
                     if (BindKeyManager.bindChild(ParentActivity.this, input)) {
                         Toast.makeText(this, "✅ 绑定成功！孩子Key: " + input, Toast.LENGTH_SHORT).show();
+                        showBindKeyDialog(); // 保持对话框不关闭，方便连续操作
+                        return;
                     } else {
                         Toast.makeText(this, "⚠️ 该孩子已绑定过", Toast.LENGTH_SHORT).show();
                     }
@@ -998,6 +1000,7 @@ public class ParentActivity extends AppCompatActivity {
                             BindKeyManager.unbindChild(ParentActivity.this, ck);
                         }
                         Toast.makeText(this, "已解绑全部孩子", Toast.LENGTH_SHORT).show();
+                        showBindKeyDialog(); // 保持对话框不关闭
                     })
                     .setNegativeButton("取消", null)
                     .show();
