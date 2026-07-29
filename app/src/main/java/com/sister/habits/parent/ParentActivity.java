@@ -59,7 +59,7 @@ public class ParentActivity extends AppCompatActivity {
     private ProfileManager profile;
 
     private TextView tvStats;
-    private RecyclerView rvPendingApprovals, rvPendingTasks;
+    private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
 
     // 相册选图 — 当前选中的商品图片路径
@@ -428,6 +428,7 @@ public class ParentActivity extends AppCompatActivity {
         refreshStats();
         loadPendingApprovals();
         loadPendingTasks();
+        loadPendingEarnings();
     }
 
         private void refreshStats() {
@@ -501,7 +502,27 @@ public class ParentActivity extends AppCompatActivity {
             return;
         }
         rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
+   
+    /** 加载待审批积分（CoinEarning + Task approval） */
+    private void loadPendingEarnings() {
+        java.util.List<com.sister.habits.data.models.CoinEarning> pendingEarnings = db.coinEarningDao().getPending();
+        if (pendingEarnings.isEmpty()) {
+            rvPendingEarnings.setVisibility(View.GONE);
+            return;
+        }
+        rvPendingEarnings.setVisibility(View.VISIBLE);
+        // 简单列表适配器
+        java.util.List<String> items = new java.util.ArrayList<>();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
+        for (com.sister.habits.data.models.CoinEarning ce : pendingEarnings) {
+            String type = "task".equals(ce.sourceType) ? "📋" : "🏅";
+            items.add(type + " +" + ce.amount + "金币 来源:" + ce.sourceDescription + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")");
+        }
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1, items);
+        rvPendingEarnings.setAdapter(adapter);
     }
+ }
 
     private void processTaskApproval(Task task, boolean approved) {
         if (approved) {
