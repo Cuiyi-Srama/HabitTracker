@@ -2600,8 +2600,6 @@ private void showProfileSettings() {
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
     }
-}
-
     /** 🔐 PIN码管理 */
     private void showPinManageDialog() {
         boolean hasPin = PinHelper.isPinSet(this);
@@ -2630,3 +2628,4 @@ private void showProfileSettings() {
                 .setNegativeButton("← 返回上级", (d2, w2) -> showSystemMenu())
                 .show();
     }
+}
