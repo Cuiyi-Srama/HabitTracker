@@ -795,12 +795,73 @@ public class ParentActivity extends AppCompatActivity {
                 .setItems(items, (d, which) -> {
                     switch (which) {
                         case 0: showWordbankDialog(); break;
-                        case 1: showEconomySettings(); break;
-                        case 2: showEconomySettings(); break;
+                        case 1: showLearningLimitDialog(); break;
+                        case 2: showLearningRewardDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
                 .show();
+    }
+
+    /** 📝 每日学习限额 */
+    private void showLearningLimitDialog() {
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
+        EconomyConfig fc = config;
+        View v = getLayoutInflater().inflate(android.R.layout.simple_list_item_2, null);
+        android.widget.EditText etWords = new android.widget.EditText(this);
+        etWords.setHint("每日新词上限");
+        etWords.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etWords.setText(String.valueOf(fc.maxDailyWords));
+        android.widget.EditText etReview = new android.widget.EditText(this);
+        etReview.setHint("每日复习上限");
+        etReview.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etReview.setText(String.valueOf(fc.maxDailyReview));
+        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
+        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
+        ll.setPadding(32,16,32,16);
+        ll.addView(etWords);
+        ll.addView(etReview);
+        new AlertDialog.Builder(this)
+                .setTitle("📝 每日学习限额")
+                .setView(ll)
+                .setPositiveButton("保存", (d,w2)->{
+                    fc.maxDailyWords = parseInt(etWords,10);
+                    fc.maxDailyReview = parseInt(etReview,20);
+                    db.economyConfigDao().setConfig(fc);
+                    Toast.makeText(this,"学习限额已更新",Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("← 返回上级",(d,w2)->showLearningMenu()).show();
+    }
+
+    /** 💰 学习奖励参数 */
+    private void showLearningRewardDialog() {
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
+        EconomyConfig fc = config;
+        android.widget.EditText etLearn = new android.widget.EditText(this);
+        etLearn.setHint("新词答对奖励");
+        etLearn.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etLearn.setText(String.valueOf(fc.wordLearnReward));
+        android.widget.EditText etPass = new android.widget.EditText(this);
+        etPass.setHint("复习通关奖励");
+        etPass.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etPass.setText(String.valueOf(fc.reviewPassReward));
+        android.widget.LinearLayout ll = new android.widget.LinearLayout(this);
+        ll.setOrientation(android.widget.LinearLayout.VERTICAL);
+        ll.setPadding(32,16,32,16);
+        ll.addView(etLearn);
+        ll.addView(etPass);
+        new AlertDialog.Builder(this)
+                .setTitle("💰 学习奖励参数")
+                .setView(ll)
+                .setPositiveButton("保存", (d,w2)->{
+                    fc.wordLearnReward = parseInt(etLearn,2);
+                    fc.reviewPassReward = parseInt(etPass,2);
+                    db.economyConfigDao().setConfig(fc);
+                    Toast.makeText(this,"学习奖励已更新",Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("← 返回上级",(d,w2)->showLearningMenu()).show();
     }
 
     /** 二级菜单：🏪 商城管理 */
@@ -839,7 +900,7 @@ public class ParentActivity extends AppCompatActivity {
                     switch (which) {
                         case 0: showAddTaskDialog(); break;
                         case 1: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
-                        case 2: loadPendingTasks(); Toast.makeText(this, "已刷新", Toast.LENGTH_SHORT).show(); break;
+                        case 2: showTaskTemplates(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
