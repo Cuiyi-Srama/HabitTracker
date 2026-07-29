@@ -401,6 +401,8 @@ public class ParentActivity extends AppCompatActivity {
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
         rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
+        rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
+        rvPendingEarnings.setLayoutManager(new LinearLayoutManager(this));
 
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
