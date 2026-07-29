@@ -479,8 +479,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 1:
                             // 检查指纹硬件
                             BiometricManager bm = BiometricManager.from(this);
-                            if (bm.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                                    == BiometricManager.BIOMETRIC_SUCCESS) {
+                            if (bm.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS) {
                                 PinHelper.setAuthMode(this, PinHelper.MODE_FINGERPRINT);
                                 Toast.makeText(this, "✅ 已选择指纹验证", Toast.LENGTH_SHORT).show();
                             } else {
@@ -619,7 +618,7 @@ public class ParentActivity extends AppCompatActivity {
                 });
         BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("🔐 家长验证")
-                .setSubtitle("请验证指纹以进入家长管理")
+                .setDescription("请验证指纹以进入家长管理")
                 .setNegativeButtonText("使用PIN码")
                 .build();
         // 如果按了"使用PIN码"，回退到PIN验证
