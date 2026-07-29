@@ -129,6 +129,12 @@ public class HubSync {
                 if (payload.coins != null) merger.mergeCoinTransactions(payload.coins);
                 if (payload.tasks != null) merger.mergeTasks(payload.tasks);
                 if (payload.redemptions != null) merger.mergeRedemptions(payload.redemptions);
+                if (payload.vocabularies != null) merger.mergeVocabularies(payload.vocabularies);
+                if (payload.shopItems != null) merger.mergeShopItems(payload.shopItems);
+                if (payload.wishlistItems != null) merger.mergeWishlistItems(payload.wishlistItems);
+                if (payload.wordBanks != null) merger.mergeWordBanks(payload.wordBanks);
+                if (payload.coinEarnings != null) merger.mergeCoinEarnings(payload.coinEarnings);
+                if (payload.economyConfig != null) merger.mergeEconomyConfig(payload.economyConfig);
 
                 // 标记已同步
                 if (payload.checkIns != null)
@@ -160,12 +166,8 @@ public class HubSync {
                 }
             }
 
-            // 构建拉取响应
-            PullResponse response = new PullResponse();
-            response.serverTime = System.currentTimeMillis();
-            response.hubDeviceId = SyncManager.getInstance(context).getDeviceId();
-
-            String result = gson.toJson(response);
+            // 返回Hub上所有数据（增量+全量）
+            String result = buildAccumulatedPayload();
             return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", result);
 
         } catch (Exception e) {
@@ -232,6 +234,12 @@ public class HubSync {
                 if (hubData.coins != null) merger.mergeCoinTransactions(hubData.coins);
                 if (hubData.tasks != null) merger.mergeTasks(hubData.tasks);
                 if (hubData.redemptions != null) merger.mergeRedemptions(hubData.redemptions);
+                if (hubData.vocabularies != null) merger.mergeVocabularies(hubData.vocabularies);
+                if (hubData.shopItems != null) merger.mergeShopItems(hubData.shopItems);
+                if (hubData.wishlistItems != null) merger.mergeWishlistItems(hubData.wishlistItems);
+                if (hubData.wordBanks != null) merger.mergeWordBanks(hubData.wordBanks);
+                if (hubData.coinEarnings != null) merger.mergeCoinEarnings(hubData.coinEarnings);
+                if (hubData.economyConfig != null) merger.mergeEconomyConfig(hubData.economyConfig);
 
                 // 标记这些数据为已同步
                 if (hubData.checkIns != null)
@@ -322,6 +330,12 @@ public class HubSync {
         payload.coins = db.coinTransactionDao().getUnsynced();
         payload.tasks = db.taskDao().getUnsynced();
         payload.redemptions = db.redemptionDao().getUnsynced();
+        payload.vocabularies = db.vocabularyDao().getAll();
+        payload.shopItems = db.shopItemDao().getAll();
+        payload.wishlistItems = db.wishlistDao().getAll();
+        payload.wordBanks = db.wordBankDao().getAll();
+        payload.coinEarnings = db.coinEarningDao().getUnsynced();
+        payload.economyConfig = db.economyConfigDao().getConfig();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -333,6 +347,12 @@ public class HubSync {
         payload.coins = db.coinTransactionDao().getUnsynced();
         payload.tasks = db.taskDao().getUnsynced();
         payload.redemptions = db.redemptionDao().getUnsynced();
+        payload.vocabularies = db.vocabularyDao().getAll();
+        payload.shopItems = db.shopItemDao().getAll();
+        payload.wishlistItems = db.wishlistDao().getAll();
+        payload.wordBanks = db.wordBankDao().getAll();
+        payload.coinEarnings = db.coinEarningDao().getUnsynced();
+        payload.economyConfig = db.economyConfigDao().getConfig();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -524,6 +544,12 @@ public class HubSync {
         List<CoinTransaction> coins;
         List<Task> tasks;
         List<Redemption> redemptions;
+        List<Vocabulary> vocabularies;
+        List<ShopItem> shopItems;
+        List<WishlistItem> wishlistItems;
+        List<WordBank> wordBanks;
+        List<CoinEarning> coinEarnings;
+        com.sister.habits.data.models.EconomyConfig economyConfig;
     }
 
     private static class PullResponse {
