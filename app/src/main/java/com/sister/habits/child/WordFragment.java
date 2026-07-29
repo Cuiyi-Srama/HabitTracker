@@ -52,6 +52,8 @@ public class WordFragment extends Fragment {
     private int dailyWordLimit = 10;
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
+    // 选项缓存：每个词的固定干扰项，防止复习重考时选项变化被孩子投机取巧
+    private final java.util.Map<String, java.util.List<String>> cachedOptions = new java.util.HashMap<>();
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
@@ -224,6 +226,7 @@ public class WordFragment extends Fragment {
 
         Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
+        cachedOptions.clear(); // 新一轮答题，清空选项缓存
         // 答题中禁用模式切换按钮，防止刷新选项作弊
         if (btnNewWords != null) btnNewWords.setEnabled(false);
         if (btnReview != null) btnReview.setEnabled(false);
