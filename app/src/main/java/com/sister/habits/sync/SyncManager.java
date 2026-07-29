@@ -160,6 +160,11 @@ public class SyncManager {
         remoteSync.syncAll();
     }
 
+    /** 手动设置Hub IP（跳过自动发现） */
+    public void setManualHubIp(String ip) {
+        hubSync.setManualHubIp(ip);
+    }
+
     /**
      * 生成QR码数据（增量同步兜底）
      */
