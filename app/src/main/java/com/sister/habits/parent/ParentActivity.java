@@ -40,6 +40,9 @@ import com.sister.habits.utils.ProfileManager;
 import com.sister.habits.data.models.GateConfig;
 import com.sister.habits.data.models.DailyGate;
 import com.sister.habits.data.models.LaundryTask;
+import com.sister.habits.data.models.LotteryPrize;
+import com.sister.habits.data.models.LotteryRecord;
+import com.sister.habits.data.models.SchoolReward;
 import com.sister.habits.utils.GateHelper;
 import com.sister.habits.utils.PinHelper;
 import android.app.KeyguardManager;
@@ -977,6 +980,8 @@ public class ParentActivity extends AppCompatActivity {
                 "📋 任务管理",
                 "📋 作业管理",
                 "🧺 洗衣任务",
+                "🎰 抽奖管理",
+                "🏆 学校奖励",
             "⚙️ 系统设置"
         };
         com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
@@ -985,6 +990,8 @@ public class ParentActivity extends AppCompatActivity {
                 this::showTaskMenu,
                 this::showGateManageDialog,
                 this::showLaundryManageDialog,
+                this::showLotteryManageDialog,
+                this::showSchoolRewardDialog,
                 this::showSystemMenu
         );
     }
@@ -1530,6 +1537,187 @@ public class ParentActivity extends AppCompatActivity {
                 }
             })
             .setNeutralButton("取消", null)
+            .show();
+    }
+
+    /** 🎰 抽奖管理 */
+    private void showLotteryManageDialog() {
+        soundHelper.playClickSound();
+        List<LotteryPrize> prizes = db.lotteryDao().getAllPrizes();
+        int totalDraws = db.lotteryDao().getTotalDraws();
+        
+        String[] items = new String[prizes.size() + 2];
+        for (int i = 0; i < prizes.size(); i++) {
+            LotteryPrize p = prizes.get(i);
+            String status = p.enabled ? "" : " [已禁用]";
+            items[i] = p.icon + " " + p.name + " (" + p.probability + "%)" + status;
+        }
+        items[prizes.size()] = "➕ 添加奖品";
+        items[prizes.size() + 1] = "📊 统计: 共抽奖" + totalDraws + "次";
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🎰 抽奖管理")
+            .setItems(items, (d, which) -> {
+                if (which < prizes.size()) {
+                    showLotteryPrizeEditDialog(prizes.get(which));
+                } else if (which == prizes.size()) {
+                    showAddLotteryPrizeDialog();
+                }
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showSettingsDialog())
+            .show();
+    }
+    
+    private void showAddLotteryPrizeDialog() {
+        final android.widget.EditText etName = new android.widget.EditText(this);
+        etName.setHint("奖品名称");
+        final android.widget.EditText etIcon = new android.widget.EditText(this);
+        etIcon.setHint("图标emoji (如 ⭐)");
+        final android.widget.EditText etCost = new android.widget.EditText(this);
+        etCost.setHint("消耗积分 (默认10)");
+        etCost.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        final android.widget.EditText etProb = new android.widget.EditText(this);
+        etProb.setHint("概率权重 1-100 (默认50)");
+        etProb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 0);
+        layout.addView(etName);
+        layout.addView(etIcon);
+        layout.addView(etCost);
+        layout.addView(etProb);
+        
+        new AlertDialog.Builder(this)
+            .setTitle("➕ 添加奖品")
+            .setView(layout)
+            .setPositiveButton("添加", (d, w) -> {
+                String name = etName.getText().toString().trim();
+                String icon = etIcon.getText().toString().trim();
+                String costStr = etCost.getText().toString().trim();
+                String probStr = etProb.getText().toString().trim();
+                if (name.isEmpty()) { Toast.makeText(this, "请输入奖品名称", Toast.LENGTH_SHORT).show(); return; }
+                LotteryPrize prize = new LotteryPrize();
+                prize.name = name;
+                prize.icon = icon.isEmpty() ? "🎁" : icon;
+                prize.cost = costStr.isEmpty() ? 10 : Integer.parseInt(costStr);
+                prize.probability = probStr.isEmpty() ? 50 : Integer.parseInt(probStr);
+                db.lotteryDao().insertPrize(prize);
+                Toast.makeText(this, "✅ 奖品已添加", Toast.LENGTH_SHORT).show();
+                showLotteryManageDialog();
+            })
+            .setNegativeButton("取消", (d2, w2) -> showLotteryManageDialog())
+            .show();
+    }
+    
+    private void showLotteryPrizeEditDialog(LotteryPrize prize) {
+        new AlertDialog.Builder(this)
+            .setTitle(prize.icon + " " + prize.name)
+            .setMessage("概率: " + prize.probability + "% | 消耗: " + prize.cost + "分
+库存: " + (prize.stock == -1 ? "无限" : String.valueOf(prize.stock)))
+            .setPositiveButton(prize.enabled ? "🔴 禁用" : "🟢 启用", (d, w) -> {
+                prize.enabled = !prize.enabled;
+                db.lotteryDao().updatePrize(prize);
+                Toast.makeText(this, prize.enabled ? "已启用" : "已禁用", Toast.LENGTH_SHORT).show();
+                showLotteryManageDialog();
+            })
+            .setNegativeButton("🗑️ 删除", (d, w) -> {
+                db.lotteryDao().deletePrize(prize);
+                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
+                showLotteryManageDialog();
+            })
+            .setNeutralButton("← 返回", (d2, w2) -> showLotteryManageDialog())
+            .show();
+    }
+    
+    /** 🏆 学校奖励管理 */
+    private void showSchoolRewardDialog() {
+        soundHelper.playClickSound();
+        List<SchoolReward> rewards = db.schoolRewardDao().getAll();
+        int totalPoints = db.schoolRewardDao().getTotalPoints();
+        
+        String[] items = new String[rewards.size() + 2];
+        for (int i = 0; i < rewards.size(); i++) {
+            SchoolReward r = rewards.get(i);
+            items[i] = r.badge + " " + r.name + " +" + r.points + "分 (" + r.date + ")";
+        }
+        items[rewards.size()] = "➕ 添加学校奖励";
+        items[rewards.size() + 1] = "📊 累计: " + totalPoints + "分";
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🏆 学校奖励管理")
+            .setItems(items, (d, which) -> {
+                if (which < rewards.size()) {
+                    showSchoolRewardEditDialog(rewards.get(which));
+                } else if (which == rewards.size()) {
+                    showAddSchoolRewardDialog();
+                }
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showSettingsDialog())
+            .show();
+    }
+    
+    private void showAddSchoolRewardDialog() {
+        final android.widget.EditText etName = new android.widget.EditText(this);
+        etName.setHint("奖励名称 (如: 数学优+)");
+        final android.widget.EditText etPoints = new android.widget.EditText(this);
+        etPoints.setHint("奖励积分 (默认5)");
+        etPoints.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        final android.widget.EditText etNote = new android.widget.EditText(this);
+        etNote.setHint("备注 (可选)");
+        
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 0);
+        layout.addView(etName);
+        layout.addView(etPoints);
+        layout.addView(etNote);
+        
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
+        
+        new AlertDialog.Builder(this)
+            .setTitle("🏆 添加学校奖励 (" + today + ")")
+            .setView(layout)
+            .setPositiveButton("添加", (d, w) -> {
+                String name = etName.getText().toString().trim();
+                String ptsStr = etPoints.getText().toString().trim();
+                if (name.isEmpty()) { Toast.makeText(this, "请输入奖励名称", Toast.LENGTH_SHORT).show(); return; }
+                SchoolReward reward = new SchoolReward();
+                reward.name = name;
+                reward.points = ptsStr.isEmpty() ? 5 : Integer.parseInt(ptsStr);
+                reward.note = etNote.getText().toString().trim();
+                reward.date = today;
+                reward.deviceId = syncManager.getDeviceId();
+                db.schoolRewardDao().insert(reward);
+                
+                // 同时发放积分
+                Integer balance = db.coinTransactionDao().getBalance("sister");
+                int newBalance = (balance != null ? balance : 0) + reward.points;
+                com.sister.habits.data.models.CoinTransaction tx = new com.sister.habits.data.models.CoinTransaction(
+                    "sister", reward.points, newBalance, "school_reward",
+                    "🏆 " + reward.name, syncManager.getDeviceId());
+                db.coinTransactionDao().insert(tx);
+                syncManager.onDataChanged();
+                
+                Toast.makeText(this, "✅ 已添加！+ " + reward.points + "分", Toast.LENGTH_SHORT).show();
+                showSchoolRewardDialog();
+            })
+            .setNegativeButton("取消", (d2, w2) -> showSchoolRewardDialog())
+            .show();
+    }
+    
+    private void showSchoolRewardEditDialog(SchoolReward reward) {
+        new AlertDialog.Builder(this)
+            .setTitle(reward.badge + " " + reward.name)
+            .setMessage("日期: " + reward.date + "
+积分: +" + reward.points + "分
+备注: " + (reward.note.isEmpty() ? "无" : reward.note))
+            .setPositiveButton("🗑️ 删除", (d, w) -> {
+                db.schoolRewardDao().delete(reward);
+                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
+                showSchoolRewardDialog();
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showSchoolRewardDialog())
             .show();
     }
     /** 二级菜单：⚙️ 系统设置 */
