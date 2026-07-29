@@ -885,23 +885,20 @@ public class ParentActivity extends AppCompatActivity {
 
     /** 二级菜单：📋 任务管理 */
     private void showTaskMenu() {
-        int pendingTaskCount = db.taskDao().getByStatus("pending").size();
-        String[] items = {
-                "➕ 发布新任务",
-                "✅ 任务审批（" + pendingTaskCount + "项待确认）",
-                "📋 刷新任务列表"
+        int pendingCount = db.taskDao().getByStatus("pending").size();
+        String[] taskLabels = {
+                "➕ 添加新任务",
+                "⏳ 待确认任务（" + pendingCount + "项）",
+                "📋 任务模板库",
+                "📝 管理已发布任务"
         };
-        new AlertDialog.Builder(this)
-                .setTitle("📋 任务管理")
-                .setItems(items, (d, which) -> {
-                    switch (which) {
-                        case 0: showAddTaskDialog(); break;
-                        case 1: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
-                        case 2: showTaskTemplates(); break;
-                    }
-                })
-                .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
-                .show();
+        com.sister.habits.utils.MenuHelper.showWithBack(this, "📋 任务管理", taskLabels,
+                this::showSettingsDialog,
+                this::showAddTaskDialog,
+                () -> { loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); },
+                this::showTaskTemplates,
+                this::showManageTasksDialog
+        );
     }
 
     /** 二级菜单：⚙️ 系统设置 */
