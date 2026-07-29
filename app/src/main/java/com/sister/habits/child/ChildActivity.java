@@ -25,6 +25,7 @@ import com.sister.habits.sync.SyncManager;
 import com.sister.habits.sync.EarningService;
 import com.sister.habits.sync.AcceleratorService;
 import com.sister.habits.utils.SoundHelper;
+import com.sister.habits.utils.BindKeyManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -205,6 +206,7 @@ public class ChildActivity extends AppCompatActivity {
                         "👤 查看我的统计",
                         "🔊 朗读速度(正常/慢速)",
                         "📖 今日单词进度",
+                        "🔑 我的Key",
                         "🔐 进入家长管理"
                 }, (dialog, which) -> {
                     switch (which) {
@@ -250,6 +252,34 @@ public class ChildActivity extends AppCompatActivity {
                                     .show();
                             break;
                         case 3:
+                            // 显示我的Child Key
+                            String childKey = BindKeyManager.generateChildKey(this);
+                            java.util.Set<String> parents = BindKeyManager.getBoundParents(this);
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("🔑 你的Key: ").append(childKey).append("\n\n");
+                            sb.append("👨‍👩‍👧 已绑定的家长:\n");
+                            if (parents.isEmpty()) {
+                                sb.append("（暂无）\n\n请把Key告诉家长进行绑定");
+                            } else {
+                                int idx = 1;
+                                for (String pk : parents) {
+                                    sb.append(idx).append(". ").append(pk).append("\n");
+                                    idx++;
+                                }
+                            }
+                            new android.app.AlertDialog.Builder(this)
+                                .setTitle("🔑 我的Key")
+                                .setMessage(sb.toString())
+                                .setPositiveButton("📋 复制Key", (d2, w2) -> {
+                                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                                    android.content.ClipData clip = android.content.ClipData.newPlainText("ChildKey", childKey);
+                                    clipboard.setPrimaryClip(clip);
+                                    Toast.makeText(this, "✅ Key已复制到剪贴板", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("关闭", null)
+                                .show();
+                            break;
+                        case 4:
                             // 进入家长管理（需要验证）
                             Intent intent = new Intent(this, com.sister.habits.MainActivity.class);
                             intent.putExtra("force_parent_mode", true);
