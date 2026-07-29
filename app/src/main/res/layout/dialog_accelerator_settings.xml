@@ -1,0 +1,213 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🚀 加速器管理"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- 双倍积分日 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✨ 双倍积分日"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#E8F5E9"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+            <android.widget.Switch
+                android:id="@+id/sw_double_points"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" 开启双倍积分日" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_double_date"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:background="#F5F5F5"
+            android:text="📅 启用日期: "
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginBottom="12dp" />
+
+        <!-- 加速器奖励金额 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🏆 加速器奖励（分）"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#FFF3E0"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="连续7天打卡"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_accel_streak7"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="15" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="周勤勉奖"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_accel_week"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="30" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="月度全勤奖"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_accel_month"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="80" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="生日礼包"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_accel_birthday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="100" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="节日礼包"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_accel_holiday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="50" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        </LinearLayout>
+
+        <!-- 积分软上限 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔒 积分软上限"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#FFEBEE"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="12dp">
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="平日上限"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_limit_weekday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="60" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:hint="周末上限"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp">
+                <android.widget.EditText
+                    android:id="@+id/et_limit_weekend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="100" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- 当前加速器状态 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊 今日加速器状态"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#E3F2FD"
+            android:layout_marginBottom="4dp" />
+        <TextView
+            android:id="@+id/tv_accel_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="加载中..."
+            android:textSize="13sp"
+            android:textColor="#666" />
+    </LinearLayout>
+</ScrollView>
