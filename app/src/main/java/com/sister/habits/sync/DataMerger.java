@@ -219,4 +219,45 @@ public class DataMerger {
         }
         Log.d(TAG, "合并积分审批完成: 新增 " + added);
     }
+
+    /** 合并作业关卡配置 */
+    public void mergeGateConfig(com.sister.habits.data.models.GateConfig remote) {
+        com.sister.habits.data.dao.GateConfigDao dao = appDb.gateConfigDao();
+        try {
+            com.sister.habits.data.models.GateConfig local = dao.getConfig();
+            if (local == null) {
+                remote.synced = true;
+                dao.insert(remote);
+            } else if (remote.updatedAt > local.updatedAt) {
+                remote.id = 1; // 保证主键一致
+                remote.synced = true;
+                dao.update(remote);
+            }
+        } catch (Exception e) {
+            android.util.Log.d("DataMerger", "合并GateConfig失败: " + e.getMessage());
+        }
+    }
+
+    /** 合并每日作业记录 */
+    public void mergeDailyGates(java.util.List<com.sister.habits.data.models.DailyGate> remoteList) {
+        com.sister.habits.data.dao.DailyGateDao dao = appDb.dailyGateDao();
+        int added = 0;
+        for (com.sister.habits.data.models.DailyGate g : remoteList) {
+            try {
+                com.sister.habits.data.models.DailyGate existing = dao.getByDate(g.date);
+                if (existing == null) {
+                    g.synced = true;
+                    dao.insert(g);
+                    added++;
+                } else if (g.reviewedAt > existing.reviewedAt) {
+                    // 远程更新更新，覆盖本地
+                    g.synced = true;
+                    dao.update(g);
+                }
+            } catch (Exception e) {
+                android.util.Log.d("DataMerger", "跳过重复DailyGate: " + g.date);
+            }
+        }
+        android.util.Log.d("DataMerger", "合并DailyGate完成: 新增/更新 " + added + "/" + remoteList.size());
+    }
 }
