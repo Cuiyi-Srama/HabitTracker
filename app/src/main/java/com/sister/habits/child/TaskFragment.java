@@ -123,13 +123,24 @@ public class TaskFragment extends Fragment {
             Toast.makeText(getContext(), "✅ 任务已完成并获得奖励！", Toast.LENGTH_SHORT).show();
             return;
         }
+        // 检查积分上限
+        if (!EarningService.isWithinLimit(getContext(), task.rewardCoins)) {
+            Toast.makeText(getContext(), "⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)", Toast.LENGTH_SHORT).show();
+            return;
+        }
         // 标记为"待家长确认"
         db.taskDao().markPending(task.id, System.currentTimeMillis());
-
+        // 提交积分申请
+        CoinEarning earning = new CoinEarning();
+        earning.amount = task.rewardCoins;
+        earning.sourceType = "task";
+        earning.sourceId = task.id;
+        earning.description = task.title;
+        earning.deviceId = SyncManager.getInstance(getContext()).getDeviceId();
+        db.coinEarningDao().insert(earning);
         // 发送通知给家长
         NotificationHelper.createChannel(requireContext());
         NotificationHelper.notifyTaskCompleted(requireContext(), task.title, task.id);
-
         Toast.makeText(getContext(), "✅ 任务已完成！等待家长确认中～", Toast.LENGTH_SHORT).show();
         loadTasks();
     }
