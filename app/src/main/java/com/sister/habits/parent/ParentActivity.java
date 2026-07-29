@@ -1613,8 +1613,7 @@ public class ParentActivity extends AppCompatActivity {
     private void showLotteryPrizeEditDialog(LotteryPrize prize) {
         new AlertDialog.Builder(this)
             .setTitle(prize.icon + " " + prize.name)
-            .setMessage("概率: " + prize.probability + "% | 消耗: " + prize.cost + "分
-库存: " + (prize.stock == -1 ? "无限" : String.valueOf(prize.stock)))
+            .setMessage("概率: " + prize.probability + "% | 消耗: " + prize.cost + "分\n库存: " + (prize.stock == -1 ? "无限" : String.valueOf(prize.stock)))
             .setPositiveButton(prize.enabled ? "🔴 禁用" : "🟢 启用", (d, w) -> {
                 prize.enabled = !prize.enabled;
                 db.lotteryDao().updatePrize(prize);
@@ -1709,9 +1708,7 @@ public class ParentActivity extends AppCompatActivity {
     private void showSchoolRewardEditDialog(SchoolReward reward) {
         new AlertDialog.Builder(this)
             .setTitle(reward.badge + " " + reward.name)
-            .setMessage("日期: " + reward.date + "
-积分: +" + reward.points + "分
-备注: " + (reward.note.isEmpty() ? "无" : reward.note))
+            .setMessage("日期: " + reward.date + "\n积分: +" + reward.points + "分\n备注: " + (reward.note.isEmpty() ? "无" : reward.note))
             .setPositiveButton("🗑️ 删除", (d, w) -> {
                 db.schoolRewardDao().delete(reward);
                 Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
