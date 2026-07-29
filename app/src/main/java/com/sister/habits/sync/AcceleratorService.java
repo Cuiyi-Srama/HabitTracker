@@ -6,6 +6,7 @@ import com.sister.habits.data.models.CoinEarning;
 import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.CheckIn;
 import com.sister.habits.data.models.EconomyConfig;
+import com.sister.habits.utils.ProfileManager;
 import java.util.Calendar;
 import java.util.List;
 
