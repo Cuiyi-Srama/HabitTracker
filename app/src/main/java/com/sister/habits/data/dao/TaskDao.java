@@ -20,6 +20,8 @@ public interface TaskDao {
 
     @Update
     void update(Task task);
+    @Delete
+    void delete(Task task);
 
     @Query("UPDATE tasks SET status = 'pending', completedAt = :completedAt WHERE id = :id")
     void markPending(String id, long completedAt);
