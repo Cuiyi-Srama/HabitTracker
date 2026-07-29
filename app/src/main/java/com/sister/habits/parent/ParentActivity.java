@@ -426,6 +426,7 @@ public class ParentActivity extends AppCompatActivity {
         int maxStreak = db.checkInDao().getMaxStreak("sister");
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
         int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        int earningPendingCount = db.coinEarningDao().getPendingCount();
         Integer balance = db.coinTransactionDao().getBalance("sister");
 
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
@@ -574,9 +575,11 @@ public class ParentActivity extends AppCompatActivity {
     private void showApprovalCenterDialog(String focusType, int focusId) {
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
         int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        int earningPendingCount = db.coinEarningDao().getPendingCount();
         String[] items = {
             "💳 兑换审批（" + pendingCount + "项待处理）",
             "📋 任务确认（" + pendingTaskCount + "项待确认）",
+            "💰 积分审批（" + earningPendingCount + "项待审）",
             "📜 历史记录"
         };
         new AlertDialog.Builder(this)
@@ -585,7 +588,8 @@ public class ParentActivity extends AppCompatActivity {
                     switch (which) {
                         case 0: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
                         case 1: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
-                        case 2: Toast.makeText(this, "历史记录（待实现）", Toast.LENGTH_SHORT).show(); break;
+                        case 2: showEarningApprovals(); break;
+                        case 3: Toast.makeText(this, "历史记录（待实现）", Toast.LENGTH_SHORT).show(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -745,6 +749,7 @@ public class ParentActivity extends AppCompatActivity {
     private void showDashboardMenu() {
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
         int pendingTaskCount = db.taskDao().getByStatus("pending").size();
+        int earningPendingCount = db.coinEarningDao().getPendingCount();
         String[] items = {
                 "📊 查看统计数据",
                 "✅ 兑换审批（" + pendingCount + "项待处理）",
@@ -838,6 +843,8 @@ public class ParentActivity extends AppCompatActivity {
                 "🏠 启动模式 & Hub中枢",
                 "💰 完整经济参数",
                 "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
+                "📋 任务模板库（20+预设任务）",
+                "💰 积分审批（待审积分确认）",
                 "🔐 数据导出备份",
                 "📡 设备同步 & QR配对",
                 "🔄 检查更新"
@@ -850,9 +857,11 @@ public class ParentActivity extends AppCompatActivity {
                         case 1: showHubSettings(); break;
                         case 2: showEconomySettings(); break;
                         case 3: showAcceleratorSettings(); break;
-                        case 4: showBackupRestoreDialog(); break;
-                        case 5: showSyncDashboardDialog(); break;
-                        case 6: checkForUpdate(); break;
+                        case 4: showTaskTemplates(); break;
+                        case 5: showEarningApprovals(); break;
+                        case 6: showBackupRestoreDialog(); break;
+                        case 7: showSyncDashboardDialog(); break;
+                        case 8: checkForUpdate(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
