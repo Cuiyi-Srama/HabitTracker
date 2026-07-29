@@ -26,13 +26,15 @@ public class EarningService {
     }
 
     public static int getDailySoftLimit(Context ctx) {
+        AppDatabase db = AppDatabase.getInstance(ctx);
+        com.sister.habits.data.models.EconomyConfig config = db.economyConfigDao().getConfig();
         Calendar cal = Calendar.getInstance();
         int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-        // Saturday = 7, Sunday = 1
-        if (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) {
-            return 100;
+        boolean isWeekend = (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY);
+        if (config != null) {
+            return isWeekend ? config.softLimitWeekend : config.softLimitWeekday;
         }
-        return 60;
+        return isWeekend ? 100 : 60;
     }
 
     public static boolean isWithinLimit(Context ctx, int newAmount) {
