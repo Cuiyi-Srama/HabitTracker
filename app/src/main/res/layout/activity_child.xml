@@ -73,6 +73,19 @@
         </LinearLayout>
 
     </RelativeLayout>
+    <!-- 积分预期 -->
+    <TextView
+        android:id="@+id/tv_earning_estimate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:text="📈 预计今日: 0分 | 待审批: 0 | 上限: 60"
+        android:textSize="12sp"
+        android:textColor="#FF666666"
+        android:background="#FFF8E1" />
 
     <!-- 底部导航 TabLayout -->
     <com.google.android.material.tabs.TabLayout
