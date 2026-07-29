@@ -434,6 +434,10 @@ public class ParentActivity extends AppCompatActivity {
         btnSettings = findViewById(R.id.btn_settings);
         btnSync = findViewById(R.id.btn_sync);
         btnRefresh = findViewById(R.id.btn_refresh);
+        // 高频快捷入口
+        findViewById(R.id.btn_laundry_review).setOnClickListener(v -> { soundHelper.playClickSound(); showLaundryManageDialog(); });
+        findViewById(R.id.btn_gate_manage).setOnClickListener(v -> { soundHelper.playClickSound(); showGateManageDialog(); });
+        findViewById(R.id.btn_approval_center).setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalCenterDialog(null, -1); });
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
         rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
@@ -968,18 +972,14 @@ public class ParentActivity extends AppCompatActivity {
             + db.coinEarningDao().getPendingCount()
             + db.laundryDao().getPending().size();
         String[] mainLabels = {
-                "📊 数据总览",
-                "✅ 审批中心" + (pendingTotal > 0 ? "（" + pendingTotal + "项待处理）" : ""),
                 "📚 学习管理",
                 "🏪 商城管理",
                 "📋 任务管理",
-                "📋 作业管理（关卡打折）",
+                "📋 作业管理",
                 "🧺 洗衣任务",
             "⚙️ 系统设置"
         };
         com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
-                this::showDashboardMenu,
-                () -> showApprovalCenterDialog(null, -1),
                 this::showLearningMenu,
                 this::showShopMenu,
                 this::showTaskMenu,
