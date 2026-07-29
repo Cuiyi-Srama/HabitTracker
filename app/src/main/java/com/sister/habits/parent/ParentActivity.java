@@ -1240,16 +1240,66 @@ public class ParentActivity extends AppCompatActivity {
         etMakeup.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         layout.addView(etMakeup);
 
-        // 假期范围
+        // 假期范围（日期选择器）
         android.widget.TextView tvHoliday = new android.widget.TextView(this);
-        tvHoliday.setText("📅 假期范围（JSON格式）:");
+        tvHoliday.setText("📅 假期范围:");
         tvHoliday.setPadding(0, 20, 0, 4);
         layout.addView(tvHoliday);
-        android.widget.EditText etHoliday = new android.widget.EditText(this);
-        etHoliday.setText(config.holidayRanges != null ? config.holidayRanges : "[{\"start\":\"2026-07-01\",\"end\":\"2026-08-31\"}]");
-        etHoliday.setHint("[{\"start\":\"2026-07-01\",\"end\":\"2026-08-31\"}]");
-        etHoliday.setMinLines(3);
-        layout.addView(etHoliday);
+
+        // 解析已有假期范围
+        java.util.List<String[]> holidayList = new java.util.ArrayList<>();
+        String hrJson = config.holidayRanges;
+        if (hrJson != null && !hrJson.isEmpty() && !"[]".equals(hrJson)) {
+            try {
+                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.utils.GateHelper.HolidayRange>>(){}.getType();
+                java.util.List<com.sister.habits.utils.GateHelper.HolidayRange> hrs = new com.google.gson.Gson().fromJson(hrJson, listType);
+                if (hrs != null) {
+                    for (com.sister.habits.utils.GateHelper.HolidayRange hr : hrs) {
+                        holidayList.add(new String[]{hr.start, hr.end});
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        final java.util.List<String[]> finalHolidayList = holidayList;
+
+        // 显示已有范围
+        android.widget.TextView tvRanges = new android.widget.TextView(this);
+        tvRanges.setTextSize(13);
+        tvRanges.setPadding(8, 4, 8, 4);
+        tvRanges.setTextColor(0xFF333333);
+        updateHolidayRangesText(tvRanges, finalHolidayList);
+        layout.addView(tvRanges);
+
+        // 添加按钮
+        android.widget.Button btnAddRange = new android.widget.Button(this);
+        btnAddRange.setText("➕ 添加假期范围");
+        btnAddRange.setOnClickListener(v -> {
+            java.util.Calendar calStart = java.util.Calendar.getInstance();
+            new android.app.DatePickerDialog(this, (view, year, month, day) -> {
+                String startDate = year + "-" + String.format("%02d", month+1) + "-" + String.format("%02d", day);
+                new android.app.DatePickerDialog(this, (view2, year2, month2, day2) -> {
+                    String endDate = year2 + "-" + String.format("%02d", month2+1) + "-" + String.format("%02d", day2);
+                    finalHolidayList.add(new String[]{startDate, endDate});
+                    updateHolidayRangesText(tvRanges, finalHolidayList);
+                }, calStart.get(java.util.Calendar.YEAR), calStart.get(java.util.Calendar.MONTH), calStart.get(java.util.Calendar.DAY_OF_MONTH)).show();
+            }, calStart.get(java.util.Calendar.YEAR), calStart.get(java.util.Calendar.MONTH), calStart.get(java.util.Calendar.DAY_OF_MONTH)).show();
+        });
+        layout.addView(btnAddRange);
+
+        // 清除按钮
+        android.widget.Button btnClearRanges = new android.widget.Button(this);
+        btnClearRanges.setText("🗑 清除所有假期");
+        btnClearRanges.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                .setTitle("确认")
+                .setMessage("确定清除所有假期范围？")
+                .setPositiveButton("确定", (dd, ww) -> {
+                    finalHolidayList.clear();
+                    updateHolidayRangesText(tvRanges, finalHolidayList);
+                })
+                .setNegativeButton("取消", null).show();
+        });
+        layout.addView(btnClearRanges);
 
         new AlertDialog.Builder(this)
             .setTitle("⚙️ 假期配置")
@@ -1260,7 +1310,19 @@ public class ParentActivity extends AppCompatActivity {
                 try { config.completionReward = Integer.parseInt(etReward.getText().toString()); } catch (Exception e) {}
                 try { config.defaultPenaltyPercent = Integer.parseInt(etPenalty.getText().toString()); } catch (Exception e) {}
                 try { config.makeupPercent = Integer.parseInt(etMakeup.getText().toString()); } catch (Exception e) {}
-                config.holidayRanges = etHoliday.getText().toString().trim();
+                // 将假期列表转为JSON
+                if (finalHolidayList.isEmpty()) {
+                    config.holidayRanges = "[]";
+                } else {
+                    StringBuilder sb = new StringBuilder("[");
+                    for (int i = 0; i < finalHolidayList.size(); i++) {
+                        if (i > 0) sb.append(",");
+                        String[] range = finalHolidayList.get(i);
+                        sb.append("{"start":"").append(range[0]).append("","end":"").append(range[1]).append(""}");
+                    }
+                    sb.append("]");
+                    config.holidayRanges = sb.toString();
+                }
                 config.updatedAt = System.currentTimeMillis();
                 config.deviceId = syncManager.getDeviceId();
                 db.gateConfigDao().update(config);
@@ -2755,4 +2817,20 @@ private void showProfileSettings() {
                 .setNegativeButton("← 返回上级", (d2, w2) -> showSystemMenu())
                 .show();
     }
+
+    /** 更新假期范围显示 */
+    private void updateHolidayRangesText(android.widget.TextView tv, java.util.List<String[]> list) {
+        if (list.isEmpty()) {
+            tv.setText("（暂无假期）");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < list.size(); i++) {
+                String[] r = list.get(i);
+                sb.append(i+1).append(". ").append(r[0]).append(" ~ ").append(r[1]).append("
+");
+            }
+            tv.setText(sb.toString().trim());
+        }
+    }
+
 }
