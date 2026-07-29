@@ -59,7 +59,7 @@ public class ParentActivity extends AppCompatActivity {
     private ProfileManager profile;
 
     private TextView tvStats;
-    private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings;
+    private RecyclerView rvPendingApprovals, rvPendingTasks;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
 
     // 相册选图 — 当前选中的商品图片路径
@@ -401,8 +401,6 @@ public class ParentActivity extends AppCompatActivity {
 
         rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
         rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
-        rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
-        rvPendingEarnings.setLayoutManager(new LinearLayoutManager(this));
 
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
@@ -430,7 +428,6 @@ public class ParentActivity extends AppCompatActivity {
         refreshStats();
         loadPendingApprovals();
         loadPendingTasks();
-        loadPendingEarnings();
     }
 
         private void refreshStats() {
@@ -504,38 +501,6 @@ public class ParentActivity extends AppCompatActivity {
             return;
         }
         rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
-    }
-
-    private void loadPendingEarnings() {
-        java.util.List<com.sister.habits.data.models.CoinEarning> pendingEarnings = db.coinEarningDao().getPending();
-        if (pendingEarnings.isEmpty()) {
-            rvPendingEarnings.setVisibility(View.GONE);
-            return;
-        }
-        rvPendingEarnings.setVisibility(View.VISIBLE);
-        // 使用简单 RecyclerView 适配器
-        rvPendingEarnings.setAdapter(new RecyclerView.Adapter() {
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                TextView tv = new TextView(ParentActivity.this);
-                tv.setPadding(16, 12, 16, 12);
-                tv.setTextSize(14);
-                return new RecyclerView.ViewHolder(tv) {};
-            }
-            @Override
-            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-                com.sister.habits.data.models.CoinEarning ce = pendingEarnings.get(position);
-                String type = "task".equals(ce.sourceType) ? "📋" : "🏅";
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
-                String text = type + " +" + ce.amount + "金币 来源:" + ce.description + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")";
-                ((TextView) holder.itemView).setText(text);
-                holder.itemView.setOnClickListener(v -> {
-                    showApprovalCenterDialog(ce.sourceType, ce.sourceId != null ? ce.sourceId.hashCode() : 0);
-                });
-            }
-            @Override
-            public int getItemCount() { return pendingEarnings.size(); }
-        });
     }
 
     private void processTaskApproval(Task task, boolean approved) {
