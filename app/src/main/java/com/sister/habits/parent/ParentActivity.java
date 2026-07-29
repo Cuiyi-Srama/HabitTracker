@@ -513,15 +513,29 @@ public class ParentActivity extends AppCompatActivity {
             return;
         }
         rvPendingEarnings.setVisibility(View.VISIBLE);
-        java.util.List<String> items = new java.util.ArrayList<>();
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
-        for (com.sister.habits.data.models.CoinEarning ce : pendingEarnings) {
-            String type = "task".equals(ce.sourceType) ? "📋" : "🏅";
-            items.add(type + " +" + ce.amount + "金币 来源:" + ce.description + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")");
-        }
-        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1, items);
-        rvPendingEarnings.setAdapter(adapter);
+        // 使用简单 RecyclerView 适配器
+        rvPendingEarnings.setAdapter(new RecyclerView.Adapter() {
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                TextView tv = new TextView(ParentActivity.this);
+                tv.setPadding(16, 12, 16, 12);
+                tv.setTextSize(14);
+                return new RecyclerView.ViewHolder(tv) {};
+            }
+            @Override
+            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                com.sister.habits.data.models.CoinEarning ce = pendingEarnings.get(position);
+                String type = "task".equals(ce.sourceType) ? "📋" : "🏅";
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
+                String text = type + " +" + ce.amount + "金币 来源:" + ce.description + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")";
+                ((TextView) holder.itemView).setText(text);
+                holder.itemView.setOnClickListener(v -> {
+                    showApprovalCenterDialog(ce.sourceType, ce.sourceId != null ? ce.sourceId.hashCode() : 0);
+                });
+            }
+            @Override
+            public int getItemCount() { return pendingEarnings.size(); }
+        });
     }
 
     private void processTaskApproval(Task task, boolean approved) {
