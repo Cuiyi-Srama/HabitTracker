@@ -14,7 +14,7 @@ public interface LaundryDao {
     @Query("SELECT * FROM laundry_tasks WHERE date = :date ORDER BY submittedAt DESC")
     List<LaundryTask> getByDate(String date);
 
-    @Query("SELECT * FROM laundry_tasks WHERE date = :date AND clothingType = :type LIMIT1")
+    @Query("SELECT * FROM laundry_tasks WHERE date = :date AND clothingType = :type LIMIT 1")
     LaundryTask getByDateAndType(String date, String type);
 
     @Query("SELECT * FROM laundry_tasks ORDER BY submittedAt DESC")
