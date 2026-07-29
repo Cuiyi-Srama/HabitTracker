@@ -518,7 +518,7 @@ public class ParentActivity extends AppCompatActivity {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.CHINA);
         for (com.sister.habits.data.models.CoinEarning ce : pendingEarnings) {
             String type = "task".equals(ce.sourceType) ? "📋" : "🏅";
-            items.add(type + " +" + ce.amount + "金币 来源:" + ce.sourceDescription + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")");
+            items.add(type + " +" + ce.amount + "金币 来源:" + ce.description + " (" + sdf.format(new java.util.Date(ce.createdAt)) + ")");
         }
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, items);
