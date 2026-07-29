@@ -165,7 +165,7 @@ public class AcceleratorService {
     }
 
     /** 获取今天应得的加速器列表（用于UI显示） */
-    public static String public static String getTodayBoostSummary(Context ctx) {
+    public static String getTodayBoostSummary(Context ctx) {
         AppDatabase db = AppDatabase.getInstance(ctx);
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) return "";
