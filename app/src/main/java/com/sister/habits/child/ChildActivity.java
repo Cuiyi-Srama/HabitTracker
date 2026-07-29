@@ -102,9 +102,23 @@ public class ChildActivity extends AppCompatActivity {
         });
     }
 
-    public void refreshCoinBalance() {
+        public void refreshCoinBalance() {
         Integer balance = db.coinTransactionDao().getBalance("sister");
         tvCoinBalance.setText("🪙 " + (balance != null ? balance : 0));
+        refreshEarningEstimate();
+    }
+
+    private void refreshEarningEstimate() {
+        int estimate = com.sister.habits.sync.EarningService.calculateTodayEstimate(this);
+        int pending = com.sister.habits.sync.EarningService.calculateTodayPending(this);
+        int limit = com.sister.habits.sync.EarningService.getDailySoftLimit(this);
+        String boostSummary = com.sister.habits.sync.AcceleratorService.getTodayBoostSummary(this);
+        String base = "📈 预计今日: " + estimate + "分 | 待审批: " + pending + " | 上限: " + limit;
+        if (!boostSummary.isEmpty()) {
+            tvEarningEstimate.setText(base + "\n" + boostSummary);
+        } else {
+            tvEarningEstimate.setText(base);
+        }
     }
 
     private void performCheckIn() {
