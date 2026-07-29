@@ -978,6 +978,93 @@ private void showProfileSettings() {
     }
 
                         /** 🚀 加速器管理：双倍积分日、加速器开关 */
+
+    private void showTaskTemplates() {
+        String[] templates = {
+            "H01-整理床铺 (3分)", "H02-玩具归位 (3分)", "H03-擦拭餐桌 (5分)",
+            "H04-倒垃圾 (5分)", "H05-扫地一间 (10分)", "H06-拖地一间 (15分)",
+            "H07-洗碗一餐 (10分)", "H08-晾收衣服 (8分)", "H09-叠衣服 (8分)",
+            "H15-大扫除30min (30分)", "S01-背单词10个 (8分)", "S02-课外阅读20min (5分)",
+            "S03-练琴练字20min (8分)", "S04-额外练习一页 (5分)", "S05-背古诗古文 (5分)",
+            "S06-写日记小作文 (10分)", "S09-错题5道整理 (5分)", "C01-主动帮小事 (5分)",
+            "C03-连续三天不挑食 (5分)", "C06-教妹妹学习15min (8分)"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("任务模板库(20个)点击添加")
+                .setItems(templates, (d, which) -> {
+                    String t = templates[which];
+                    String[] p = t.split("-", 2);
+                    String code = p[0];
+                    String desc = p.length > 1 ? p[1] : "";
+                    int reward = 5;
+                    if (desc.contains("(") && desc.contains("分")) {
+                        try {
+                            reward = Integer.parseInt(desc.substring(desc.indexOf("(")+1, desc.indexOf("分")));
+                        } catch (Exception e) {}
+                    }
+                    String title = desc.contains("(") ? desc.substring(0, desc.indexOf("(")).trim() : desc;
+                    com.sister.habits.data.models.Task task = new com.sister.habits.data.models.Task();
+                    task.id = code + "_" + System.currentTimeMillis();
+                    task.title = title;
+                    task.description = code + " " + title;
+                    task.rewardCoins = reward;
+                    task.recurrenceType = "daily";
+                    task.status = "active";
+                    task.createdAt = System.currentTimeMillis();
+                    db.taskDao().insert(task);
+                    Toast.makeText(this, "已添加: " + title + " (+" + reward + "分)", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("返回上级", (d, w) -> showSystemMenu()).show();
+    }
+
+
+    private void showEarningApprovals() {
+        java.util.List<com.sister.habits.data.models.CoinEarning> pendings = db.coinEarningDao().getPending("sister");
+        if (pendings == null || pendings.isEmpty()) {
+            Toast.makeText(this, "无待审积分", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] items = new String[pendings.size()];
+        for (int i = 0; i < pendings.size(); i++) {
+            com.sister.habits.data.models.CoinEarning e = pendings.get(i);
+            String desc = e.description != null ? e.description : "未知";
+            String time = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.CHINA)
+                    .format(new java.util.Date(e.requestedAt));
+            items[i] = "+" + e.amount + "分 " + desc + "  (" + time + ")";
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("" + pendings.size() + "项待审积分")
+                .setItems(items, (d, which) -> {
+                    com.sister.habits.data.models.CoinEarning e = pendings.get(which);
+                    new AlertDialog.Builder(this)
+                            .setTitle("审批: " + e.description)
+                            .setMessage("金额: +" + e.amount + "分\n来源: " + e.sourceType)
+                            .setPositiveButton("确认", (d2, w2) -> {
+                                e.status = "confirmed";
+                                e.confirmedAt = System.currentTimeMillis();
+                                db.coinEarningDao().update(e);
+                                Integer balance = db.coinTransactionDao().getBalance("sister");
+                                int newBal = (balance != null ? balance : 0) + e.amount;
+                                com.sister.habits.data.models.CoinTransaction ct = new com.sister.habits.data.models.CoinTransaction(
+                                        "sister", e.amount, newBal,
+                                        e.sourceType, e.description,
+                                        com.sister.habits.sync.SyncManager.getInstance(ParentActivity.this).getDeviceId());
+                                db.coinTransactionDao().insert(ct);
+                                Toast.makeText(this, "已确认 +" + e.amount + "分!", Toast.LENGTH_SHORT).show();
+                                refreshStats();
+                            })
+                            .setNegativeButton("拒绝", (d2, w2) -> {
+                                e.status = "rejected";
+                                e.rejectedAt = System.currentTimeMillis();
+                                db.coinEarningDao().update(e);
+                                Toast.makeText(this, "已拒绝该积分申请", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNeutralButton("返回", null)
+                            .show();
+                })
+                .setNegativeButton("返回上级", (d, w) -> showSystemMenu()).show();
+    }
+
     private void showAcceleratorSettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
