@@ -48,7 +48,7 @@ public class AcceleratorService {
                 boost.sourceType = "boost_streak7";
                 boost.sourceId = "streak7_" + today;
                 boost.description = "🚀 连续打卡勋章: 连续" + checkIn.streakDay + "天!";
-                boost.deviceId = db.profileDao().getProfile().deviceId;
+                boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
                 boost.status = "pending";
                 boost.requestedAt = System.currentTimeMillis();
                 db.coinEarningDao().insert(boost);
@@ -67,7 +67,7 @@ public class AcceleratorService {
                 boost.sourceType = "boost_week";
                 boost.sourceId = "week_" + getWeekLabel();
                 boost.description = "🚀 周勤勉奖: 本周完成" + weekTotal + "项任务!";
-                boost.deviceId = db.profileDao().getProfile().deviceId;
+                boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
                 boost.status = "pending";
                 boost.requestedAt = System.currentTimeMillis();
                 db.coinEarningDao().insert(boost);
@@ -90,7 +90,7 @@ public class AcceleratorService {
                 boost.sourceType = "boost_month";
                 boost.sourceId = "month_" + getMonthLabel();
                 boost.description = "🚀 月度全勤奖: 本月已完成" + monthTotal + "项任务!";
-                boost.deviceId = db.profileDao().getProfile().deviceId;
+                boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
                 boost.status = "pending";
                 boost.requestedAt = System.currentTimeMillis();
                 db.coinEarningDao().insert(boost);
@@ -111,7 +111,7 @@ public class AcceleratorService {
             boost.sourceType = "boost_birthday";
             boost.sourceId = "birthday_" + bdayKey;
             boost.description = "🎂 生日礼包: 生日快乐! 今天+100分!";
-            boost.deviceId = db.profileDao().getProfile().deviceId;
+            boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
             boost.status = "pending";
             boost.requestedAt = System.currentTimeMillis();
             db.coinEarningDao().insert(boost);
@@ -128,7 +128,7 @@ public class AcceleratorService {
                 boost.sourceType = "boost_holiday";
                 boost.sourceId = "holiday_" + holiday;
                 boost.description = "🎉 节日礼包: " + holiday + "! +50分!";
-                boost.deviceId = db.profileDao().getProfile().deviceId;
+                boost.deviceId = com.sister.habits.sync.SyncManager.getInstance(ctx).getDeviceId();
                 boost.status = "pending";
                 boost.requestedAt = System.currentTimeMillis();
                 db.coinEarningDao().insert(boost);
