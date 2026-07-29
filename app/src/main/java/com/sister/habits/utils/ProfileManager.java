@@ -12,6 +12,7 @@ public class ProfileManager {
     private static final String KEY_NICKNAME = "nickname";
     private static final String KEY_AVATAR_PATH = "avatar_path";
     private static final String KEY_APP_TITLE = "app_title";
+    private static final String KEY_BIRTHDAY = "birthday";  // yyyy-MM-dd
 
     private static ProfileManager instance;
     private final SharedPreferences prefs;
@@ -59,5 +60,13 @@ public class ProfileManager {
     /** 设置头像路径 */
     public void setAvatarPath(String path) {
         prefs.edit().putString(KEY_AVATAR_PATH, path).apply();
+    }
+    /** 获取生日（yyyy-MM-dd，空字符串=未设置） */
+    public String getBirthday() {
+        return prefs.getString(KEY_BIRTHDAY, "");
+    }
+    /** 设置生日 */
+    public void setBirthday(String birthday) {
+        prefs.edit().putString(KEY_BIRTHDAY, birthday).apply();
     }
 }
