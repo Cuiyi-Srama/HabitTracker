@@ -52,8 +52,6 @@ public class WordFragment extends Fragment {
     private int dailyWordLimit = 10;
     private int dailyReviewLimit = 20;
     private boolean isAnswering = false;
-    // 选项缓存：每个词的固定干扰项，防止复习重考时选项变化被孩子投机取巧
-    private final java.util.Map<String, java.util.List<String> > cachedOptions = new java.util.HashMap<>();
     private boolean isReviewMode = false;
     private String currentBankId = "builtin";
 
@@ -114,20 +112,6 @@ public class WordFragment extends Fragment {
 
         startQuiz(false);
         return view;
-    }
-
-    /** 由ChildActivity在切换到单词Tab时调用，强制刷新词库 */
-    public void refreshWordBank() {
-        loadConfig();
-        SharedPreferences prefs = requireContext().getSharedPreferences("wordbank_prefs", 0);
-        String newBankId = prefs.getString("active_bank_id", "builtin");
-        android.util.Log.i("WordFragment", "refreshWordBank: current=" + currentBankId + " new=" + newBankId);
-        if (!newBankId.equals(currentBankId)) {
-            currentBankId = newBankId;
-            startQuiz(isReviewMode);
-        } else {
-            updateStats();
-        }
     }
 
     @Override
@@ -217,19 +201,11 @@ public class WordFragment extends Fragment {
                     ? "所有单词都检测通过了！去逛逛商城吧 🏪"
                     : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
-            // 恢复按钮可用状态
-            if (btnNewWords != null) btnNewWords.setEnabled(true);
-            if (btnReview != null) btnReview.setEnabled(true);
             updateStats();
             return;
         }
 
-        Collections.shuffle(words);
         quizQueue = new ArrayList<>(words);
-        cachedOptions.clear(); // 新一轮答题，清空选项缓存
-        // 答题中禁用模式切换按钮，防止刷新选项作弊
-        if (btnNewWords != null) btnNewWords.setEnabled(false);
-        if (btnReview != null) btnReview.setEnabled(false);
         updateStats();
         showNextWord();
     }
@@ -237,7 +213,9 @@ public class WordFragment extends Fragment {
     private void showNextWord() {
         if (quizQueue.isEmpty()) {
             if (isReviewMode) {
+                // 复习模式：一轮结束，检查是否全部答对
                 if (wrongInReviewSet.isEmpty()) {
+                    // ✅ 全部答对 → 发放积分
                     int totalBonus = currentReviewTotal * 2;
                     grantReviewReward(totalBonus);
                     tvWord.setText("🎉 全部通关！+" + totalBonus + "金币！");
@@ -249,8 +227,10 @@ public class WordFragment extends Fragment {
                     updateStats();
                     return;
                 } else {
+                    // ❌ 有答错 → 整组从头重排重新来
                     int wrongCount = wrongInReviewSet.size();
                     tvPrompt.setText("💪 答错了 " + wrongCount + " 个～整组重来，全部答对才算通关！加油！");
+                    // 整组重新随机排列，从头开始
                     if (reviewAllWords != null) {
                         Collections.shuffle(reviewAllWords);
                         quizQueue = new ArrayList<>(reviewAllWords);
@@ -264,6 +244,7 @@ public class WordFragment extends Fragment {
             tvPhonetic.setText("");
             tvPrompt.setText("点击「📚新词」或「🔄复习」继续");
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
+            // 恢复按钮
             if (btnNewWords != null) btnNewWords.setEnabled(true);
             if (btnReview != null) btnReview.setEnabled(true);
             updateStats();
@@ -274,33 +255,32 @@ public class WordFragment extends Fragment {
         tvWord.setText(currentWord.word);
         tvPhonetic.setText(currentWord.phonetic != null ? currentWord.phonetic : "");
         tvPrompt.setText("选出正确的中文意思 👇");
+        // 自动朗读单词
         soundHelper.speakWord(currentWord.word);
 
-        // ★ 使用缓存：同一单词选项不变，防止复习重考时投机取巧
-        java.util.List<String> options = cachedOptions.get(currentWord.id);
-        if (options == null) {
-            options = new java.util.ArrayList<>();
-            options.add(currentWord.meaning);
-            java.util.List<Vocabulary> distractors = db.vocabularyDao().getRandom(8, getCurrentBankId());
-            java.util.Collections.shuffle(distractors);
-            for (Vocabulary v : distractors) {
-                if (!v.meaning.equals(currentWord.meaning) && !options.contains(v.meaning)) {
-                    options.add(v.meaning);
+        // 生成选项：1正确 + 3干扰
+        List<String> options = new ArrayList<>();
+        options.add(currentWord.meaning);
+
+        List<Vocabulary> distractors = db.vocabularyDao().getRandom(8, getCurrentBankId());
+        Collections.shuffle(distractors);
+        for (Vocabulary v : distractors) {
+            if (!v.meaning.equals(currentWord.meaning) && !options.contains(v.meaning)) {
+                options.add(v.meaning);
+                if (options.size() >= 4) break;
+            }
+        }
+        while (options.size() < 4) {
+            String[] fb = {"你好", "谢谢", "再见", "好的", "早上好", "晚上好", "爸爸", "妈妈"};
+            for (String s : fb) {
+                if (!options.contains(s)) {
+                    options.add(s);
                     if (options.size() >= 4) break;
                 }
             }
-            while (options.size() < 4) {
-                String[] fb = {"你好", "谢谢", "再见", "好的", "早上好", "晚上好", "爸爸", "妈妈"};
-                for (String s : fb) {
-                    if (!options.contains(s)) {
-                        options.add(s);
-                        if (options.size() >= 4) break;
-                    }
-                }
-            }
-            java.util.Collections.shuffle(options);
-            cachedOptions.put(currentWord.id, options);
         }
+
+        Collections.shuffle(options);
 
         isAnswering = true;
         for (int i = 0; i < optionButtons.size(); i++) {
@@ -313,7 +293,90 @@ public class WordFragment extends Fragment {
         }
     }
 
-    /**    /**
+    private void onOptionClicked(View v) {
+        if (!isAnswering || currentWord == null) return;
+        isAnswering = false;
+
+        Button clicked = (Button) v;
+        String selected = clicked.getText().toString();
+        boolean correct = selected.equals(currentWord.meaning);
+
+        // 锁定并高亮正确答案
+        for (Button btn : optionButtons) {
+            btn.setEnabled(false);
+            if (btn.getText().toString().equals(currentWord.meaning)) {
+                btn.setBackgroundColor(0xFF4CAF50);
+                btn.setTextColor(0xFFFFFFFF);
+            }
+        }
+
+        if (correct) {
+            // ✅ 答对
+            clicked.setBackgroundColor(0xFF4CAF50);
+            clicked.setTextColor(0xFFFFFFFF);
+            streakCount++;
+
+            if (isReviewMode) {
+                // 复习模式：不单独发积分，最后统一发
+                tvPrompt.setText("✅ 答对了！继续加油 💪");
+                soundHelper.playCorrectSound();
+            } else {
+                // 学习模式：每个词一次机会，答对得2积分（提交家长审批）
+                int coinReward = 2;
+                if (!EarningService.isWithinLimit(getContext(), coinReward)) {
+                    tvPrompt.setText("⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)");
+                    soundHelper.playClickSound();
+                } else {
+                    CoinEarning earning = new CoinEarning();
+                    earning.amount = coinReward;
+                    earning.sourceType = "word_learn";
+                    earning.sourceId = currentWord.id;
+                    earning.description = "新词学习: " + currentWord.word;
+                    earning.deviceId = com.sister.habits.sync.SyncManager.getInstance(getContext()).getDeviceId();
+                    db.coinEarningDao().insert(earning);
+
+                    // 实时刷新预估
+                    if (getActivity() instanceof ChildActivity) {
+                        ((ChildActivity) getActivity()).refreshCoinBalance();
+                    }
+
+                    tvPrompt.setText("📖 已记住: " + currentWord.word + "  +" + coinReward + "分（待家长审批）");
+                    soundHelper.playClickSound();
+                }
+            }
+
+            // 答对更新复习状态
+            updateWordReview(currentWord.id, true);
+
+        } else {
+            // ❌ 答错
+            clicked.setBackgroundColor(0xFFE53935);
+            clicked.setTextColor(0xFFFFFFFF);
+            streakCount = 0;
+            soundHelper.playErrorVibration();
+
+            if (isReviewMode) {
+                // 复习模式：记录答错的词，纠错重来
+                wrongInReviewSet.add(currentWord.id);
+                tvPrompt.setText("🌸 答错了～" + currentWord.meaning + " 才是对的，纠错时间！💪");
+            } else {
+                // 学习模式：答错不扣分，直接进复习区
+                tvPrompt.setText("🌸 " + currentWord.meaning + " 才对哦，已加入复习区～");
+            }
+
+            // 答错更新复习状态
+            updateWordReview(currentWord.id, false);
+        }
+
+        syncManager.onDataChanged();
+        updateStats();
+        updateStreakDisplay();
+
+        // 学习模式：答对答错都跳过该词（仅一次机会）
+        new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 1200);
+    }
+
+    /**
      * 更新复习状态
      * 
      * 核心逻辑：
