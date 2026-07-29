@@ -837,6 +837,7 @@ public class ParentActivity extends AppCompatActivity {
                 "👤 个人信息（昵称/头像/标题）",
                 "🏠 启动模式 & Hub中枢",
                 "💰 完整经济参数",
+                "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
                 "🔐 数据导出备份",
                 "📡 设备同步 & QR配对",
                 "🔄 检查更新"
@@ -848,9 +849,10 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showProfileSettings(); break;
                         case 1: showHubSettings(); break;
                         case 2: showEconomySettings(); break;
-                        case 3: showBackupRestoreDialog(); break;
-                        case 4: showSyncDashboardDialog(); break;
-                        case 5: checkForUpdate(); break;
+                        case 3: showAcceleratorSettings(); break;
+                        case 4: showBackupRestoreDialog(); break;
+                        case 5: showSyncDashboardDialog(); break;
+                        case 6: checkForUpdate(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -975,7 +977,87 @@ private void showProfileSettings() {
                 .show();
     }
 
-                        private void showEconomySettings() {
+                        /** 🚀 加速器管理：双倍积分日、加速器开关 */
+    private void showAcceleratorSettings() {
+        EconomyConfig config = db.economyConfigDao().getConfig();
+        if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
+        EconomyConfig finalConfig = config;
+        View view = getLayoutInflater().inflate(R.layout.dialog_accelerator_settings, null);
+
+        android.widget.Switch swDoublePoints = view.findViewById(R.id.sw_double_points);
+        android.widget.TextView tvDoubleDate = view.findViewById(R.id.tv_double_date);
+        android.widget.EditText etStreak7 = view.findViewById(R.id.et_accel_streak7);
+        android.widget.EditText etWeek = view.findViewById(R.id.et_accel_week);
+        android.widget.EditText etMonth = view.findViewById(R.id.et_accel_month);
+        android.widget.EditText etBirthday = view.findViewById(R.id.et_accel_birthday);
+        android.widget.EditText etHoliday = view.findViewById(R.id.et_accel_holiday);
+        android.widget.EditText etLimitWeekday = view.findViewById(R.id.et_limit_weekday);
+        android.widget.EditText etLimitWeekend = view.findViewById(R.id.et_limit_weekend);
+        android.widget.TextView tvSummary = view.findViewById(R.id.tv_accel_summary);
+
+        swDoublePoints.setChecked(finalConfig.doublePointsEnabled);
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA)
+                .format(new java.util.Date());
+        tvDoubleDate.setText("📅 启用日期: " + (finalConfig.doublePointDate != null ? finalConfig.doublePointDate : today));
+        etStreak7.setText(String.valueOf(finalConfig.boostStreak7));
+        etWeek.setText(String.valueOf(finalConfig.boostWeek));
+        etMonth.setText(String.valueOf(finalConfig.boostMonth));
+        etBirthday.setText(String.valueOf(finalConfig.boostBirthday));
+        etHoliday.setText(String.valueOf(finalConfig.boostHoliday));
+        etLimitWeekday.setText(String.valueOf(finalConfig.softLimitWeekday));
+        etLimitWeekend.setText(String.valueOf(finalConfig.softLimitWeekend));
+
+        // 双倍积分日开关：点日期可修改
+        tvDoubleDate.setOnClickListener(v -> {
+            String dateStr = tvDoubleDate.getText().toString().replace("📅 启用日期: ", "").trim();
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA);
+                java.util.Date d = sdf.parse(dateStr);
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(d);
+                new android.app.DatePickerDialog(this, (view2, year, month, day) -> {
+                    String picked = year + "-" + (month+1) + "-" + day;
+                    tvDoubleDate.setText("📅 启用日期: " + picked);
+                }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show();
+            } catch (Exception e) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                new android.app.DatePickerDialog(this, (view2, year, month, day) -> {
+                    String picked = year + "-" + (month+1) + "-" + day;
+                    tvDoubleDate.setText("📅 启用日期: " + picked);
+                }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show();
+            }
+        });
+
+        // 显示当前加速器摘要
+        String boostSummary = com.sister.habits.sync.AcceleratorService.getTodayBoostSummary(this);
+        tvSummary.setText(!boostSummary.isEmpty() ? boostSummary : "今日暂无加速器触发");
+
+        new AlertDialog.Builder(this)
+                .setTitle("🚀 加速器管理")
+                .setView(view)
+                .setPositiveButton("保存", (d, w) -> {
+                    boolean doubleOn = swDoublePoints.isChecked();
+                    String doubleDate = tvDoubleDate.getText().toString().replace("📅 启用日期: ", "").trim();
+                    finalConfig.doublePointsEnabled = doubleOn;
+                    finalConfig.doublePointDate = doubleOn ? doubleDate : null;
+                    finalConfig.boostStreak7 = parseInt(etStreak7, 15);
+                    finalConfig.boostWeek = parseInt(etWeek, 30);
+                    finalConfig.boostMonth = parseInt(etMonth, 80);
+                    finalConfig.boostBirthday = parseInt(etBirthday, 100);
+                    finalConfig.boostHoliday = parseInt(etHoliday, 50);
+                    finalConfig.softLimitWeekday = parseInt(etLimitWeekday, 60);
+                    finalConfig.softLimitWeekend = parseInt(etLimitWeekend, 100);
+                    db.economyConfigDao().setConfig(finalConfig);
+                    Toast.makeText(this, "加速器设置已保存 ✅", Toast.LENGTH_SHORT).show();
+                })
+                .setNeutralButton("🚀 立即检查加速器", (d, w) -> {
+                    com.sister.habits.sync.AcceleratorService.checkAndApply(this);
+                    Toast.makeText(this, "加速器检查完成，查看积分审批确认结果", Toast.LENGTH_LONG).show();
+                })
+                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
+    }
+
+    private void showEconomySettings() {
         EconomyConfig config = db.economyConfigDao().getConfig();
         if (config == null) { config = new EconomyConfig(); db.economyConfigDao().setConfig(config); }
         View view = getLayoutInflater().inflate(R.layout.dialog_economy_settings, null);
