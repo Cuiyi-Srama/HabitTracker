@@ -413,6 +413,7 @@ public class WordFragment extends Fragment {
                 } else {
                     wr.nextReviewAt = Long.MAX_VALUE;
                     db.vocabularyDao().markMastered(wordId, now);
+                    updateStats();  // 立即刷新"已掌握"计数
                 }
                 wr.lastReviewedAt = now;
             } else {
