@@ -1777,6 +1777,14 @@ private void showProfileSettings() {
     }
 
     private void listBackupFiles() {
+        // Android 10+ 需要运行时权限读公共目录
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, 200);
+                Toast.makeText(this, "请先授予存储读取权限再试", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
         java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles();
         if (backups == null || backups.length == 0) {
             Toast.makeText(this, "📂 Download 目录下暂无 .habitbak 备份文件", Toast.LENGTH_SHORT).show();
