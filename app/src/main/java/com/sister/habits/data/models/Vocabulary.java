@@ -30,6 +30,6 @@ public class Vocabulary {
         this.id = UUID.randomUUID().toString();
         this.mastered = false;
         this.active = true;
-        this.bankId = "builtin";
+        this.bankId = "";  // 由调用者设置，不预设为builtin
     }
 }
