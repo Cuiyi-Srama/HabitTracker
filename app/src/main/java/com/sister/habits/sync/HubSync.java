@@ -14,8 +14,8 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import fi.iki.elonen.NanoHTTPD;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import fi.iki.elonen.NanoHTTPD.IHTTPSession;
 import fi.iki.elonen.NanoHTTPD.Response;
 
@@ -264,12 +264,21 @@ public class HubSync {
         }
     }
 
+    /** 手动设置Hub IP（跳过扫描，用户直接输入） */
+    public void setManualHubIp(String ip) {
+        if (ip != null && !ip.isEmpty()) {
+            this.cachedHubIp = ip;
+            this.lastHubDiscovery = System.currentTimeMillis();
+            Log.d(TAG, "📌 手动设置Hub IP: " + ip);
+        }
+    }
+
     /**
      * 发现局域网内的Hub设备
-     * 策略：先尝试缓存 → 再扫描端口 18081
+     * 策略：先尝试缓存 → 并行扫描端口 18081（32线程，8秒内完成）
      */
     private String discoverHub() {
-        // 缓存有效期内使用缓存
+        // 缓存有效期内使用缓存（5分钟）
         if (cachedHubIp != null && (System.currentTimeMillis() - lastHubDiscovery) < 300000) {
             return cachedHubIp;
         }
@@ -281,31 +290,53 @@ public class HubSync {
             if (wifiInfo == null) return null;
 
             int ipInt = wifiInfo.getIpAddress();
+            if (ipInt == 0) return null;
             String myIp = String.format("%d.%d.%d.%d",
                     (ipInt & 0xff), (ipInt >> 8 & 0xff),
                     (ipInt >> 16 & 0xff), (ipInt >> 24 & 0xff));
             String subnet = myIp.substring(0, myIp.lastIndexOf('.') + 1);
 
-            // 扫描子网，查找端口18081
+            // 并行扫描子网（32线程大幅加速）
+            ExecutorService executor = Executors.newFixedThreadPool(32);
+            AtomicReference<String> foundHub = new AtomicReference<>(null);
+
             for (int i = 1; i < 255; i++) {
-                String targetIp = subnet + i;
+                final String targetIp = subnet + i;
                 if (targetIp.equals(myIp)) continue;
+                executor.submit(() -> {
+                    if (foundHub.get() != null) return;
+                    try {
+                        Socket socket = new Socket();
+                        socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 250);
+                        socket.close();
 
-                try {
-                    Socket socket = new Socket();
-                    socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 500);
-                    socket.close();
+                        URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
+                        HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
+                        conn.setConnectTimeout(800);
+                        conn.setReadTimeout(800);
+                        if (conn.getResponseCode() == 200) {
+                            foundHub.set(targetIp);
+                            Log.d(TAG, "🔍 发现Hub: " + targetIp);
+                        }
+                        conn.disconnect();
+                    } catch (Exception ignored) {}
+                });
+            }
 
-                    // 发现Hub！验证一下
-                    URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
-                    HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
-                    conn.setConnectTimeout(1500);
-                    if (conn.getResponseCode() == 200) {
-                        cachedHubIp = targetIp;
-                        lastHubDiscovery = System.currentTimeMillis();
-                        Log.d(TAG, "🔍 发现Hub: " + targetIp);
-                        return targetIp;
-                    }
+            executor.shutdown();
+            try { executor.awaitTermination(8, TimeUnit.SECONDS); } catch (InterruptedException e) { executor.shutdownNow(); }
+
+            String result = foundHub.get();
+            if (result != null) {
+                cachedHubIp = result;
+                lastHubDiscovery = System.currentTimeMillis();
+                return result;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Hub发现失败", e);
+        }
+        return null;
+    }
                 } catch (Exception e) {
                         Log.d(TAG, "Hub扫描跳过: " + targetIp);
                     }
