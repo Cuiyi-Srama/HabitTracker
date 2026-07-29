@@ -12,11 +12,13 @@ import android.util.Log;
 public class LanSyncService extends Service {
     private static final String TAG = "LanSyncService";
 
+    private SyncManager syncManager;
     @Override
     public void onCreate() {
         super.onCreate();
-        SyncManager syncManager = SyncManager.getInstance(this);
-        Log.d(TAG, "局域网同步服务已创建");
+        syncManager = SyncManager.getInstance(this);
+        syncManager.getLanSync().start();
+        Log.d(TAG, "局域网同步服务已创建，HTTP服务器已启动");
     }
 
     @Override
@@ -33,6 +35,9 @@ public class LanSyncService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (syncManager != null) {
+            syncManager.getLanSync().stop();
+        }
         Log.d(TAG, "局域网同步服务已停止");
     }
 }
