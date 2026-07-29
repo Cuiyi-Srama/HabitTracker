@@ -72,19 +72,29 @@ public class ParentActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) return;
                 try {
-                    // 复制到App内部存储
-                    java.io.InputStream is = getContentResolver().openInputStream(uri);
+                    // 压缩并保存到App内部存储（最大1280px，JPEG质量75%）
+                    android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+                    opts.inJustDecodeBounds = true;
+                    android.graphics.BitmapFactory.decodeStream(getContentResolver().openInputStream(uri), null, opts);
+                    // 计算采样率
+                    int maxDim = 1280;
+                    int scale = 1;
+                    while (opts.outWidth / scale > maxDim || opts.outHeight / scale > maxDim) {
+                        scale *= 2;
+                    }
+                    opts.inJustDecodeBounds = false;
+                    opts.inSampleSize = scale;
+                    java.io.InputStream is2 = getContentResolver().openInputStream(uri);
+                    android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is2, null, opts);
+                    is2.close();
+                    if (bmp == null) throw new Exception("无法读取图片");
                     String fileName = "shop_" + System.currentTimeMillis() + ".jpg";
                     java.io.File outFile = new java.io.File(getFilesDir(), "shop_images/" + fileName);
                     outFile.getParentFile().mkdirs();
                     java.io.OutputStream os = new java.io.FileOutputStream(outFile);
-                    byte[] buffer = new byte[4096];
-                    int len;
-                    while ((len = is.read(buffer)) > 0) {
-                        os.write(buffer, 0, len);
-                    }
+                    bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 75, os);
                     os.close();
-                    is.close();
+                    bmp.recycle();
                     selectedShopImagePath = outFile.getAbsolutePath();
 
                     // 通知对话框中的预览控件更新（如果有打开的对话框）
