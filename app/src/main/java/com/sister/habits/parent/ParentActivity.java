@@ -1463,15 +1463,35 @@ private void showProfileSettings() {
         String currentMode = prefs.getString("default_mode", "child");
         String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
         int checked = "child".equals(currentMode) ? 0 : "parent".equals(currentMode) ? 1 : 2;
+        // 创建Hub中枢对话框（带手动IP输入）
+        android.widget.EditText etHubIp = new android.widget.EditText(this);
+        etHubIp.setHint("手动输入Hub IP（如192.168.1.100）");
+        etHubIp.setTextSize(14);
+        etHubIp.setPadding(16, 12, 16, 12);
+        android.widget.LinearLayout hubLayout = new android.widget.LinearLayout(this);
+        hubLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        hubLayout.setPadding(16, 8, 16, 8);
+        hubLayout.addView(etHubIp);
+
         new AlertDialog.Builder(this)
                 .setTitle("🏠 默认启动模式 + Hub中枢")
                 .setSingleChoiceItems(modes, checked, (d, w) -> {
                     String mode = w == 0 ? "child" : w == 1 ? "parent" : "ask";
                     prefs.edit().putString("default_mode", mode).apply();
                 })
-                .setNeutralButton("Hub模式开关: " + (syncManager.isHubModeEnabled() ? "🟢开启" : "🔴关闭"), (d, w) -> {
+                .setView(hubLayout)
+                .setNeutralButton("Hub模式: " + (syncManager.isHubModeEnabled() ? "🟢开启" : "🔴关闭"), (d, w) -> {
                     syncManager.setHubModeEnabled(!syncManager.isHubModeEnabled());
                     Toast.makeText(this, syncManager.isHubModeEnabled() ? "🏠 中枢已开启" : "🏠 中枢已关闭", Toast.LENGTH_SHORT).show();
+                })
+                .setPositiveButton("📌 设置Hub IP", (d, w) -> {
+                    String ip = etHubIp.getText().toString().trim();
+                    if (!ip.isEmpty()) {
+                        syncManager.setManualHubIp(ip);
+                        Toast.makeText(this, "✅ Hub IP已设置为: " + ip + "\n下次同步将直接使用此IP", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "请输入有效的IP地址", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
     }
