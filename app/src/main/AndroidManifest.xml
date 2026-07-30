@@ -53,6 +53,7 @@
         <activity
             android:name=".parent.ParentActivity"
             android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.HabitTracker.Parent" />
 
         <!-- QR码扫描Activity (ZXing) -->
