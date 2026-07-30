@@ -2753,7 +2753,7 @@ private void showProfileSettings() {
     }
 
     private void doImportBackup() {
-        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles();
+        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
         if (backups == null || backups.length == 0) {
             Toast.makeText(this, "❌ 未在 Download 目录找到 .habitbak 备份文件", Toast.LENGTH_LONG).show();
             return;
@@ -2805,7 +2805,7 @@ private void showProfileSettings() {
                 return;
             }
         }
-        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles();
+        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
         if (backups == null || backups.length == 0) {
             Toast.makeText(this, "📂 Download 目录下暂无 .habitbak 备份文件", Toast.LENGTH_SHORT).show();
             return;
