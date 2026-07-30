@@ -34,7 +34,10 @@ public class LaundryTask {
 
     // ===== 衣物类型常量 =====
     public static final String TYPE_TSHIRT = "T恤";
-    public static final String TYPE_PANTS = "裤子";
+    public static final String TYPE_SKIRT = "裙子";
+    public static final String TYPE_SHORTS = "短裤";
+    public static final String TYPE_THIN_PANTS = "薄长裤";
+    public static final String TYPE_THICK_PANTS = "厚长裤";
     public static final String TYPE_JACKET = "外套";
     public static final String TYPE_UNDERWEAR = "内裤";
     public static final String TYPE_SOCKS = "袜子";
@@ -45,7 +48,10 @@ public class LaundryTask {
 
     public static final String[][] CLOTHING_TYPES = {
         {TYPE_TSHIRT, "6分"},
-        {TYPE_PANTS, "6分"},
+        {TYPE_SKIRT, "6分"},
+        {TYPE_SHORTS, "6分"},
+        {TYPE_THIN_PANTS, "7分"},
+        {TYPE_THICK_PANTS, "8分"},
         {TYPE_JACKET, "8分"},
         {TYPE_UNDERWEAR, "4分"},
         {TYPE_SOCKS, "3分"},
@@ -64,7 +70,10 @@ public class LaundryTask {
     public static int getPointsForType(String type) {
         switch (type) {
             case TYPE_TSHIRT: return 6;
-            case TYPE_PANTS: return 6;
+            case TYPE_SKIRT: return 6;
+            case TYPE_SHORTS: return 6;
+            case TYPE_THIN_PANTS: return 7;
+            case TYPE_THICK_PANTS: return 8;
             case TYPE_JACKET: return 8;
             case TYPE_UNDERWEAR: return 4;
             case TYPE_SOCKS: return 3;
