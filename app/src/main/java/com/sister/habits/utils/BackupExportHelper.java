@@ -248,7 +248,8 @@ public class BackupExportHelper {
             String[] tables = {
                 "check_ins", "coin_transactions", "tasks", "shop_items", "redemptions",
                 "vocabulary", "economy_config", "word_reviews", "word_banks", "wishlist_items",
-                "coin_earnings"
+                "coin_earnings", "laundry_tasks", "lottery_prizes", "lottery_records",
+                "school_rewards"
             };
 
             boolean first = true;
@@ -327,7 +328,8 @@ public class BackupExportHelper {
             String[] tables = {
                 "check_ins", "coin_transactions", "tasks", "shop_items", "redemptions",
                 "vocabulary", "economy_config", "word_reviews", "word_banks", "wishlist_items",
-                "coin_earnings"
+                "coin_earnings", "laundry_tasks", "lottery_prizes", "lottery_records",
+                "school_rewards"
             };
 
             for (String table : tables) {
