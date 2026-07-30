@@ -20,11 +20,15 @@ public class ShopItem {
     public int priceCoins;         // 所需金币
     public String iconUrl;         // 图标（可选）
     public String category;        // "snack" | "toy" | "game_time" | "outing" | "other"
+    public String itemType;        // "normal"(常驻/可反复购买) | "limited"(限量/一次性)
+    public int stock;              // 库存，-1=无限，仅限量商品使用
     public boolean active;         // 是否上架
     public long createdAt;
 
     public ShopItem() {
         this.id = UUID.randomUUID().toString();
+        this.itemType = "limited";
+        this.stock = -1;
         this.active = true;
         this.createdAt = System.currentTimeMillis();
     }
