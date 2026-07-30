@@ -418,13 +418,41 @@ public class ParentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parent);
 
-// 🔐 安全防护（所有初始化完成后才检查）
+        // ✅ 初始化数据库和服务
+        db = AppDatabase.getInstance(this);
+        syncManager = SyncManager.getInstance(this);
+        soundHelper = SoundHelper.getInstance(this);
+        profile = ProfileManager.getInstance(this);
+
+        // ✅ 初始化UI控件
+        tvStats = findViewById(R.id.tv_parent_stats);
+        rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
+        rvPendingTasks = findViewById(R.id.rv_pending_tasks);
+        btnAddTask = findViewById(R.id.btn_add_task);
+        btnAddShopItem = findViewById(R.id.btn_add_shop_item);
+        btnSettings = findViewById(R.id.btn_settings);
+        btnSync = findViewById(R.id.btn_sync);
+        btnRefresh = findViewById(R.id.btn_refresh);
+
+        // ✅ 设置监听器
+        btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
+        btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
+        btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
+        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.startSync(); });
+        btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
+
+        // ✅ 通知渠道
+        NotificationHelper.createChannel(this);
+
+        // 🔐 安全防护
         if (PinHelper.isSystemLockEnabled(this)) {
             android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             if (kgm != null && kgm.isKeyguardSecure()) {
                 deviceLockSuccessCallback = () -> {
-                    if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(() -> refreshAll());
-                    refreshAll();
+                    if (db != null) {
+                        if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(() -> refreshAll());
+                        refreshAll();
+                    }
                 };
                 android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent("🔐 家长验证", "请验证身份以进入家长管理");
                 if (intent != null) { deviceLockPending.set(true); deviceLockLauncher.launch(intent); return; }
