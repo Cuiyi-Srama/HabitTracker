@@ -83,7 +83,7 @@ public class ChildActivity extends AppCompatActivity {
 
         // 🧺 洗衣任务按钮
         TextView btnLaundry = findViewById(R.id.btn_laundry);
-        btnLaundry.setOnClickListener(v -> showLaundryDialog());
+        btnLaundry.setOnClickListener(v -> showLaundryCartDialog());
 
         // 🎰 抽奖按钮
         TextView btnLottery = findViewById(R.id.btn_lottery);
@@ -442,69 +442,198 @@ public class ChildActivity extends AppCompatActivity {
             .setPositiveButton("继续努力 💪", null)
             .show();
     }
-    /** 🧺 洗衣任务 - 选择衣物类型和件数提交 */
-    private void showLaundryDialog() {
+    /** 🧺 洗衣任务 - 购物车模式：选类型+数量 → 一并提交 */
+    private void showLaundryCartDialog() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         
-        // 先检查是否已开启
         SharedPreferences prefs = getSharedPreferences("laundry_prefs", MODE_PRIVATE);
         if (!prefs.getBoolean("laundry_enabled", true)) {
             Toast.makeText(this, "🚫 洗衣任务暂未开启，请联系家长", Toast.LENGTH_SHORT).show();
             return;
         }
         
-        // 显示衣物类型选择
         String[][] types = LaundryTask.CLOTHING_TYPES;
-        String[] labels = new String[types.length];
-        for (int i = 0; i < types.length; i++) {
-            // 检查今天该类型是否已提交
+        int n = types.length;
+        final int[] quantities = new int[n];
+        final boolean[] submittedToday = new boolean[n];
+        
+        int todayCount = db.laundryDao().getCountByDate(today);
+        final int dailyLimit = 15;
+        
+        // 构建UI
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(32, 16, 32, 16);
+        
+        // 提示文字
+        android.widget.TextView tvHint = new android.widget.TextView(this);
+        tvHint.setText("🧺 洗衣购物车
+（调整数量，一并提交）");
+        tvHint.setTextSize(14);
+        tvHint.setPadding(0, 0, 0, 20);
+        tvHint.setTextColor(0xFF666666);
+        layout.addView(tvHint);
+        
+        // 记录每个衣物类型的数量TextView引用
+        final android.widget.TextView[] tvQuantities = new android.widget.TextView[n];
+        
+        for (int i = 0; i < n; i++) {
+            android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(8, 12, 8, 12);
+            
+            // 检查是否已提交
             LaundryTask existing = db.laundryDao().getByDateAndType(today, types[i][0]);
-            String mark = existing != null ? " (今日已提交)" : "";
-            labels[i] = types[i][0] + " — " + types[i][1] + mark;
+            boolean done = existing != null;
+            submittedToday[i] = done;
+            
+            // 名称+积分
+            android.widget.TextView tvName = new android.widget.TextView(this);
+            String label = types[i][0] + "（" + types[i][1] + "）";
+            tvName.setText(done ? label + " ✓" : label);
+            tvName.setTextSize(15);
+            if (done) tvName.setTextColor(0xFF4CAF50);
+            
+            // 数量选择器
+            android.widget.LinearLayout qtyRow = new android.widget.LinearLayout(this);
+            qtyRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            qtyRow.setGravity(android.view.Gravity.CENTER);
+            
+            android.widget.Button btnMinus = new android.widget.Button(this);
+            btnMinus.setText("−");
+            btnMinus.setTextSize(14);
+            btnMinus.setPadding(12, 4, 12, 4);
+            
+            android.widget.TextView tvQty = new android.widget.TextView(this);
+            tvQty.setText(done ? "✓" : "0");
+            tvQty.setGravity(android.view.Gravity.CENTER);
+            tvQty.setMinWidth(40);
+            tvQty.setTextSize(16);
+            tvQuantities[i] = tvQty;
+            
+            android.widget.Button btnPlus = new android.widget.Button(this);
+            btnPlus.setText("+");
+            btnPlus.setTextSize(14);
+            btnPlus.setPadding(12, 4, 12, 4);
+            
+            if (done) {
+                btnMinus.setEnabled(false);
+                btnPlus.setEnabled(false);
+                btnMinus.setAlpha(0.3f);
+                btnPlus.setAlpha(0.3f);
+            }
+            
+            final int idx = i;
+            btnMinus.setOnClickListener(v -> {
+                if (quantities[idx] > 0) {
+                    quantities[idx]--;
+                    tvQuantities[idx].setText(String.valueOf(quantities[idx]));
+                }
+            });
+            btnPlus.setOnClickListener(v -> {
+                if (!submittedToday[idx] && quantities[idx] < 5) {
+                    quantities[idx]++;
+                    tvQuantities[idx].setText(String.valueOf(quantities[idx]));
+                }
+            });
+            
+            qtyRow.addView(btnMinus);
+            qtyRow.addView(tvQty);
+            qtyRow.addView(btnPlus);
+            
+            row.addView(tvName, new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            row.addView(qtyRow);
+            layout.addView(row);
+            
+            // 分隔线
+            if (i < n - 1) {
+                android.view.View divider = new android.view.View(this);
+                android.widget.LinearLayout.LayoutParams dp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                dp.setMargins(8, 0, 8, 0);
+                divider.setLayoutParams(dp);
+                divider.setBackgroundColor(0x22000000);
+                layout.addView(divider);
+            }
         }
         
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("🧺 洗衣任务 — 选择你今天洗的衣物类型")
-                .setItems(labels, (dialog, which) -> {
-                    LaundryTask existing = db.laundryDao().getByDateAndType(today, types[which][0]);
-                    if (existing != null) {
-                        Toast.makeText(this, "今天已提交过「" + types[which][0] + "」啦！", Toast.LENGTH_SHORT).show();
-                        return;
+        sv.addView(layout);
+        
+        // 对话框
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+            .setTitle("🧺 洗衣购物车")
+            .setView(sv)
+            .setPositiveButton("提交", null)
+            .setNegativeButton("取消", null)
+            .create();
+        
+        dialog.setOnShowListener(di -> {
+            android.widget.Button btnSubmit = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+            btnSubmit.setOnClickListener(v -> {
+                // 收集提交项
+                java.util.List<int[]> items = new java.util.ArrayList<>();
+                for (int i = 0; i < n; i++) {
+                    if (quantities[i] > 0 && !submittedToday[i]) {
+                        items.add(new int[]{i, quantities[i]});
                     }
-                    showLaundryQuantityDialog(types[which][0], LaundryTask.getPointsForType(types[which][0]));
-                })
-                .setNegativeButton("关闭", null)
-                .show();
+                }
+                
+                if (items.isEmpty()) {
+                    Toast.makeText(ChildActivity.this, "请至少选择一件衣物并设置数量", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // 计算总积分并确认
+                int subTotal = 0;
+                StringBuilder sb = new StringBuilder();
+                for (int[] item : items) {
+                    int tIdx = item[0];
+                    int qty = item[1];
+                    int pts = LaundryTask.getPointsForType(types[tIdx][0]);
+                    int itTotal = pts * qty;
+                    subTotal += itTotal;
+                    sb.append("• ").append(types[tIdx][0]).append(" ×").append(qty).append(" = ").append(itTotal).append("分
+");
+                }
+                
+                double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(ChildActivity.this);
+                final int finalTotal = (int) Math.round(subTotal * multiplier);
+                String discountInfo = multiplier < 1.0 ? "
+（打折后: " + finalTotal + "分）" : "";
+                
+                sb.append("
+合计: ").append(subTotal).append("分").append(discountInfo);
+                
+                new android.app.AlertDialog.Builder(ChildActivity.this)
+                    .setTitle("确认提交")
+                    .setMessage(sb.toString())
+                    .setPositiveButton("✅ 确认", (d2, w2) -> {
+                        for (int[] item : items) {
+                            submitSingleTask(types[item[0]][0], item[1], LaundryTask.getPointsForType(types[item[0]][0]));
+                        }
+                        dialog.dismiss();
+                        Toast.makeText(ChildActivity.this, "✅ 已提交" + items.size() + "种衣物，共" + finalTotal + "分", Toast.LENGTH_SHORT).show();
+                        refreshEarningEstimate();
+                    })
+                    .setNegativeButton("再想想", null)
+                    .show();
+            });
+        });
+        
+        dialog.show();
     }
     
-    /** 选择件数 */
-    private void showLaundryQuantityDialog(String clothingType, int pointsPerItem) {
-        String[] quantities = {"1件", "2件", "3件", "4件", "5件"};
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("🧺 " + clothingType + " (" + pointsPerItem + "分/件)")
-                .setItems(quantities, (dialog, which) -> {
-                    int qty = which + 1;
-                    int total = pointsPerItem * qty;
-                    submitLaundryTask(clothingType, qty, pointsPerItem, total);
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-    
-    /** 提交洗衣任务 */
-    private void submitLaundryTask(String clothingType, int quantity, int pointsPerItem, int totalPoints) {
+    /** 提交单个洗衣任务（内部使用） */
+    private void submitSingleTask(String clothingType, int quantity, int pointsPerItem) {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         
-        // 再次检查是否已提交
         LaundryTask existing = db.laundryDao().getByDateAndType(today, clothingType);
-        if (existing != null) {
-            Toast.makeText(this, "今天已提交过啦！", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (existing != null) return;
         
-        // 打折系统影响
         double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
-        int finalPoints = (int) Math.round(totalPoints * multiplier);
+        int finalPoints = (int) Math.round(pointsPerItem * quantity * multiplier);
         
         LaundryTask task = new LaundryTask();
         task.date = today;
@@ -514,11 +643,6 @@ public class ChildActivity extends AppCompatActivity {
         task.totalPoints = finalPoints;
         task.deviceId = syncManager.getDeviceId();
         db.laundryDao().insert(task);
-        
-        String info = multiplier < 1.0 ? " (打折后: " + finalPoints + "分)" : "";
-        Toast.makeText(this, "✅ 已提交！" + clothingType + "×" + quantity + " = " + finalPoints + "分" + info, Toast.LENGTH_SHORT).show();
-        
-        refreshEarningEstimate();
     }
     /** 📝 提交今日作业 */
     private void submitTodayHomework() {
