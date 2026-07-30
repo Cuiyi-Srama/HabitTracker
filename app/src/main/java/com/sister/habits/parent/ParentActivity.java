@@ -2159,6 +2159,27 @@ private void showProfileSettings() {
         etMaxDailyCoins.setText(String.valueOf(finalConfig.maxDailyCoins));
         etMaxWords.setText(String.valueOf(finalConfig.maxDailyWords));
         etMaxReview.setText(String.valueOf(finalConfig.maxDailyReview));
+
+        android.widget.EditText etTaskDailyMin = view.findViewById(R.id.et_task_daily_min);
+        android.widget.EditText etTaskDailyMax = view.findViewById(R.id.et_task_daily_max);
+        android.widget.EditText etTaskChallengeMin = view.findViewById(R.id.et_task_challenge_min);
+        android.widget.EditText etTaskChallengeMax = view.findViewById(R.id.et_task_challenge_max);
+        android.widget.EditText etScreen15 = view.findViewById(R.id.et_screen_15min);
+        android.widget.EditText etScreen30 = view.findViewById(R.id.et_screen_30min);
+        android.widget.EditText etScreen60 = view.findViewById(R.id.et_screen_60min);
+        android.widget.EditText etSoftWeekday = view.findViewById(R.id.et_soft_limit_weekday);
+        android.widget.EditText etSoftWeekend = view.findViewById(R.id.et_soft_limit_weekend);
+
+        etTaskDailyMin.setText(String.valueOf(finalConfig.taskDailyMin));
+        etTaskDailyMax.setText(String.valueOf(finalConfig.taskDailyMax));
+        etTaskChallengeMin.setText(String.valueOf(finalConfig.taskChallengeMin));
+        etTaskChallengeMax.setText(String.valueOf(finalConfig.taskChallengeMax));
+        etScreen15.setText(String.valueOf(finalConfig.screenTime15min));
+        etScreen30.setText(String.valueOf(finalConfig.screenTime30min));
+        etScreen60.setText(String.valueOf(finalConfig.screenTime60min));
+        etSoftWeekday.setText(String.valueOf(finalConfig.softLimitWeekday));
+        etSoftWeekend.setText(String.valueOf(finalConfig.softLimitWeekend));
+
         new AlertDialog.Builder(this)
                 .setTitle("💰 经济参数")
                 .setView(view)
@@ -2173,6 +2194,15 @@ private void showProfileSettings() {
                     finalConfig.maxDailyCoins = parseInt(etMaxDailyCoins, 500);
                     finalConfig.maxDailyWords = parseInt(etMaxWords, 10);
                     finalConfig.maxDailyReview = parseInt(etMaxReview, 30);
+                    finalConfig.taskDailyMin = parseInt(etTaskDailyMin, 5);
+                    finalConfig.taskDailyMax = parseInt(etTaskDailyMax, 15);
+                    finalConfig.taskChallengeMin = parseInt(etTaskChallengeMin, 20);
+                    finalConfig.taskChallengeMax = parseInt(etTaskChallengeMax, 50);
+                    finalConfig.screenTime15min = parseInt(etScreen15, 10);
+                    finalConfig.screenTime30min = parseInt(etScreen30, 18);
+                    finalConfig.screenTime60min = parseInt(etScreen60, 30);
+                    finalConfig.softLimitWeekday = parseInt(etSoftWeekday, 60);
+                    finalConfig.softLimitWeekend = parseInt(etSoftWeekend, 100);
                     db.economyConfigDao().setConfig(finalConfig);
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
@@ -3007,53 +3037,79 @@ private void showProfileSettings() {
         final boolean sysOn = PinHelper.isSystemLockEnabled(this);
         final boolean pinOn = PinHelper.isAppPinEnabled(this);
         final boolean pinSet = PinHelper.isPinSet(this);
-        
-        java.util.List<String> optList = new java.util.ArrayList<>();
-        optList.add(sysOn ? "✅ 系统锁屏验证（已开启）" : "⬜ 系统锁屏验证（已关闭）");
-        optList.add(pinOn ? "✅ 应用PIN码（已开启）" : "⬜ 应用PIN码（已关闭）");
-        if (pinSet) optList.add("✏️ 修改PIN码");
-        else optList.add("🔢 设置PIN码");
-        optList.add("🔄 重置为默认（仅系统锁屏）");
-        String[] opts = optList.toArray(new String[0]);
 
-        final AlertDialog[] holder = new AlertDialog[1];
-        holder[0] = new AlertDialog.Builder(this)
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(40, 20, 40, 20);
+
+        android.widget.CheckBox cbSysLock = new android.widget.CheckBox(this);
+        cbSysLock.setText("🔒 系统锁屏验证");
+        cbSysLock.setChecked(sysOn);
+        cbSysLock.setTextSize(16);
+        cbSysLock.setPadding(0, 8, 0, 8);
+        layout.addView(cbSysLock);
+
+        android.widget.CheckBox cbAppPin = new android.widget.CheckBox(this);
+        cbAppPin.setText("🔑 应用PIN码验证");
+        cbAppPin.setChecked(pinOn);
+        cbAppPin.setTextSize(16);
+        cbAppPin.setPadding(0, 8, 0, 8);
+        layout.addView(cbAppPin);
+
+        android.widget.Button btnSetPin = new android.widget.Button(this);
+        btnSetPin.setText(pinSet ? "✏️ 修改PIN码" : "🔢 设置PIN码");
+        btnSetPin.setAllCaps(false);
+        btnSetPin.setTextSize(14);
+        android.widget.LinearLayout.LayoutParams bLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        bLp.setMargins(0, 12, 0, 0);
+        btnSetPin.setLayoutParams(bLp);
+        layout.addView(btnSetPin);
+
+        android.widget.Button btnReset = new android.widget.Button(this);
+        btnReset.setText("🔄 重置为默认（仅系统锁屏）");
+        btnReset.setAllCaps(false);
+        btnReset.setTextSize(14);
+        android.widget.LinearLayout.LayoutParams rLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        rLp.setMargins(0, 8, 0, 0);
+        btnReset.setLayoutParams(rLp);
+        layout.addView(btnReset);
+
+        new AlertDialog.Builder(this)
                 .setTitle("🔐 安全防护管理")
-                .setMessage("系统锁屏：" + (sysOn ? "开" : "关") + " | 应用PIN：" + (pinOn ? "开" : "关"))
-                .setItems(opts, (d, which) -> {
-                    if (which == 0) {
-                        if (sysOn && !pinOn) {
-                            Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
-                        } else {
-                            PinHelper.setSystemLockEnabled(this, !sysOn);
-                            if (holder[0] != null) holder[0].dismiss();
-                            showPinManageDialog();
-                        }
-                    } else if (which == 1) {
-                        if (pinOn && !sysOn) {
-                            Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
-                        } else {
-                            if (!pinOn && !pinSet) {
-                                if (holder[0] != null) holder[0].dismiss();
-                                showPinSetupDialog();
-                            } else {
-                                PinHelper.setAppPinEnabled(this, !pinOn);
-                                if (holder[0] != null) holder[0].dismiss();
-                                showPinManageDialog();
-                            }
-                        }
-                    } else if (which == 2) {
-                        if (holder[0] != null) holder[0].dismiss();
-                        showAuthVerifyDialog(() -> showPinSetupDialog());
-                    } else if (which == 3) {
-                        PinHelper.disableAll(this);
-                        Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
-                        if (holder[0] != null) holder[0].dismiss();
-                        showPinManageDialog();
+                .setView(layout)
+                .setPositiveButton("💾 保存", (d, w) -> {
+                    boolean newSys = cbSysLock.isChecked();
+                    boolean newPin = cbAppPin.isChecked();
+                    if (!newSys && !newPin) {
+                        Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
+                        return;
                     }
+                    PinHelper.setSystemLockEnabled(this, newSys);
+                    PinHelper.setAppPinEnabled(this, newPin);
+                    Toast.makeText(this, "✅ 安全设置已更新", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("← 返回", (d2, w2) -> showSystemMenu())
                 .show();
+
+        btnSetPin.setOnClickListener(v -> {
+            showAuthVerifyDialog(() -> showPinSetupDialog());
+        });
+
+        btnReset.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("确认重置")
+                    .setMessage("将关闭所有安全防护，只保留系统锁屏。确定？")
+                    .setPositiveButton("确定", (dd, ww) -> {
+                        PinHelper.disableAll(this);
+                        Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        });
     }    /** 更新假期范围显示 */
     private void updateHolidayRangesText(android.widget.TextView tv, java.util.List<String[]> list) {
         if (list.isEmpty()) {
