@@ -438,7 +438,7 @@ public class ParentActivity extends AppCompatActivity {
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
-        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.startSync(); });
+        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); });
         btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
 
         // ✅ 通知渠道
