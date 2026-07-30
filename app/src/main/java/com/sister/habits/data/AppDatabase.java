@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -263,7 +263,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .build();
                 }
             }
