@@ -83,5 +83,70 @@
                 <android.widget.EditText android:id="@+id/et_max_review" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="30"/>
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📋 任务积分"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#E8F5E9"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="4dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="日常最低" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_task_daily_min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="5"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="日常最高" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_task_daily_max" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="15"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="挑战最低" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_task_challenge_min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="20"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="挑战最高" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_task_challenge_max" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="50"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📱 屏幕时间价格"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#F3E5F5"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="3" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="15分钟" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_15min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="10"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="30分钟(9折)" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="3dp" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_30min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="18"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="1小时(75折)" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="3dp">
+                <android.widget.EditText android:id="@+id/et_screen_60min" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="30"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊 积分软上限"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="#FFF8E1"
+            android:layout_marginBottom="8dp" />
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:weightSum="2" android:layout_marginBottom="8dp">
+            <com.google.android.material.textfield.TextInputLayout android:hint="平日上限" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginEnd="4dp">
+                <android.widget.EditText android:id="@+id/et_soft_limit_weekday" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="60"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:hint="周末上限" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="4dp">
+                <android.widget.EditText android:id="@+id/et_soft_limit_weekend" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="number" android:text="100"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
