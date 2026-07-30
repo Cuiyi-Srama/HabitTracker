@@ -31,20 +31,23 @@ public class WordBankParser {
      * 从 JSON 字符串解析词库，自动检测格式
      */
     public static List<Vocabulary> parse(String json, String sourceGradeLevel) {
+        return parse(json, sourceGradeLevel, "external");
+    }
+    public static List<Vocabulary> parse(String json, String sourceGradeLevel, String bankId) {
         // ★ Fix 3: 去除UTF-8 BOM头（\uFEFF）
         if (json != null && json.length() > 0 && json.charAt(0) == '\uFEFF') {
             json = json.substring(1);
         }
         String trimmed = json.trim();
         if (trimmed.startsWith("[")) {
-            return parseJsonArray(trimmed, sourceGradeLevel);
+            return parseJsonArray(trimmed, sourceGradeLevel, bankId);
         }
         Log.w(TAG, "不支持的JSON格式，不以[开头，实际前50字符: " + trimmed.substring(0, Math.min(50, trimmed.length())));
         return new ArrayList<>();
     }
 
     @SuppressWarnings("unchecked")
-    private static List<Vocabulary> parseJsonArray(String json, String gradeLevel) {
+    private static List<Vocabulary> parseJsonArray(String json, String gradeLevel, String bankId) {
         try {
             // 先尝试解析成通用 List<Map>
             Type mapType = new TypeToken<List<Map<String, Object>>>() {}.getType();
@@ -55,16 +58,16 @@ public class WordBankParser {
                 // === 格式检测 ===
                 if (first.containsKey("word") && (first.containsKey("translations") || first.containsKey("translation"))) {
                     // KyleBing 格式
-                    return parseKyleBing(rawList, gradeLevel);
+                    return parseKyleBing(rawList, gradeLevel, bankId);
                 } else if (first.containsKey("w") && first.containsKey("m")) {
                     // 自有格式
-                    return parseNative(rawList, gradeLevel);
+                    return parseNative(rawList, gradeLevel, bankId);
                 } else if (first.containsKey("word") && first.containsKey("meaning")) {
                     // 通用格式
-                    return parseGeneric(rawList, gradeLevel);
+                    return parseGeneric(rawList, gradeLevel, bankId);
                 } else {
                     Log.w(TAG, "未知格式，尝试作为自有格式解析。keys: " + first.keySet());
-                    return parseNative(rawList, gradeLevel);
+                    return parseNative(rawList, gradeLevel, bankId);
                 }
             }
         } catch (Exception ignored) {
@@ -76,7 +79,7 @@ public class WordBankParser {
             Type stringType = new TypeToken<List<String>>() {}.getType();
             List<String> wordList = new Gson().fromJson(json, stringType);
             if (wordList != null && !wordList.isEmpty()) {
-                return parseWordlist(wordList, gradeLevel);
+                return parseWordlist(wordList, gradeLevel, bankId);
             }
         } catch (Exception e) {
             Log.e(TAG, "纯词表格式解析也失败", e);
@@ -86,7 +89,7 @@ public class WordBankParser {
     }
 
     /** 纯词表格式解析 (endict_wordlist)：["word1", "word2", ...] */
-    private static List<Vocabulary> parseWordlist(List<String> wordList, String gradeLevel) {
+    private static List<Vocabulary> parseWordlist(List<String> wordList, String gradeLevel, String bankId) {
         List<Vocabulary> result = new ArrayList<>();
         for (String word : wordList) {
             try {
@@ -100,6 +103,7 @@ public class WordBankParser {
                 v.level = word.contains(" ") ? 2 : 1;
                 v.mastered = false;
                 v.active = true;
+                v.bankId = bankId;
                 result.add(v);
             } catch (Exception e) {
                 Log.w(TAG, "跳过异常词条", e);
@@ -109,7 +113,7 @@ public class WordBankParser {
     }
 
     /** KyleBing 格式解析（含短语） */
-    private static List<Vocabulary> parseKyleBing(List<Map<String, Object>> rawList, String gradeLevel) {
+    private static List<Vocabulary> parseKyleBing(List<Map<String, Object>> rawList, String gradeLevel, String bankId) {
         List<Vocabulary> result = new ArrayList<>();
         for (Map<String, Object> item : rawList) {
             try {
@@ -123,6 +127,7 @@ public class WordBankParser {
                 v.level = 1;
                 v.mastered = false;
                 v.active = true;
+                v.bankId = bankId;
                 result.add(v);
             } catch (Exception e) {
                 Log.w(TAG, "跳过异常词条", e);
@@ -165,7 +170,7 @@ public class WordBankParser {
     }
 
     /** 自有格式解析 */
-    private static List<Vocabulary> parseNative(List<Map<String, Object>> rawList, String gradeLevel) {
+    private static List<Vocabulary> parseNative(List<Map<String, Object>> rawList, String gradeLevel, String bankId) {
         List<Vocabulary> result = new ArrayList<>();
         for (Map<String, Object> item : rawList) {
             try {
@@ -180,6 +185,7 @@ public class WordBankParser {
                 v.level = level instanceof Number ? ((Number) level).intValue() : 1;
                 v.mastered = false;
                 v.active = true;
+                v.bankId = bankId;
                 result.add(v);
             } catch (Exception e) {
                 Log.w(TAG, "跳过异常词条", e);
@@ -189,7 +195,7 @@ public class WordBankParser {
     }
 
     /** 通用格式解析 */
-    private static List<Vocabulary> parseGeneric(List<Map<String, Object>> rawList, String gradeLevel) {
+    private static List<Vocabulary> parseGeneric(List<Map<String, Object>> rawList, String gradeLevel, String bankId) {
         List<Vocabulary> result = new ArrayList<>();
         for (Map<String, Object> item : rawList) {
             try {
@@ -203,6 +209,7 @@ public class WordBankParser {
                 v.level = 1;
                 v.mastered = false;
                 v.active = true;
+                v.bankId = bankId;
                 result.add(v);
             } catch (Exception e) {
                 Log.w(TAG, "跳过异常词条", e);
