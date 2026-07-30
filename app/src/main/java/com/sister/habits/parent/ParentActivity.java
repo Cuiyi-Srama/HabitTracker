@@ -422,18 +422,50 @@ public class ParentActivity extends AppCompatActivity {
             android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             if (kgm != null && kgm.isKeyguardSecure()) {
                 deviceLockSuccessCallback = () -> {
+                    completeOnCreateSetup();
                     if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(null);
                 };
                 android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent("🔐 家长验证", "请验证身份以进入家长管理");
                 if (intent != null) { deviceLockLauncher.launch(intent); return; }
             }
-            if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(null);
+            if (PinHelper.isAppPinEnabled(this)) { showPinVerifyDialog(this::completeOnCreateSetup); return; }
         } else if (PinHelper.isAppPinEnabled(this)) {
-            showPinVerifyDialog(null);
+            showPinVerifyDialog(this::completeOnCreateSetup);
+            return;
         } else {
             showPinManageDialog();
+            return;
         }
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshAll();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        SoundHelper.releaseInstance();
+    }
+
+    // ========== 🔐 安全防护（PIN/指纹/设备锁） ==========
+
+    /** 首次设置：双开关 */
+    private void showAuthSetupDialog() {
+        showPinManageDialog();
+    }
+
+    /** 已废弃 - 验证逻辑合并到onCreate */
+    private void showAuthVerifyDialog(Runnable onSuccess) {
+        showPinVerifyDialog(onSuccess);
+    }
+
+
+    /** 完成onCreate初始化（所有验证路径最终调用） */
+    private void completeOnCreateSetup() {
+        if (db != null) return;
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
         soundHelper = SoundHelper.getInstance(this);
@@ -463,31 +495,7 @@ public class ParentActivity extends AppCompatActivity {
 
         // 创建通知渠道
         NotificationHelper.createChannel(this);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        refreshAll();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        SoundHelper.releaseInstance();
-    }
-
-    // ========== 🔐 安全防护（PIN/指纹/设备锁） ==========
-
-    /** 首次设置：双开关 */
-    private void showAuthSetupDialog() {
-        showPinManageDialog();
-    }
-
-    /** 已废弃 - 验证逻辑合并到onCreate */
-    private void showAuthVerifyDialog(Runnable onSuccess) {
-        showPinVerifyDialog(onSuccess);
-    }
+    }    }
 
     /** PIN码设置 */
     private void showPinSetupDialog() {
