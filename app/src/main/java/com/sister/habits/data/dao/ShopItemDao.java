@@ -8,6 +8,8 @@ import java.util.List;
 public interface ShopItemDao {
     @Query("SELECT * FROM shop_items WHERE active = 1 ORDER BY priceCoins ASC")
     List<ShopItem> getActive();
+    @Query("SELECT * FROM shop_items WHERE active = 1 AND itemType = :itemType ORDER BY priceCoins ASC")
+    List<ShopItem> getActiveByType(String itemType);
 
     @Query("SELECT * FROM shop_items ORDER BY createdAt DESC")
     List<ShopItem> getAll();
