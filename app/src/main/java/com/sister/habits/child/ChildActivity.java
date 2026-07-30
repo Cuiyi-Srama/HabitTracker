@@ -468,8 +468,7 @@ public class ChildActivity extends AppCompatActivity {
         
         // 提示文字
         android.widget.TextView tvHint = new android.widget.TextView(this);
-        tvHint.setText("🧺 洗衣购物车
-（调整数量，一并提交）");
+        tvHint.setText("🧺 洗衣购物车（调整数量，一并提交）");
         tvHint.setTextSize(14);
         tvHint.setPadding(0, 0, 0, 20);
         tvHint.setTextColor(0xFF666666);
