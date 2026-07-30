@@ -57,10 +57,7 @@ public class MainActivity extends AppCompatActivity {
         } else if ("parent".equals(defaultMode)) {
             enterParentMode();
             return;
-
-
-
-
+        }
 
         showModeSelection();
     }
