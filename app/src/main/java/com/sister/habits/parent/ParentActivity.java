@@ -286,7 +286,8 @@ public class ParentActivity extends AppCompatActivity {
                 try {
                     final String label = urlIdx == 0 ? "CDN主线路" : urlIdx == 1 ? "备用CDN" : "GitHub原始源";
                     final int curIdx = urlIdx;
-                    runOnUiThread(() -> progress.setMessage(label + " (" + (curIdx+1) + "/" + urlCount + "): " + source.name));
+                    final int curCount = urlCount;
+                    runOnUiThread(() -> progress.setMessage(label + " (" + (curIdx+1) + "/" + curCount + "): " + source.name));
 
                     java.net.URI uri = new java.net.URI(dlUrl);
                     java.net.URL url = uri.toURL();
