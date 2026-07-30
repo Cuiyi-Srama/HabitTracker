@@ -615,8 +615,11 @@ public class ParentActivity extends AppCompatActivity {
                     }
                     @Override
                     public void onAuthenticationError(int errorCode, CharSequence errString) {
-                        if (errorCode != BiometricPrompt.ERROR_USER_CANCELED
-                                && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                        if (errorCode == BiometricPrompt.ERROR_USER_CANCELED
+                                || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                            // 用户取消或选择PIN码回退 → 关闭家长页面
+                            finish();
+                        } else {
                             Toast.makeText(ParentActivity.this, "⚠️ " + errString, Toast.LENGTH_SHORT).show();
                             finish();
                         }
