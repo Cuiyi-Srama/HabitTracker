@@ -25,4 +25,6 @@ public interface LaundryDao {
 
     @Query("SELECT COUNT(*) FROM laundry_tasks WHERE date = :date AND status = 'approved'")
     int getApprovedCountForDate(String date);
+    @Query("SELECT COUNT(*) FROM laundry_tasks WHERE date = :date AND status != 'rejected'")
+    int getCountByDate(String date);
 }
