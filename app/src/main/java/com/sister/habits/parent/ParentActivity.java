@@ -541,7 +541,7 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** PIN码验证 */
+    /** PIN码验证（非递归，错误时清空输入框重试） */
     private void showPinVerifyDialog(Runnable onSuccess) {
         final android.widget.EditText etPin = new android.widget.EditText(this);
         etPin.setHint("请输入PIN码");
@@ -552,22 +552,32 @@ public class ParentActivity extends AppCompatActivity {
         layout.setPadding(48, 24, 48, 0);
         layout.addView(etPin);
 
-        new AlertDialog.Builder(this)
+        final boolean[] verified = {false};
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("🔐 验证PIN码")
                 .setMessage("请输入家长PIN码以进入管理界面")
                 .setView(layout)
                 .setCancelable(false)
-                .setPositiveButton("确认", (d, w) -> {
-                    String pin = etPin.getText().toString().trim();
-                    if (PinHelper.verifyPin(this, pin)) {
-                        if (onSuccess != null) onSuccess.run();
-                    } else {
-                        Toast.makeText(this, "❌ PIN码错误", Toast.LENGTH_SHORT).show();
-                        showPinVerifyDialog(onSuccess);
-                    }
-                })
+                .setPositiveButton("确认", null)
                 .setNegativeButton("退出", (d, w) -> finish())
-                .show();
+                .create();
+        dialog.setOnShowListener(di -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String pin = etPin.getText().toString().trim();
+                if (PinHelper.verifyPin(ParentActivity.this, pin)) {
+                    verified[0] = true;
+                    dialog.dismiss();
+                    if (onSuccess != null) onSuccess.run();
+                } else {
+                    Toast.makeText(ParentActivity.this, "❌ PIN码错误", Toast.LENGTH_SHORT).show();
+                    etPin.setText("");
+                }
+            });
+        });
+        dialog.setOnDismissListener(di -> {
+            if (!verified[0]) finish();
+        });
+        dialog.show();
     }
 
 
