@@ -253,7 +253,7 @@ public class ShopFragment extends Fragment {
                 db.coinTransactionDao().insert(ct);
                 syncManager.onDataChanged();
                 NotificationHelper.createChannel(requireContext());
-                NotificationHelper.notifyRedemption(requireContext(), "批量兑换(" + cart.size() + "件)", 0);
+                NotificationHelper.notifyRedemption(requireContext(), "批量兑换(" + cart.size() + "件)", "batch");
                 
                 cart.clear();
                 updateCartBar();
