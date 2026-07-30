@@ -78,7 +78,7 @@ public class ChildActivity extends AppCompatActivity {
         btnSettings.setOnClickListener(v -> showChildSettings());
 
         // 📝 作业提交按钮
-        TextView btnHomework = findViewById(R.id.btn_submit_homework);
+        com.google.android.material.button.MaterialButton btnHomework = findViewById(R.id.btn_submit_homework);
         btnHomework.setOnClickListener(v -> submitTodayHomework());
 
         // 🧺 洗衣任务按钮
@@ -636,7 +636,7 @@ public class ChildActivity extends AppCompatActivity {
             return;
         }
         
-        double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
+        multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
         int finalPoints = (int) Math.round(pointsPerItem * quantity * multiplier);
         
         LaundryTask task = new LaundryTask();
