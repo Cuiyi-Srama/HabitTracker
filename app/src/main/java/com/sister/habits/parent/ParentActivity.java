@@ -441,7 +441,7 @@ public class ParentActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        refreshAll();
+        if (db != null) refreshAll();
     }
 
     @Override
@@ -495,6 +495,7 @@ public class ParentActivity extends AppCompatActivity {
 
         // 创建通知渠道
         NotificationHelper.createChannel(this);
+        refreshAll();
     }
 
     /** PIN码设置 */
