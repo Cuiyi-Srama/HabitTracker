@@ -266,40 +266,34 @@ public class ParentActivity extends AppCompatActivity {
         progress.setCancelable(false);
         progress.show();
 
+                // 三路 URL 池：CDN 主 → CDN 备用 → GitHub raw
+        final java.util.List<String> urlPool = new java.util.ArrayList<>();
+        urlPool.add(source.url);
+        if (source.backupUrl != null && !source.backupUrl.isEmpty()) urlPool.add(source.backupUrl);
+        if (source.backupUrl2 != null && !source.backupUrl2.isEmpty()) urlPool.add(source.backupUrl2);
         final int MAX_RETRIES = 2;
         new Thread(() -> {
             byte[] rawData = null;
             String errorMsg = null;
-
-            boolean triedBackup = false;
-            for (int attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+            int urlIndex = 0;
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                if (urlIndex >= urlPool.size()) break;
+                String dlUrl = urlPool.get(urlIndex);
                 try {
-                    final int currentAttempt = attempt;
-                    final String dlUrl;
-                    if (attempt <= MAX_RETRIES) {
-                        dlUrl = source.url;
-                        runOnUiThread(() -> progress.setMessage("正在下载: " + source.name + " (第" + currentAttempt + "次)"));
-                    } else if (source.backupUrl != null && !triedBackup) {
-                        dlUrl = source.backupUrl;
-                        triedBackup = true;
-                        runOnUiThread(() -> progress.setMessage("主链接失败，切换备用CDN: " + source.name));
-                    } else {
-                        break;
-                    }
-
+                    final String urlLabel = urlIndex == 0 ? "CDN主线路" : urlIndex == 1 ? "备用CDN" : "GitHub原始源";
+                    final int idx = urlIndex;
+                    runOnUiThread(() -> progress.setMessage(urlLabel + " (" + (idx+1) + "/" + urlPool.size() + "): " + source.name));
                     java.net.URI uri = new java.net.URI(dlUrl);
                     java.net.URL url = uri.toURL();
                     java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                    conn.setConnectTimeout(30000);
-                    conn.setReadTimeout(60000);
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/1.5.0");
+                    conn.setConnectTimeout(10000);
+                    conn.setReadTimeout(30000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/2.0");
                     conn.setInstanceFollowRedirects(true);
-
                     int responseCode = conn.getResponseCode();
                     if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
                         throw new java.io.IOException("HTTP " + responseCode);
                     }
-
                     int contentLength = conn.getContentLength();
                     java.io.InputStream is = conn.getInputStream();
                     java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(contentLength > 0 ? contentLength : 65536);
@@ -307,7 +301,6 @@ public class ParentActivity extends AppCompatActivity {
                     int len;
                     long totalRead = 0;
                     long lastUpdate = 0;
-
                     while ((len = is.read(buf)) != -1) {
                         baos.write(buf, 0, len);
                         totalRead += len;
@@ -329,21 +322,33 @@ public class ParentActivity extends AppCompatActivity {
                     }
                     is.close();
                     rawData = baos.toByteArray();
-                    break; // 成功，跳出重试循环
-
+                    break;
                 } catch (java.net.SocketException e) {
-                    errorMsg = "连接中断: " + e.getMessage() + " (尝试 " + attempt + "/" + MAX_RETRIES + ")";
-                    android.util.Log.e("Download", errorMsg);
-                    if (attempt < MAX_RETRIES) {
-                        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    errorMsg = "连接超时";
+                    android.util.Log.w("Download", "[" + dlUrl.substring(0, Math.min(40, dlUrl.length())) + "] " + e.getMessage());
+                    urlIndex++;
+                    if (urlIndex < urlPool.size()) {
+                        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+                    }
+                } catch (java.io.IOException e) {
+                    errorMsg = e.getMessage();
+                    android.util.Log.w("Download", "[" + dlUrl.substring(0, Math.min(40, dlUrl.length())) + "] " + e.getMessage());
+                    urlIndex++;
+                    if (urlIndex < urlPool.size()) {
+                        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
                     }
                 } catch (Exception e) {
                     errorMsg = e.getMessage();
-                    break; // 非Socket异常，不重试
+                    android.util.Log.w("Download", "Unexpected: " + e.getMessage());
+                    if (urlIndex + 1 < urlPool.size()) {
+                        urlIndex++;
+                        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    } else {
+                        break;
+                    }
                 }
             }
-
-            if (rawData == null) {
+if (rawData == null) {
                 final String msg = errorMsg;
                 runOnUiThread(() -> {
                     progress.dismiss();
