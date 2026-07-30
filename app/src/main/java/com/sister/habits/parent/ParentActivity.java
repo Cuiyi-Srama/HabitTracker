@@ -417,26 +417,26 @@ public class ParentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parent);
 
-        // 🔐 安全防护（双独立开关：系统锁屏 → 应用PIN）
+// 🔐 安全防护（所有初始化完成后才检查）
         if (PinHelper.isSystemLockEnabled(this)) {
             android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             if (kgm != null && kgm.isKeyguardSecure()) {
                 deviceLockSuccessCallback = () -> {
-                    completeOnCreateSetup();
-                    if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(null);
+                    if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(() -> refreshAll());
+                    refreshAll();
                 };
                 android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent("🔐 家长验证", "请验证身份以进入家长管理");
-                if (intent != null) { deviceLockLauncher.launch(intent); return; }
+                if (intent != null) { deviceLockPending.set(true); deviceLockLauncher.launch(intent); return; }
             }
-            if (PinHelper.isAppPinEnabled(this)) { showPinVerifyDialog(this::completeOnCreateSetup); return; }
+            if (PinHelper.isAppPinEnabled(this)) { showPinVerifyDialog(() -> refreshAll()); return; }
+            refreshAll();
         } else if (PinHelper.isAppPinEnabled(this)) {
-            showPinVerifyDialog(this::completeOnCreateSetup);
+            showPinVerifyDialog(() -> refreshAll());
             return;
         } else {
-            showPinManageDialog();
-            return;
-        }
-    }
+            Toast.makeText(this, "⚠️ 安全防护已全部关闭，建议开启至少一种验证", Toast.LENGTH_LONG).show();
+            refreshAll();
+        }    }
 
     @Override
     protected void onResume() {
@@ -463,40 +463,6 @@ public class ParentActivity extends AppCompatActivity {
     }
 
 
-    /** 完成onCreate初始化（所有验证路径最终调用） */
-    private void completeOnCreateSetup() {
-        if (db != null) return;
-        db = AppDatabase.getInstance(this);
-        syncManager = SyncManager.getInstance(this);
-        soundHelper = SoundHelper.getInstance(this);
-        profile = ProfileManager.getInstance(this);
-
-        tvStats = findViewById(R.id.tv_parent_stats);
-        rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
-        rvPendingTasks = findViewById(R.id.rv_pending_tasks);
-        btnAddTask = findViewById(R.id.btn_add_task);
-        btnAddShopItem = findViewById(R.id.btn_add_shop_item);
-        btnSettings = findViewById(R.id.btn_settings);
-        btnSync = findViewById(R.id.btn_sync);
-        btnRefresh = findViewById(R.id.btn_refresh);
-        // 高频快捷入口
-        findViewById(R.id.btn_laundry_review).setOnClickListener(v -> { soundHelper.playClickSound(); showLaundryManageDialog(); });
-        findViewById(R.id.btn_gate_manage).setOnClickListener(v -> { soundHelper.playClickSound(); showGateManageDialog(); });
-        findViewById(R.id.btn_approval_center).setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalCenterDialog(null, -1); });
-
-        rvPendingApprovals.setLayoutManager(new LinearLayoutManager(this));
-        rvPendingTasks.setLayoutManager(new LinearLayoutManager(this));
-
-        btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
-        btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
-        btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
-        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerFullSync(); Toast.makeText(this, "全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show(); });
-        btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
-
-        // 创建通知渠道
-        NotificationHelper.createChannel(this);
-        refreshAll();
-    }
 
     /** PIN码设置 */
     private void showPinSetupDialog() {
