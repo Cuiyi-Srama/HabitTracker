@@ -417,11 +417,21 @@ public class ParentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parent);
 
-        // 🔐 安全防护（PIN/指纹/设备锁）
-        if (!PinHelper.isEnabled(this)) {
-            showAuthSetupDialog();
+        // 🔐 安全防护（双独立开关：系统锁屏 → 应用PIN）
+        if (PinHelper.isSystemLockEnabled(this)) {
+            android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            if (kgm != null && kgm.isKeyguardSecure()) {
+                deviceLockSuccessCallback = () -> {
+                    if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(null);
+                };
+                android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent("🔐 家长验证", "请验证身份以进入家长管理");
+                if (intent != null) { deviceLockLauncher.launch(intent); return; }
+            }
+            if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(null);
+        } else if (PinHelper.isAppPinEnabled(this)) {
+            showPinVerifyDialog(null);
         } else {
-            showAuthVerifyDialog(null);
+            showPinManageDialog();
         }
 
         db = AppDatabase.getInstance(this);
@@ -513,7 +523,6 @@ public class ParentActivity extends AppCompatActivity {
                         return;
                     }
                     if (PinHelper.setPin(this, p1)) {
-                        PinHelper.setAuthMode(this, "");
                         Toast.makeText(this, "✅ PIN码设置成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(this, "⚠️ PIN码格式错误（需4~6位数字）", Toast.LENGTH_SHORT).show();
@@ -553,58 +562,8 @@ public class ParentActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** 指纹验证 */
-    private void startFingerprintAuth(Runnable onSuccess) {
-        Executor executor = ContextCompat.getMainExecutor(this);
-        BiometricPrompt prompt = new BiometricPrompt(this, executor,
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
-                        if (onSuccess != null) onSuccess.run();
-                    }
-                    @Override
-                    public void onAuthenticationFailed() {
-                        Toast.makeText(ParentActivity.this, "❌ 指纹不匹配", Toast.LENGTH_SHORT).show();
-                    }
-                    @Override
-                    public void onAuthenticationError(int errorCode, CharSequence errString) {
-                        if (errorCode == BiometricPrompt.ERROR_USER_CANCELED
-                                || errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
-                            // 用户取消或选择PIN码回退 → 关闭家长页面
-                            finish();
-                        } else {
-                            Toast.makeText(ParentActivity.this, "⚠️ " + errString, Toast.LENGTH_SHORT).show();
-                            finish();
-                        }
-                    }
-                });
-        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("🔐 家长验证")
-                .setDescription("请验证指纹以进入家长管理")
-                .setNegativeButtonText("使用PIN码")
-                .build();
-        // 如果按了"使用PIN码"，回退到PIN验证
-        prompt.authenticate(info);
-    }
 
-    /** 设备锁验证 */
-    private void startDeviceLockAuth(Runnable onSuccess) {
-        KeyguardManager kgm = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-        if (kgm == null || !kgm.isKeyguardSecure()) {
-            Toast.makeText(this, "⚠️ 设备未设置锁屏密码", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-        deviceLockSuccessCallback = onSuccess;
-        android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent(
-                "🔐 家长验证", "请验证设备锁屏密码以进入家长管理");
-        if (intent != null) {
-            deviceLockLauncher.launch(intent);
-        } else {
-            Toast.makeText(this, "⚠️ 无法启动设备锁验证", Toast.LENGTH_SHORT).show();
-            finish();
-        }
-    }
+
 
 
     private void refreshAll() {
