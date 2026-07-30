@@ -436,7 +436,7 @@ public class ParentActivity extends AppCompatActivity {
             showPinManageDialog();
             return;
         }
-
+    }
 
     @Override
     protected void onResume() {
@@ -495,7 +495,7 @@ public class ParentActivity extends AppCompatActivity {
 
         // 创建通知渠道
         NotificationHelper.createChannel(this);
-    }    }
+    }
 
     /** PIN码设置 */
     private void showPinSetupDialog() {
