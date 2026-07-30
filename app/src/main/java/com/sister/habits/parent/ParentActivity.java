@@ -255,7 +255,7 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     /** 下载外部词库 → 预览 → 确认后应用 */
-    private void downloadAndPreview(ExternalSource source) {
+        private void downloadAndPreview(ExternalSource source) {
         soundHelper.playClickSound();
         android.app.ProgressDialog progress = new android.app.ProgressDialog(this);
         progress.setTitle("📥 下载词库中...");
@@ -266,23 +266,27 @@ public class ParentActivity extends AppCompatActivity {
         progress.setCancelable(false);
         progress.show();
 
-                // 三路 URL 池：CDN 主 → CDN 备用 → GitHub raw
-        final java.util.List<String> urlPool = new java.util.ArrayList<>();
-        urlPool.add(source.url);
-        if (source.backupUrl != null && !source.backupUrl.isEmpty()) urlPool.add(source.backupUrl);
-        if (source.backupUrl2 != null && !source.backupUrl2.isEmpty()) urlPool.add(source.backupUrl2);
+        // 三路URL：主CDN → 备用CDN → GitHub raw
+        final String[] urls = new String[3];
+        int urlCount = 0;
+        urls[urlCount++] = source.url;
+        if (source.backupUrl != null && !source.backupUrl.isEmpty()) urls[urlCount++] = source.backupUrl;
+        if (source.backupUrl2 != null && !source.backupUrl2.isEmpty()) urls[urlCount++] = source.backupUrl2;
         final int MAX_RETRIES = 2;
+
         new Thread(() -> {
             byte[] rawData = null;
             String errorMsg = null;
-            int urlIndex = 0;
+            int urlIdx = 0;
+
             for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-                if (urlIndex >= urlPool.size()) break;
-                String dlUrl = urlPool.get(urlIndex);
+                if (urlIdx >= urlCount) break;
+                String dlUrl = urls[urlIdx];
                 try {
-                    final String urlLabel = urlIndex == 0 ? "CDN主线路" : urlIndex == 1 ? "备用CDN" : "GitHub原始源";
-                    final int idx = urlIndex;
-                    runOnUiThread(() -> progress.setMessage(urlLabel + " (" + (idx+1) + "/" + urlPool.size() + "): " + source.name));
+                    final String label = urlIdx == 0 ? "CDN主线路" : urlIdx == 1 ? "备用CDN" : "GitHub原始源";
+                    final int curIdx = urlIdx;
+                    runOnUiThread(() -> progress.setMessage(label + " (" + (curIdx+1) + "/" + urlCount + "): " + source.name));
+
                     java.net.URI uri = new java.net.URI(dlUrl);
                     java.net.URL url = uri.toURL();
                     java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
@@ -290,10 +294,12 @@ public class ParentActivity extends AppCompatActivity {
                     conn.setReadTimeout(30000);
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) HabitTracker/2.0");
                     conn.setInstanceFollowRedirects(true);
+
                     int responseCode = conn.getResponseCode();
                     if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
                         throw new java.io.IOException("HTTP " + responseCode);
                     }
+
                     int contentLength = conn.getContentLength();
                     java.io.InputStream is = conn.getInputStream();
                     java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(contentLength > 0 ? contentLength : 65536);
@@ -301,10 +307,10 @@ public class ParentActivity extends AppCompatActivity {
                     int len;
                     long totalRead = 0;
                     long lastUpdate = 0;
+
                     while ((len = is.read(buf)) != -1) {
                         baos.write(buf, 0, len);
                         totalRead += len;
-                        // 每200ms更新一次进度
                         long now = System.currentTimeMillis();
                         if (now - lastUpdate > 200) {
                             lastUpdate = now;
@@ -323,36 +329,33 @@ public class ParentActivity extends AppCompatActivity {
                     is.close();
                     rawData = baos.toByteArray();
                     break;
+
                 } catch (java.net.SocketException e) {
                     errorMsg = "连接超时";
                     android.util.Log.w("Download", "[" + dlUrl.substring(0, Math.min(40, dlUrl.length())) + "] " + e.getMessage());
-                    urlIndex++;
-                    if (urlIndex < urlPool.size()) {
+                    urlIdx++;
+                    if (urlIdx < urlCount) {
                         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
                     }
                 } catch (java.io.IOException e) {
                     errorMsg = e.getMessage();
                     android.util.Log.w("Download", "[" + dlUrl.substring(0, Math.min(40, dlUrl.length())) + "] " + e.getMessage());
-                    urlIndex++;
-                    if (urlIndex < urlPool.size()) {
+                    urlIdx++;
+                    if (urlIdx < urlCount) {
                         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
                     }
                 } catch (Exception e) {
                     errorMsg = e.getMessage();
                     android.util.Log.w("Download", "Unexpected: " + e.getMessage());
-                    if (urlIndex + 1 < urlPool.size()) {
-                        urlIndex++;
-                        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                    } else {
-                        break;
-                    }
+                    break;
                 }
             }
-if (rawData == null) {
+
+            if (rawData == null) {
                 final String msg = errorMsg;
                 runOnUiThread(() -> {
                     progress.dismiss();
-                    Toast.makeText(this, "❌ 下载失败: " + msg, Toast.LENGTH_LONG).show();
+                    Toast.makeText(ParentActivity.this, "❌ 下载失败: " + msg, Toast.LENGTH_LONG).show();
                 });
                 return;
             }
@@ -366,18 +369,16 @@ if (rawData == null) {
                 runOnUiThread(() -> {
                     progress.dismiss();
                     if (words.isEmpty()) {
-                        Toast.makeText(this, "❌ 词库解析失败：格式不兼容或为空", Toast.LENGTH_LONG).show();
+                        Toast.makeText(ParentActivity.this, "❌ 词库解析失败：格式不兼容或为空", Toast.LENGTH_LONG).show();
                         return;
                     }
-
                     StringBuilder samples = new StringBuilder();
                     int sampleCount = Math.min(5, words.size());
                     for (int i = 0; i < sampleCount; i++) {
                         com.sister.habits.data.models.Vocabulary v = words.get(i);
                         samples.append("• ").append(v.word).append(" — ").append(v.meaning).append("\n");
                     }
-
-                    new AlertDialog.Builder(this)
+                    new AlertDialog.Builder(ParentActivity.this)
                             .setTitle("📖 预览词库")
                             .setMessage("来源: " + source.name + "\n" +
                                     "共 " + words.size() + " 个单词\n" +
@@ -390,12 +391,11 @@ if (rawData == null) {
             } catch (Exception e) {
                 runOnUiThread(() -> {
                     progress.dismiss();
-                    Toast.makeText(this, "❌ 解析失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(ParentActivity.this, "❌ 解析失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
     }
-
     /** 应用外部词库到数据库 — 使用 bankId 隔离，学习进度独立保存 */
     private void applyExternalWordbank(java.util.List<com.sister.habits.data.models.Vocabulary> words, ExternalSource source) {
         try {
