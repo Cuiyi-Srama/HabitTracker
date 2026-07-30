@@ -255,7 +255,7 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     /** 下载外部词库 → 预览 → 确认后应用 */
-        private void downloadAndPreview(ExternalSource source) {
+            private void downloadAndPreview(ExternalSource source) {
         soundHelper.playClickSound();
         android.app.ProgressDialog progress = new android.app.ProgressDialog(this);
         progress.setTitle("📥 下载词库中...");
@@ -266,15 +266,15 @@ public class ParentActivity extends AppCompatActivity {
         progress.setCancelable(false);
         progress.show();
 
-        // 三路URL：主CDN → 备用CDN → GitHub raw
-        final String[] urls = new String[3];
-        int urlCount = 0;
-        urls[urlCount++] = source.url;
-        if (source.backupUrl != null && !source.backupUrl.isEmpty()) urls[urlCount++] = source.backupUrl;
-        if (source.backupUrl2 != null && !source.backupUrl2.isEmpty()) urls[urlCount++] = source.backupUrl2;
         final int MAX_RETRIES = 2;
-
         new Thread(() -> {
+            // 三路URL池（在Thread内部构建，避免lambda捕获非final变量）
+            String[] urls = new String[3];
+            int urlCount = 0;
+            urls[urlCount++] = source.url;
+            if (source.backupUrl != null && !source.backupUrl.isEmpty()) urls[urlCount++] = source.backupUrl;
+            if (source.backupUrl2 != null && !source.backupUrl2.isEmpty()) urls[urlCount++] = source.backupUrl2;
+
             byte[] rawData = null;
             String errorMsg = null;
             int urlIdx = 0;
@@ -360,7 +360,6 @@ public class ParentActivity extends AppCompatActivity {
                 return;
             }
 
-            // 解析JSON
             try {
                 String json = new String(rawData, "UTF-8");
                 String grade = source.gradeLabel != null ? source.gradeLabel : "external";
