@@ -82,6 +82,7 @@ public class ParentActivity extends AppCompatActivity {
     private View currentShopDialogView;
 
     private Runnable deviceLockSuccessCallback = null;
+    private final java.util.concurrent.atomic.AtomicBoolean deviceLockPending = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     // 设备锁验证启动器
     private final ActivityResultLauncher<android.content.Intent> deviceLockLauncher =
