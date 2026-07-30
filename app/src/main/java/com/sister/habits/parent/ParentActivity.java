@@ -444,7 +444,11 @@ public class ParentActivity extends AppCompatActivity {
         // ✅ 通知渠道
         NotificationHelper.createChannel(this);
 
-        // 🔐 安全防护
+        // 🔐 安全防护（横竖屏切换跳过）
+        if (savedInstanceState != null) {
+            refreshAll();
+            return;
+        }
         if (PinHelper.isSystemLockEnabled(this)) {
             android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             if (kgm != null && kgm.isKeyguardSecure()) {
