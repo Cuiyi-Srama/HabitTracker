@@ -472,8 +472,7 @@ public class ParentActivity extends AppCompatActivity {
     /** 首次设置：三选一 */
     private void showAuthSetupDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("🔐 家长安全设置" + "
-" + "选择一种验证方式来保护家长界面：")
+                .setTitle("🔐 家长安全设置 — 选择验证方式")
                 .setItems(new String[]{
                         "🔢 PIN码（4~6位数字）",
                         "👆 指纹识别",
