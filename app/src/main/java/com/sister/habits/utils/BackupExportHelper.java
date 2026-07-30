@@ -5,6 +5,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Base64;
 import android.util.Log;
+import android.provider.MediaStore;
+import android.os.Build;
+import android.net.Uri;
 import java.io.*;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
@@ -406,9 +409,39 @@ public class BackupExportHelper {
         return new SecretKeySpec(keyBytes, "AES");
     }
 
-    /** 查找所有备份文件 */
-    public static File[] findBackupFiles() {
-        File dir = new File(BACKUP_DIR);
-        return dir.listFiles((d, name) -> name.endsWith(BACKUP_EXT));
+    /** 查找所有备份文件（兼容Android 11+ Scoped Storage） */
+    public static File[] findBackupFiles(Context context) {
+        java.util.List<File> files = new java.util.ArrayList<>();
+        
+        // 方案1: MediaStore (Android 10+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                String[] projection = {MediaStore.Downloads.DISPLAY_NAME};
+                String selection = MediaStore.Downloads.DISPLAY_NAME + " LIKE ?";
+                String[] selectionArgs = {"%" + BACKUP_EXT};
+                android.database.Cursor cursor = context.getContentResolver().query(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, selection, selectionArgs, null);
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        String name = cursor.getString(0);
+                        if (name != null && name.endsWith(BACKUP_EXT)) {
+                            files.add(new File(BACKUP_DIR, name));
+                        }
+                    }
+                    cursor.close();
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "MediaStore query failed, fallback to File API", e);
+            }
+        }
+        
+        // 方案2: File API fallback
+        if (files.isEmpty()) {
+            File dir = new File(BACKUP_DIR);
+            File[] result = dir.listFiles((d, name) -> name.endsWith(BACKUP_EXT));
+            if (result != null) java.util.Collections.addAll(files, result);
+        }
+        
+        return files.toArray(new File[0]);
     }
 }
