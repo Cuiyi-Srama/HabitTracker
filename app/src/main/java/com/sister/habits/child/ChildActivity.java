@@ -462,8 +462,7 @@ public class ChildActivity extends AppCompatActivity {
         }
         
         new android.app.AlertDialog.Builder(this)
-                .setTitle("🧺 洗衣任务")
-                .setMessage("选择你今天洗的衣物类型：")
+                .setTitle("🧺 洗衣任务 — 选择你今天洗的衣物类型")
                 .setItems(labels, (dialog, which) -> {
                     LaundryTask existing = db.laundryDao().getByDateAndType(today, types[which][0]);
                     if (existing != null) {
