@@ -250,6 +250,7 @@ public class ParentActivity extends AppCompatActivity {
         String description;
         String url;
         String backupUrl;
+        String backupUrl2;
         String format;
         String gradeLabel;
     }
