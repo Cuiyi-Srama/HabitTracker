@@ -256,8 +256,23 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_10_11 = new Migration(10, 11) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
-            database.execSQL("ALTER TABLE shop_items ADD COLUMN itemType TEXT NOT NULL DEFAULT 'limited'");
-            database.execSQL("ALTER TABLE shop_items ADD COLUMN stock INTEGER NOT NULL DEFAULT -1");
+            database.execSQL("ALTER TABLE shop_items ADD COLUMN itemType TEXT DEFAULT 'limited'");
+            database.execSQL("ALTER TABLE shop_items ADD COLUMN stock INTEGER DEFAULT -1");
+        }
+    };
+
+    static final Migration MIGRATION_11_12 = new Migration(11, 12) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 修复 v11 中 NOT NULL 导致的迁移失败，重建 shop_items
+            database.execSQL("CREATE TABLE IF NOT EXISTS shop_items_new (" +
+                "id TEXT PRIMARY KEY NOT NULL, name TEXT, description TEXT, " +
+                "priceCoins INTEGER NOT NULL, iconUrl TEXT, category TEXT, " +
+                "itemType TEXT DEFAULT 'limited', stock INTEGER DEFAULT -1, " +
+                "active INTEGER NOT NULL, createdAt INTEGER NOT NULL)");
+            database.execSQL("INSERT OR IGNORE INTO shop_items_new SELECT id, name, description, priceCoins, iconUrl, category, 'limited', -1, active, createdAt FROM shop_items");
+            database.execSQL("DROP TABLE IF EXISTS shop_items");
+            database.execSQL("ALTER TABLE shop_items_new RENAME TO shop_items");
         }
     };
 
@@ -272,7 +287,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     )
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .build();
                 }
             }
