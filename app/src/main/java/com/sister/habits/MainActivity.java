@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         // 检查是否从儿童模式强制跳转到家长模式
         boolean forceParent = getIntent().getBooleanExtra("force_parent_mode", false);
         if (forceParent) {
-            authenticateWithBiometricOrPin(true);
+            enterParentMode();
             return;
         }
 
@@ -55,12 +55,12 @@ public class MainActivity extends AppCompatActivity {
             launchChildMode();
             return;
         } else if ("parent".equals(defaultMode)) {
-            String savedPin = prefs.getString(KEY_PIN, null);
-            if (savedPin != null) {
-                authenticateWithBiometricOrPin(true);
-                return;
-            }
-        }
+            enterParentMode();
+            return;
+
+
+
+
 
         showModeSelection();
     }
@@ -160,14 +160,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnParent.setOnClickListener(v -> {
-            String savedPin = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                    .getString(KEY_PIN, null);
-            if (savedPin == null) {
-                showSetPinDialog();
-            } else {
-                authenticateWithBiometricOrPin(false);
-            }
+            enterParentMode();
         });
+
+
+
+
+
+
     }
 
     private void showSetPinDialog() {
