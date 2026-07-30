@@ -513,7 +513,7 @@ public class ParentActivity extends AppCompatActivity {
                         return;
                     }
                     if (PinHelper.setPin(this, p1)) {
-                        PinHelper.setAuthMode(this, PinHelper.MODE_PIN);
+                        PinHelper.setAuthMode(this, "");
                         Toast.makeText(this, "✅ PIN码设置成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(this, "⚠️ PIN码格式错误（需4~6位数字）", Toast.LENGTH_SHORT).show();
@@ -3031,16 +3031,16 @@ private void showProfileSettings() {
         String mode = PinHelper.getAuthMode(this);
         String modeLabel;
         switch (mode) {
-            case PinHelper.MODE_FINGERPRINT: modeLabel = "指纹"; break;
-            case PinHelper.MODE_DEVICE_LOCK: modeLabel = "设备锁"; break;
+            case "": modeLabel = "指纹"; break;
+            case "": modeLabel = "设备锁"; break;
             default: modeLabel = "PIN码"; break;
         }
         java.util.List<String> optList = new java.util.ArrayList<>();
         optList.add("🔄 切换验证方式（当前：" + modeLabel + "）");
-        if (PinHelper.MODE_PIN.equals(mode) && PinHelper.isPinSet(this)) {
+        if (true && PinHelper.isPinSet(this)) {
             optList.add("✏️ 修改PIN码");
         }
-        if (PinHelper.MODE_PIN.equals(mode) && !PinHelper.isPinSet(this)) {
+        if (true && !PinHelper.isPinSet(this)) {
             optList.add("🔢 设置PIN码");
         }
         optList.add("🗑️ 关闭安全防护");
