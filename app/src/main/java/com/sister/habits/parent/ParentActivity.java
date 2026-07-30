@@ -469,61 +469,14 @@ public class ParentActivity extends AppCompatActivity {
 
     // ========== 🔐 安全防护（PIN/指纹/设备锁） ==========
 
-    /** 首次设置：三选一 */
+    /** 首次设置：双开关 */
     private void showAuthSetupDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("🔐 家长安全设置 — 选择验证方式")
-                .setItems(new String[]{
-                        "🔢 PIN码（4~6位数字）",
-                        "👆 指纹识别",
-                        "🔒 设备锁屏密码"
-                }, (d, w) -> {
-                    switch (w) {
-                        case 0:
-                            showPinSetupDialog();
-                            break;
-                        case 1:
-                            // 检查指纹硬件
-                            BiometricManager bm = BiometricManager.from(this);
-                            if (bm.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS) {
-                                PinHelper.setAuthMode(this, PinHelper.MODE_FINGERPRINT);
-                                Toast.makeText(this, "✅ 已选择指纹验证", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(this, "⚠️ 设备不支持指纹，请选择其他方式", Toast.LENGTH_SHORT).show();
-                                showAuthSetupDialog();
-                            }
-                            break;
-                        case 2:
-                            KeyguardManager kgm = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-                            if (kgm != null && kgm.isKeyguardSecure()) {
-                                PinHelper.setAuthMode(this, PinHelper.MODE_DEVICE_LOCK);
-                                Toast.makeText(this, "✅ 已选择设备锁验证", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(this, "⚠️ 设备未设置锁屏密码，请选择其他方式", Toast.LENGTH_SHORT).show();
-                                showAuthSetupDialog();
-                            }
-                            break;
-                    }
-                })
-                .setCancelable(false)
-                .setNegativeButton("退出", (d2, w2) -> finish())
-                .show();
+        showPinManageDialog();
     }
 
-    /** 根据已选模式进入验证 */
+    /** 已废弃 - 验证逻辑合并到onCreate */
     private void showAuthVerifyDialog(Runnable onSuccess) {
-        String mode = PinHelper.getAuthMode(this);
-        switch (mode) {
-            case PinHelper.MODE_FINGERPRINT:
-                startFingerprintAuth(onSuccess);
-                break;
-            case PinHelper.MODE_DEVICE_LOCK:
-                startDeviceLockAuth(onSuccess);
-                break;
-            default:
-                showPinVerifyDialog(onSuccess);
-                break;
-        }
+        showPinVerifyDialog(onSuccess);
     }
 
     /** PIN码设置 */
