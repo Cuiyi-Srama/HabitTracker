@@ -509,7 +509,7 @@ public class ChildActivity extends AppCompatActivity {
             if (done) {
                 // 已提交—显示已有数量，仍可继续添加
                 int alreadyQty = existing.quantity;
-                quantities[idx] = alreadyQty;
+                quantities[i] = alreadyQty;
                 tvQty.setText(String.valueOf(alreadyQty));
                 tvQty.setTextColor(0xFF4CAF50);
             } else {
