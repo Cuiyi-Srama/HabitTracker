@@ -224,12 +224,13 @@ public class ShopFragment extends Fragment {
         }
         
         // 确认对话框
+        final int finalTotalCost = totalCost;
+        final int finalCurrentBalance = currentBalance;
+        final String finalSummary = summary.toString();
         new android.app.AlertDialog.Builder(getContext())
             .setTitle("确认兑换")
-            .setMessage(summary.toString() + "\n合计: " + totalCost + " 分\n余额: " + (currentBalance - totalCost) + " 分")
+            .setMessage(finalSummary + "\n合计: " + finalTotalCost + " 分\n余额: " + (finalCurrentBalance - finalTotalCost) + " 分")
             .setPositiveButton("确认提交", (d, w) -> {
-                final int finalTotalCost = totalCost;
-                final int finalCurrentBalance = currentBalance;
                 int newBalance = finalCurrentBalance;
                 for (Map.Entry<String, Integer> e : cart.entrySet()) {
                     ShopItem item = db.shopItemDao().getById(e.getKey());
