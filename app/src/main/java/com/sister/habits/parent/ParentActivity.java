@@ -3027,45 +3027,49 @@ private void showProfileSettings() {
     }
     /** 🔐 安全防护管理 */
     private void showPinManageDialog() {
-        boolean enabled = PinHelper.isEnabled(this);
-        String mode = PinHelper.getAuthMode(this);
-        String modeLabel;
-        switch (mode) {
-            case "": modeLabel = "指纹"; break;
-            case "": modeLabel = "设备锁"; break;
-            default: modeLabel = "PIN码"; break;
-        }
+        boolean sysOn = PinHelper.isSystemLockEnabled(this);
+        boolean pinOn = PinHelper.isAppPinEnabled(this);
+        boolean pinSet = PinHelper.isPinSet(this);
+        
         java.util.List<String> optList = new java.util.ArrayList<>();
-        optList.add("🔄 切换验证方式（当前：" + modeLabel + "）");
-        if (true && PinHelper.isPinSet(this)) {
-            optList.add("✏️ 修改PIN码");
-        }
-        if (true && !PinHelper.isPinSet(this)) {
-            optList.add("🔢 设置PIN码");
-        }
-        optList.add("🗑️ 关闭安全防护");
+        optList.add(sysOn ? "✅ 系统锁屏验证（已开启）" : "⬜ 系统锁屏验证（已关闭）");
+        optList.add(pinOn ? "✅ 应用PIN码（已开启）" : "⬜ 应用PIN码（已关闭）");
+        if (pinSet) optList.add("✏️ 修改PIN码");
+        else optList.add("🔢 设置PIN码");
+        optList.add("🔄 重置为默认（仅系统锁屏）");
         String[] opts = optList.toArray(new String[0]);
 
         new AlertDialog.Builder(this)
                 .setTitle("🔐 安全防护管理")
-                .setMessage("当前方式：" + modeLabel)
+                .setMessage("系统锁屏：" + (sysOn ? "开" : "关") + " | 应用PIN：" + (pinOn ? "开" : "关"))
                 .setItems(opts, (d, which) -> {
-                    String chosen = opts[which];
-                    if (chosen.startsWith("🔄")) {
-                        // 切换方式
-                        showAuthSetupDialog();
-                    } else if (chosen.startsWith("✏️") || chosen.startsWith("🔢")) {
-                        // 修改/设置PIN
+                    if (which == 0) {
+                        if (sysOn && !pinOn) {
+                            Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
+                        } else {
+                            PinHelper.setSystemLockEnabled(this, !sysOn);
+                            showPinManageDialog();
+                        }
+                    } else if (which == 1) {
+                        if (pinOn && !sysOn) {
+                            Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
+                        } else {
+                            if (!pinOn && !pinSet) {
+                                showPinSetupDialog();
+                            } else {
+                                PinHelper.setAppPinEnabled(this, !pinOn);
+                                showPinManageDialog();
+                            }
+                        }
+                    } else if (which == 2) {
                         showAuthVerifyDialog(() -> showPinSetupDialog());
-                    } else if (chosen.startsWith("🗑️")) {
-                        // 关闭
-                        showAuthVerifyDialog(() -> {
-                            PinHelper.disableAll(ParentActivity.this);
-                            Toast.makeText(ParentActivity.this, "✅ 安全防护已关闭", Toast.LENGTH_SHORT).show();
-                        });
+                    } else if (which == 3) {
+                        PinHelper.disableAll(this);
+                        Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
+                        showPinManageDialog();
                     }
                 })
-                .setNegativeButton("← 返回上级", (d2, w2) -> showSystemMenu())
+                .setNegativeButton("← 返回", (d2, w2) -> showSystemMenu())
                 .show();
     }
 
