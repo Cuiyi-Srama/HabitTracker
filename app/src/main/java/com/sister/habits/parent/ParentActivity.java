@@ -3004,9 +3004,9 @@ private void showProfileSettings() {
     }
     /** 🔐 安全防护管理 */
     private void showPinManageDialog() {
-        boolean sysOn = PinHelper.isSystemLockEnabled(this);
-        boolean pinOn = PinHelper.isAppPinEnabled(this);
-        boolean pinSet = PinHelper.isPinSet(this);
+        final boolean sysOn = PinHelper.isSystemLockEnabled(this);
+        final boolean pinOn = PinHelper.isAppPinEnabled(this);
+        final boolean pinSet = PinHelper.isPinSet(this);
         
         java.util.List<String> optList = new java.util.ArrayList<>();
         optList.add(sysOn ? "✅ 系统锁屏验证（已开启）" : "⬜ 系统锁屏验证（已关闭）");
@@ -3016,7 +3016,8 @@ private void showProfileSettings() {
         optList.add("🔄 重置为默认（仅系统锁屏）");
         String[] opts = optList.toArray(new String[0]);
 
-        new AlertDialog.Builder(this)
+        final AlertDialog[] holder = new AlertDialog[1];
+        holder[0] = new AlertDialog.Builder(this)
                 .setTitle("🔐 安全防护管理")
                 .setMessage("系统锁屏：" + (sysOn ? "开" : "关") + " | 应用PIN：" + (pinOn ? "开" : "关"))
                 .setItems(opts, (d, which) -> {
@@ -3025,6 +3026,7 @@ private void showProfileSettings() {
                             Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
                         } else {
                             PinHelper.setSystemLockEnabled(this, !sysOn);
+                            if (holder[0] != null) holder[0].dismiss();
                             showPinManageDialog();
                         }
                     } else if (which == 1) {
@@ -3032,25 +3034,27 @@ private void showProfileSettings() {
                             Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
                         } else {
                             if (!pinOn && !pinSet) {
+                                if (holder[0] != null) holder[0].dismiss();
                                 showPinSetupDialog();
                             } else {
                                 PinHelper.setAppPinEnabled(this, !pinOn);
+                                if (holder[0] != null) holder[0].dismiss();
                                 showPinManageDialog();
                             }
                         }
                     } else if (which == 2) {
+                        if (holder[0] != null) holder[0].dismiss();
                         showAuthVerifyDialog(() -> showPinSetupDialog());
                     } else if (which == 3) {
                         PinHelper.disableAll(this);
                         Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
+                        if (holder[0] != null) holder[0].dismiss();
                         showPinManageDialog();
                     }
                 })
                 .setNegativeButton("← 返回", (d2, w2) -> showSystemMenu())
                 .show();
-    }
-
-    /** 更新假期范围显示 */
+    }    /** 更新假期范围显示 */
     private void updateHolidayRangesText(android.widget.TextView tv, java.util.List<String[]> list) {
         if (list.isEmpty()) {
             tv.setText("（暂无假期）");
