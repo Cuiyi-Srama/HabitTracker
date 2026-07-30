@@ -228,7 +228,9 @@ public class ShopFragment extends Fragment {
             .setTitle("确认兑换")
             .setMessage(summary.toString() + "\n合计: " + totalCost + " 分\n余额: " + (currentBalance - totalCost) + " 分")
             .setPositiveButton("确认提交", (d, w) -> {
-                int newBalance = currentBalance;
+                final int finalTotalCost = totalCost;
+                final int finalCurrentBalance = currentBalance;
+                int newBalance = finalCurrentBalance;
                 for (Map.Entry<String, Integer> e : cart.entrySet()) {
                     ShopItem item = db.shopItemDao().getById(e.getKey());
                     if (item != null) {
@@ -238,7 +240,7 @@ public class ShopFragment extends Fragment {
                         redemption.shopItemId = item.id;
                         redemption.itemName = item.name + " x" + e.getValue();
                         redemption.coinsCost = cost;
-                        redemption.coinsBalanceBefore = currentBalance;
+                        redemption.coinsBalanceBefore = finalCurrentBalance;
                         redemption.coinsBalanceAfter = newBalance;
                         redemption.deviceId = syncManager.getDeviceId();
                         db.redemptionDao().insert(redemption);
@@ -247,7 +249,7 @@ public class ShopFragment extends Fragment {
                 // 一次性扣款
                 com.sister.habits.data.models.CoinTransaction ct =
                     new com.sister.habits.data.models.CoinTransaction(
-                        "sister", -totalCost, currentBalance - totalCost,
+                        "sister", -finalTotalCost, finalCurrentBalance - finalTotalCost,
                         "shop_spend", "批量兑换: " + cart.size() + "种商品",
                         syncManager.getDeviceId());
                 db.coinTransactionDao().insert(ct);
