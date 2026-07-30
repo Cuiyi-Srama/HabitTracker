@@ -78,7 +78,7 @@ public class ChildActivity extends AppCompatActivity {
         btnSettings.setOnClickListener(v -> showChildSettings());
 
         // 📝 作业提交按钮
-        com.google.android.material.button.MaterialButton btnHomework = findViewById(R.id.btn_submit_homework);
+        TextView btnHomework = findViewById(R.id.btn_submit_homework);
         btnHomework.setOnClickListener(v -> submitTodayHomework());
 
         // 🧺 洗衣任务按钮
