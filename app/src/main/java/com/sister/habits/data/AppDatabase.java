@@ -252,6 +252,15 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("INSERT OR IGNORE INTO lottery_prizes (id, name, icon, cost, probability, stock, enabled, createdAt) VALUES (5, '🌟 神秘大奖', '🌟', 10, 5, -1, 1, 0)");
         }
     };
+
+    static final Migration MIGRATION_10_11 = new Migration(10, 11) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE shop_items ADD COLUMN itemType TEXT NOT NULL DEFAULT 'limited'");
+            database.execSQL("ALTER TABLE shop_items ADD COLUMN stock INTEGER NOT NULL DEFAULT -1");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
