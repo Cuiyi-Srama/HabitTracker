@@ -4,34 +4,82 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="8dp">
+    <!-- 分类Tab -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="4dp">
         <Button
             android:id="@+id/btn_shop_all"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="🏪 全部商品"
-            android:textSize="13sp"
+            android:layout_marginEnd="2dp"
+            android:text="🏪 全部"
+            android:textSize="12sp"
             android:backgroundTint="#FF9800"
             android:textColor="#FFFFFF" />
         <Button
+            android:id="@+id/btn_shop_normal"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="🔄 常驻"
+            android:textSize="12sp"
+            android:backgroundTint="#E0E0E0"
+            android:textColor="#333333" />
+        <Button
+            android:id="@+id/btn_shop_limited"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="🔥 限量"
+            android:textSize="12sp"
+            android:backgroundTint="#E0E0E0"
+            android:textColor="#333333" />
+        <Button
             android:id="@+id/btn_shop_wishlist"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="⭐ 心愿单"
-            android:textSize="13sp"
+            android:text="⭐ 心愿"
+            android:textSize="12sp"
             android:backgroundTint="#E0E0E0"
             android:textColor="#333333" />
     </LinearLayout>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_shop"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+    <!-- 底部购物车栏（常驻商品Tab可见） -->
+    <LinearLayout
+        android:id="@+id/cart_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#FFF8E1"
+        android:visibility="gone"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/tv_cart_info"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🛒 未选择商品"
+            android:textSize="13sp"
+            android:textColor="#E65100" />
+        <Button
+            android:id="@+id/btn_cart_submit"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="提交兑换"
+            android:textSize="12sp"
+            android:backgroundTint="#FF6B35"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
 </LinearLayout>
