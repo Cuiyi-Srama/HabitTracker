@@ -506,7 +506,15 @@ public class ChildActivity extends AppCompatActivity {
             btnMinus.setPadding(12, 4, 12, 4);
             
             android.widget.TextView tvQty = new android.widget.TextView(this);
-            tvQty.setText(done ? "✓" : "0");
+            if (done) {
+                // 已提交—显示已有数量，仍可继续添加
+                int alreadyQty = existing.quantity;
+                quantities[idx] = alreadyQty;
+                tvQty.setText(String.valueOf(alreadyQty));
+                tvQty.setTextColor(0xFF4CAF50);
+            } else {
+                tvQty.setText("0");
+            }
             tvQty.setGravity(android.view.Gravity.CENTER);
             tvQty.setMinWidth(40);
             tvQty.setTextSize(16);
@@ -517,13 +525,6 @@ public class ChildActivity extends AppCompatActivity {
             btnPlus.setTextSize(14);
             btnPlus.setPadding(12, 4, 12, 4);
             
-            if (done) {
-                btnMinus.setEnabled(false);
-                btnPlus.setEnabled(false);
-                btnMinus.setAlpha(0.3f);
-                btnPlus.setAlpha(0.3f);
-            }
-            
             final int idx = i;
             btnMinus.setOnClickListener(v -> {
                 if (quantities[idx] > 0) {
@@ -532,7 +533,7 @@ public class ChildActivity extends AppCompatActivity {
                 }
             });
             btnPlus.setOnClickListener(v -> {
-                if (!submittedToday[idx] && quantities[idx] < 5) {
+                if (quantities[idx] < 5) {
                     quantities[idx]++;
                     tvQuantities[idx].setText(String.valueOf(quantities[idx]));
                 }
@@ -626,7 +627,14 @@ public class ChildActivity extends AppCompatActivity {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
         
         LaundryTask existing = db.laundryDao().getByDateAndType(today, clothingType);
-        if (existing != null) return;
+        double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
+        if (existing != null) {
+            // 已有记录—累加数量并更新积分
+            existing.quantity += quantity;
+            existing.totalPoints += (int) Math.round(pointsPerItem * quantity * multiplier);
+            db.laundryDao().update(existing);
+            return;
+        }
         
         double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(this);
         int finalPoints = (int) Math.round(pointsPerItem * quantity * multiplier);
