@@ -79,6 +79,14 @@ public class ChildActivity extends AppCompatActivity {
         TextView btnHomework = findViewById(R.id.btn_submit_homework);
         btnHomework.setOnClickListener(v -> submitTodayHomework());
 
+        // 🧺 洗衣任务按钮
+        TextView btnLaundry = findViewById(R.id.btn_laundry);
+        btnLaundry.setOnClickListener(v -> showLaundryDialog());
+
+        // 🎰 抽奖按钮
+        TextView btnLottery = findViewById(R.id.btn_lottery);
+        btnLottery.setOnClickListener(v -> showLotteryDialog());
+
         // 刷新金币余额
         refreshCoinBalance();
 
