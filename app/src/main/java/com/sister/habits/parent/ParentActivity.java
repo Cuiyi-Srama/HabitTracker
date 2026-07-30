@@ -927,8 +927,7 @@ public class ParentActivity extends AppCompatActivity {
         String[] mainLabels = {
                 "📚 学习管理",
                 "🏪 商城管理",
-                "📋 任务管理",
-                "📋 作业管理",
+                "📋 任务与作业",
                 "🧺 洗衣任务",
                 "🎰 抽奖管理",
                 "🏆 学校奖励",
