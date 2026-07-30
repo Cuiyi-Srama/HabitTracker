@@ -672,26 +672,34 @@ public class ChildActivity extends AppCompatActivity {
             return;
         }
         
-        // 创建新提交
-        DailyGate gate = new DailyGate();
-        gate.date = today;
-        gate.status = DailyGate.STATUS_PENDING;
-        gate.submittedAt = System.currentTimeMillis();
-        gate.deviceId = syncManager.getDeviceId();
-        db.dailyGateDao().insert(gate);
-        
-        // 通知家长
-        NotificationHelper.notifyGateSubmission(this, today);
-        
-        // 检查是否假期模式（提示孩子）
-        com.sister.habits.data.models.GateConfig gConfig = db.gateConfigDao().getConfig();
-        boolean isHoliday = gConfig != null && GateHelper.isDiscountMode(gConfig);
-        String tip = isHoliday ? "\n\n⚠️ 当前为假期打折模式，完成任务积分可能打折哦" : "";
-        
+        // 确认对话框 — 避免误触
         new android.app.AlertDialog.Builder(this)
-                .setTitle("📝 作业已提交")
-                .setMessage("今日作业已提交，等待家长审核！" + tip)
-                .setPositiveButton("知道了", null)
+                .setTitle("📝 确认提交作业")
+                .setMessage("提交后今天将无法再次提交，确认吗？\n\n💡 提交后请等待家长审核")
+                .setPositiveButton("✅ 确认提交", (d, w) -> {
+                    // 创建新提交
+                    DailyGate gate = new DailyGate();
+                    gate.date = today;
+                    gate.status = DailyGate.STATUS_PENDING;
+                    gate.submittedAt = System.currentTimeMillis();
+                    gate.deviceId = syncManager.getDeviceId();
+                    db.dailyGateDao().insert(gate);
+                    
+                    // 通知家长
+                    NotificationHelper.notifyGateSubmission(ChildActivity.this, today);
+                    
+                    // 检查是否假期模式（提示孩子）
+                    com.sister.habits.data.models.GateConfig gConfig = db.gateConfigDao().getConfig();
+                    boolean isHoliday = gConfig != null && GateHelper.isDiscountMode(gConfig);
+                    String tip = isHoliday ? "\n\n⚠️ 当前为假期打折模式，完成任务积分可能打折哦" : "";
+                    
+                    new android.app.AlertDialog.Builder(ChildActivity.this)
+                            .setTitle("📝 作业已提交")
+                            .setMessage("今日作业已提交，等待家长审核！" + tip)
+                            .setPositiveButton("知道了", null)
+                            .show();
+                })
+                .setNegativeButton("取消", null)
                 .show();
     }
 }
