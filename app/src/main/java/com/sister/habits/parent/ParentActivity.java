@@ -249,6 +249,7 @@ public class ParentActivity extends AppCompatActivity {
         String name;
         String description;
         String url;
+        String backupUrl;
         String format;
         String gradeLabel;
     }
@@ -270,12 +271,23 @@ public class ParentActivity extends AppCompatActivity {
             byte[] rawData = null;
             String errorMsg = null;
 
-            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            boolean triedBackup = false;
+            for (int attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
                 try {
                     final int currentAttempt = attempt;
-                    runOnUiThread(() -> progress.setMessage("正在下载: " + source.name + " (第" + currentAttempt + "次)"));
+                    final String dlUrl;
+                    if (attempt <= MAX_RETRIES) {
+                        dlUrl = source.url;
+                        runOnUiThread(() -> progress.setMessage("正在下载: " + source.name + " (第" + currentAttempt + "次)"));
+                    } else if (source.backupUrl != null && !triedBackup) {
+                        dlUrl = source.backupUrl;
+                        triedBackup = true;
+                        runOnUiThread(() -> progress.setMessage("主链接失败，切换备用CDN: " + source.name));
+                    } else {
+                        break;
+                    }
 
-                    java.net.URI uri = new java.net.URI(source.url);
+                    java.net.URI uri = new java.net.URI(dlUrl);
                     java.net.URL url = uri.toURL();
                     java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(30000);
