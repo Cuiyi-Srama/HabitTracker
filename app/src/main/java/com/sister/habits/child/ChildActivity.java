@@ -593,17 +593,14 @@ public class ChildActivity extends AppCompatActivity {
                     int pts = LaundryTask.getPointsForType(types[tIdx][0]);
                     int itTotal = pts * qty;
                     subTotal += itTotal;
-                    sb.append("• ").append(types[tIdx][0]).append(" ×").append(qty).append(" = ").append(itTotal).append("分
-");
+                    sb.append("• ").append(types[tIdx][0]).append(" ×").append(qty).append(" = ").append(itTotal).append("分\n");
                 }
                 
                 double multiplier = com.sister.habits.utils.GateHelper.getTodayMultiplier(ChildActivity.this);
                 final int finalTotal = (int) Math.round(subTotal * multiplier);
-                String discountInfo = multiplier < 1.0 ? "
-（打折后: " + finalTotal + "分）" : "";
+                String discountInfo = multiplier < 1.0 ? "\n（打折后: " + finalTotal + "分）" : "";
                 
-                sb.append("
-合计: ").append(subTotal).append("分").append(discountInfo);
+                sb.append("\n合计: ").append(subTotal).append("分").append(discountInfo);
                 
                 new android.app.AlertDialog.Builder(ChildActivity.this)
                     .setTitle("确认提交")
