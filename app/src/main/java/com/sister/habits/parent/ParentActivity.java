@@ -1078,14 +1078,16 @@ public class ParentActivity extends AppCompatActivity {
                 "📋 任务列表（管理/删除任务）",
                 "➕ 发布新任务",
                 "⏳ 待确认任务（" + pendingCount + "项）",
-                "📋 任务模板库"
+                "📋 任务模板库",
+                "📝 作业管理（审核/截止日期）"
         };
-        com.sister.habits.utils.MenuHelper.showWithBack(this, "📋 任务管理", taskLabels,
+        com.sister.habits.utils.MenuHelper.showWithBack(this, "📋 任务与作业", taskLabels,
                 this::showSettingsDialog,
                 this::showManageTasksDialog,
                 this::showAddTaskDialog,
                 () -> { loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); },
-                this::showTaskTemplates
+                this::showTaskTemplates,
+                this::showGateManageDialog
         );
     }
 
