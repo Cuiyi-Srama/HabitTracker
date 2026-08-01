@@ -395,6 +395,74 @@ public class WordFragment extends Fragment {
      * - 复习模式答对 → 推进stage，加权间隔
      * - 复习模式答错 → nextReviewAt=现在，立即纠错
      */
+    /** 😅 我不会：详情弹窗 + 加入复习 */
+    private void showDontKnowDialog() {
+        if (!isAnswering || currentWord == null) return;
+        isAnswering = false;
+        if (btnDontKnow != null) btnDontKnow.setVisibility(View.GONE);
+        final Vocabulary word = currentWord;
+
+        LinearLayout layout = new LinearLayout(getContext());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 16);
+
+        TextView tvWord = new TextView(getContext());
+        tvWord.setText(word.word);
+        tvWord.setTextSize(34);
+        tvWord.setGravity(android.view.Gravity.CENTER);
+        tvWord.setTextColor(0xFF333333);
+        tvWord.setTypeface(null, android.graphics.Typeface.BOLD);
+        layout.addView(tvWord);
+
+        TextView tvPhon = new TextView(getContext());
+        tvPhon.setText(word.phonetic != null && !word.phonetic.isEmpty() ? word.phonetic : "");
+        tvPhon.setTextSize(16);
+        tvPhon.setGravity(android.view.Gravity.CENTER);
+        tvPhon.setTextColor(0xFF888888);
+        layout.addView(tvPhon);
+
+        TextView tvMeaning = new TextView(getContext());
+        tvMeaning.setText("📖 " + word.meaning);
+        tvMeaning.setTextSize(22);
+        tvMeaning.setGravity(android.view.Gravity.CENTER);
+        tvMeaning.setTextColor(0xFFE65100);
+        tvMeaning.setPadding(0, 12, 0, 16);
+        layout.addView(tvMeaning);
+
+        LinearLayout btnRow = new LinearLayout(getContext());
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setGravity(android.view.Gravity.CENTER);
+        btnRow.setPadding(0, 8, 0, 8);
+        Button btnSpeakEn = new Button(getContext());
+        btnSpeakEn.setText("🔊 朗读单词");
+        btnSpeakEn.setOnClickListener(v -> soundHelper.speakWord(word.word));
+        Button btnSpeakCn = new Button(getContext());
+        btnSpeakCn.setText("🔊 朗读中文");
+        btnSpeakCn.setOnClickListener(v -> soundHelper.speakChinese(word.meaning));
+        btnRow.addView(btnSpeakEn);
+        btnRow.addView(btnSpeakCn);
+        layout.addView(btnRow);
+
+        new android.app.AlertDialog.Builder(getContext())
+            .setTitle("😅 看一下再记")
+            .setView(layout)
+            .setPositiveButton("下一个吧 ➡️", (d, w) -> {
+                updateWordReview(word.id, false);
+                soundHelper.playClickSound();
+                showNextWord();
+            })
+            .setNegativeButton("再想想 🤔", (d, w) -> {
+                isAnswering = true;
+                if (btnDontKnow != null) btnDontKnow.setVisibility(View.VISIBLE);
+            })
+            .setOnCancelListener(d -> {
+                isAnswering = true;
+                if (btnDontKnow != null) btnDontKnow.setVisibility(View.VISIBLE);
+            })
+            .show();
+        soundHelper.speakWord(word.word);
+    }
+
     private void updateWordReview(String wordId, boolean correct) {
         String bankId = getCurrentBankId();
         WordReview wr = db.wordReviewDao().getByWordId(wordId, bankId);
