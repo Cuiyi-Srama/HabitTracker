@@ -3233,15 +3233,27 @@ private void showProfileSettings() {
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36");
         conn.setRequestProperty("Referer", "https://item.jd.com/");
         java.io.InputStream is = conn.getInputStream();
-        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is);
+        // 先读尺寸，再按采样率解码，防止超大图OOM
+        android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        android.graphics.BitmapFactory.decodeStream(is, null, opts);
         is.close();
+        int sample = 1;
+        int maxDim = 1280;
+        while (opts.outWidth / sample > maxDim || opts.outHeight / sample > maxDim) {
+            sample *= 2;
+        }
+        opts.inJustDecodeBounds = false;
+        opts.inSampleSize = sample;
+        java.io.InputStream is2 = conn.getInputStream();
+        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is2, null, opts);
+        is2.close();
         conn.disconnect();
         if (bmp == null) return null;
         String fileName = "shop_link_" + System.currentTimeMillis() + ".jpg";
         java.io.File dir = new java.io.File(getFilesDir(), "shop_images");
         dir.mkdirs();
         java.io.File outFile = new java.io.File(dir, fileName);
-        int maxDim = 1280;
         int w = bmp.getWidth(), h = bmp.getHeight();
         float scale = Math.max((float) w / maxDim, (float) h / maxDim);
         if (scale > 1) {
