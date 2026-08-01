@@ -3546,11 +3546,7 @@ private void showProfileSettings() {
                         });
                         break;
                     }
-                    case 5: { // 远程同步 WebDAV
-                        showRemoteSyncDialog();
-                        break;
-                    }
-                    case 6: { // 清除发现缓存
+                    case 5: { // 清除发现缓存
                         syncManager.getHubSync().clearDiscoveredHubs();
                         deviceListContainer.removeAllViews();
                         deviceListContainer.addView(tvEmpty);
@@ -3581,6 +3577,89 @@ private void showProfileSettings() {
                 .show();
     }
     /** 🔐 安全防护管理 */
+    /** ☁️ 远程同步 (WebDAV) 配置与执行 */
+    private void showRemoteSyncDialog() {
+        final com.sister.habits.sync.RemoteSync remote = syncManager.getRemoteSync();
+        final android.widget.EditText etUrl = new android.widget.EditText(this);
+        etUrl.setHint("WebDAV服务器地址，如 https://dav.jianguoyun.com/dav/");
+        etUrl.setSingleLine(true);
+        etUrl.setTextSize(13);
+        final android.widget.EditText etUser = new android.widget.EditText(this);
+        etUser.setHint("账号（坚果云/Nextcloud用户名）");
+        etUser.setSingleLine(true);
+        etUser.setTextSize(13);
+        final android.widget.EditText etPass = new android.widget.EditText(this);
+        etPass.setHint("应用密码（非登录密码）");
+        etPass.setSingleLine(true);
+        etPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        etPass.setTextSize(13);
+        final android.widget.EditText etSyncPass = new android.widget.EditText(this);
+        etSyncPass.setHint("数据加密密码（默认0903，两设备必须一致）");
+        etSyncPass.setSingleLine(true);
+        etSyncPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        etSyncPass.setTextSize(13);
+
+        final TextView tvStatus = new TextView(this);
+        tvStatus.setText("☁️ " + remote.getStatusText());
+        tvStatus.setTextSize(13);
+        tvStatus.setTextColor(0xFF1976D2);
+        tvStatus.setPadding(4, 8, 4, 8);
+
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(32, 8, 32, 8);
+        layout.addView(tvStatus);
+        layout.addView(etUrl);
+        layout.addView(etUser);
+        layout.addView(etPass);
+        layout.addView(etSyncPass);
+
+        new AlertDialog.Builder(this)
+                .setTitle("☁️ 远程同步 (WebDAV)")
+                .setMessage("通过WebDAV云盘（坚果云免费版即可）加密同步全部数据
+
+💡 获取方式：坚果云→账户信息→安全选项→添加应用密码
+
+🔐 同步内容：全部数据+家长Key绑定（新设备同步后自动恢复）")
+                .setView(layout)
+                .setPositiveButton("⚡ 保存并立即同步", (d, w) -> {
+                    String url = etUrl.getText().toString().trim();
+                    if (url.isEmpty()) {
+                        Toast.makeText(this, "❌ 请输入服务器地址", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
+                            etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
+                    Toast.makeText(this, "☁️ 同步中...请稍候", Toast.LENGTH_SHORT).show();
+                    remote.syncAll(new com.sister.habits.sync.SyncCallback() {
+                        @Override
+                        public void onStatusUpdate(String status) {
+                            runOnUiThread(() -> Toast.makeText(ParentActivity.this, status, Toast.LENGTH_LONG).show());
+                        }
+                        @Override
+                        public void onHubFound(String ip, String deviceId) {}
+                        @Override
+                        public void onSyncComplete(boolean success, String message) {
+                            runOnUiThread(() -> {
+                                if (success) {
+                                    Toast.makeText(ParentActivity.this, "✅ " + message, Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(ParentActivity.this, "❌ " + message, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+                        @Override
+                        public void onScanProgress(int scanned, int total) {}
+                    });
+                })
+                .setNeutralButton("🧹 清除配置", (d, w) -> {
+                    remote.clearConfig();
+                    Toast.makeText(this, "已清除WebDAV配置", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("关闭", null)
+                .show();
+    }
+
     private void showPinManageDialog() {
         final boolean sysOn = PinHelper.isSystemLockEnabled(this);
         final boolean pinOn = PinHelper.isAppPinEnabled(this);
