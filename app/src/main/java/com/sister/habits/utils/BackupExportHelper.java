@@ -75,6 +75,13 @@ public class BackupExportHelper {
         Log.i(TAG, "备份已恢复: " + file.getName());
         return true;
     }
+    /** 从SAF选择的字节流恢复（Android 11+） */
+    public boolean importBackupBytes(byte[] encrypted, String password) throws Exception {
+        byte[] zipData = decrypt(encrypted, password);
+        restoreFullZip(zipData);
+        Log.i(TAG, "备份已恢复(SAF): " + encrypted.length + " bytes");
+        return true;
+    }
 
     /** 构建完整ZIP：数据库JSON + 图片文件 + Preferences */
     private byte[] buildFullZip() throws Exception {
