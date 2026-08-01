@@ -5,7 +5,7 @@
 > Java 原生开发 · Room 本地数据库 · Material Design 3 · 离线可用
 
 [![构建状态](https://github.com/Cuiyi-Srama/HabitTracker/actions/workflows/build.yml/badge.svg)](https://github.com/Cuiyi-Srama/HabitTracker/actions)
-[![版本](https://img.shields.io/badge/版本-v1.6.0-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
+[![版本](https://img.shields.io/badge/版本-v2.2.0-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
 [![许可](https://img.shields.io/badge/许可-MIT-green)](LICENSE)
 
 ---
@@ -53,7 +53,8 @@
 | 功能 | 说明 |
 |:-----|:-----|
 | ✅ **每日打卡** | 五种任务类型：一次性、每日、每周、每月、限时 |
-| 📖 **单词学习** | 分级词库 + 复习模式，答对即获积分 |
+| 📖 **单词学习** | 分级词库 + 复习模式 +「😅 我不会」详情弹窗（朗读/音标/自动复习） |
+| 🎰 **抽奖机** | 老虎机滚动动效，固定积分抽奖，概率出奖（含未中奖） |
 | 🏪 **积分商城** | 浏览商品、提交兑换申请、查看心愿单 |
 | 📊 **积分概览** | 今日预计积分（已确认 + 待审批）、加速器加成 |
 | 🎂 **生日礼包** | 生日当天自动获得额外积分奖励 |
@@ -63,11 +64,13 @@
 | 功能 | 说明 |
 |:-----|:-----|
 | 📊 **数据总览** | 近期打卡统计、积分变化趋势 |
-| ✅ **审批中心** | 确认/拒绝任务完成 + 积分申请 + 兑换申请 |
+| ✅ **审批中心** | 批量确认/拒绝：任务完成 + 积分申请 + 兑换申请 |
+| 🎰 **抽奖管理** | 设价格、百分比概率（≤100%）、从商城添加奖品、完整编辑 |
 | 📚 **学习管理** | 词库年级切换、每日学习限额、学习奖励参数 |
-| 🏪 **商城管理** | 添加/编辑商品（支持图片上传自动压缩）、管理兑换 |
-| 📋 **任务管理** | 创建任务、模板库（20+ 预设）、待确认列表 |
-| ⚙️ **系统设置** | 个人信息、经济参数、加速器规则、备份导出 |
+| 🏪 **商城管理** | 添加/编辑商品、🔗 淘宝/京东/拼多多链接自动导入（标题/价格/封面图） |
+| 📋 **任务管理** | 创建任务、模板库（20+ 预设多选批量添加）、洗衣类型 |
+| ⚙️ **系统设置** | 个人信息、经济参数、假期与折扣、加速器、备份（SAF自定义位置） |
+| 📡 **设备同步** | Hub中枢 / 局域网P2P / ☁️ WebDAV远程同步 / QR配对 |
 
 ### 🚀 加速器系统
 
@@ -100,7 +103,7 @@
 │  CryptoHelper     QRCodeHelper            │
 ├──────────────────────────────────────────┤
 │                 数据持久层                 │
-│  Room Database (v6)                       │
+│  Room Database (v13)                       │
 │  ├─ tasks          ├─ coin_earnings       │
 │  ├─ shop_items     ├─ economy_config      │
 │  ├─ word_records   ├─ checkin_records     │
