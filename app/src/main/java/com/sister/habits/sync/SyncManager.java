@@ -95,6 +95,9 @@ public class SyncManager {
     public LanSync getLanSync() {
         return lanSync;
     }
+    public RemoteSync getRemoteSync() {
+        return remoteSync;
+    }
 
     private boolean getHubModePref() {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
