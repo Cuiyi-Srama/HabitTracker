@@ -3546,7 +3546,11 @@ private void showProfileSettings() {
                         });
                         break;
                     }
-                    case 5: { // 清除发现缓存
+                    case 5: { // 远程同步 WebDAV
+                        showRemoteSyncDialog();
+                        break;
+                    }
+                    case 6: { // 清除发现缓存
                         syncManager.getHubSync().clearDiscoveredHubs();
                         deviceListContainer.removeAllViews();
                         deviceListContainer.addView(tvEmpty);
