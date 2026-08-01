@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#CC000000">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="28dp"
+        android:background="@drawable/card_background">
+        <TextView
+            android:id="@+id/tv_lottery_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎰 抽奖机"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="16dp" />
+        <!-- 滚动图标框 -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/lottery_frame_bg">
+            <TextView
+                android:id="@+id/tv_lottery_roll"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textSize="64sp"
+                android:text="🎁" />
+        </FrameLayout>
+        <!-- 状态文字 -->
+        <TextView
+            android:id="@+id/tv_lottery_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎲 抽奖中..."
+            android:textSize="16sp"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+</LinearLayout>
