@@ -350,6 +350,7 @@ public class ShopFragment extends Fragment {
                         .apply(new RequestOptions()
                                 .placeholder(R.drawable.ic_launcher)
                                 .error(R.drawable.ic_launcher)
+                                .override(240, 240)
                                 .transform(new RoundedCorners(12)))
                         .into(holder.ivIcon);
             } else {
