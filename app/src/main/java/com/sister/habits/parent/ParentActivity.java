@@ -73,8 +73,13 @@ public class ParentActivity extends AppCompatActivity {
     private ProfileManager profile;
 
     private TextView tvStats;
-    private RecyclerView rvPendingApprovals, rvPendingTasks;
-    private View btnAddTask, btnAddShopItem, btnSettings, btnSync, btnRefresh;
+    private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings;
+    private View btnAddTask, btnAddShopItem, btnSettings, btnSync;
+    private View btnLaundryReview, btnGateManage, btnApprovalCenter;
+    private View btnApproveSelected, btnRejectSelected;
+    private final java.util.Set<Long> selectedApprovalIds = new java.util.HashSet<>();
+    private final java.util.Set<Long> selectedTaskIds = new java.util.HashSet<>();
+    private final java.util.Set<Long> selectedEarningIds = new java.util.HashSet<>();
 
     // 相册选图 — 当前选中的商品图片路径
     private String selectedShopImagePath;
@@ -92,6 +97,18 @@ public class ParentActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK) {
                         if (deviceLockSuccessCallback != null) {
                             deviceLockSuccessCallback.run();
+    // 备份文件选择器（SAF，无需存储权限）
+    private final androidx.activity.result.ActivityResultLauncher<android.content.Intent> openBackupLauncher =
+            registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                        android.net.Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            showRestorePasswordDialog(uri);
+                        }
+                    }
+                });
                             deviceLockSuccessCallback = null;
                         }
                     } else {
@@ -446,6 +463,7 @@ public class ParentActivity extends AppCompatActivity {
         tvStats = findViewById(R.id.tv_parent_stats);
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
         rvPendingTasks = findViewById(R.id.rv_pending_tasks);
+        rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
         btnAddTask = findViewById(R.id.btn_add_task);
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
         btnSettings = findViewById(R.id.btn_settings);
@@ -457,7 +475,26 @@ public class ParentActivity extends AppCompatActivity {
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
         btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); });
-        btnRefresh.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); });
+        btnLaundryReview = findViewById(R.id.btn_laundry_review);
+        btnGateManage = findViewById(R.id.btn_gate_manage);
+        btnApprovalCenter = findViewById(R.id.btn_approval_center);
+        btnApproveSelected = findViewById(R.id.btn_approve_selected);
+        btnRejectSelected = findViewById(R.id.btn_reject_selected);
+        if (btnLaundryReview != null) {
+            btnLaundryReview.setOnClickListener(v -> { soundHelper.playClickSound(); loadPendingTasks(); showLaundryInApproval(); });
+        }
+        if (btnGateManage != null) {
+            btnGateManage.setOnClickListener(v -> { soundHelper.playClickSound(); showGateManageDialog(); });
+        }
+        if (btnApprovalCenter != null) {
+            btnApprovalCenter.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); Toast.makeText(this, "✅ 审批中心已刷新", Toast.LENGTH_SHORT).show(); });
+        }
+        if (btnApproveSelected != null) {
+            btnApproveSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(true); });
+        }
+        if (btnRejectSelected != null) {
+            btnRejectSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(false); });
+        }
 
         // ✅ 通知渠道
         NotificationHelper.createChannel(this);
@@ -605,6 +642,7 @@ public class ParentActivity extends AppCompatActivity {
     private void refreshAll() {
         refreshStats();
         loadPendingApprovals();
+        loadPendingEarnings();
         loadPendingTasks();
     }
 
@@ -645,7 +683,8 @@ public class ParentActivity extends AppCompatActivity {
 
     private void loadPendingApprovals() {
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
-        rvPendingApprovals.setAdapter(new ApprovalAdapter(pending, this::processApproval));
+        selectedApprovalIds.clear();
+        rvPendingApprovals.setAdapter(new ApprovalAdapter(pending, selectedApprovalIds, this::processApproval));
     }
 
     private void processApproval(Redemption redemption, boolean approved) {
@@ -674,11 +713,74 @@ public class ParentActivity extends AppCompatActivity {
     // ===== 任务审批 =====
     private void loadPendingTasks() {
         List<Task> pending = db.taskDao().getPending();
-        if (pending.isEmpty()) {
-            rvPendingTasks.setAdapter(null);
+        selectedTaskIds.clear();
+        rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, selectedTaskIds, this::processTaskApproval));
+    }
+    /** 🧺 洗衣任务并入待确认任务列表 */
+    private void showLaundryInApproval() {
+        List<LaundryTask> laundryPending = db.laundryDao().getPending();
+        if (laundryPending.isEmpty()) {
+            Toast.makeText(this, "无待审核洗衣任务", Toast.LENGTH_SHORT).show();
             return;
         }
-        rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, this::processTaskApproval));
+        String[] labels = new String[laundryPending.size()];
+        for (int i = 0; i < laundryPending.size(); i++) {
+            LaundryTask t = laundryPending.get(i);
+            labels[i] = "🧺 " + t.clothingType + " ×" + t.quantity + " = " + t.totalPoints + "分 (" + t.date + ")";
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("🧺 待确认洗衣任务 (" + laundryPending.size() + "项)")
+            .setItems(labels, (dialog, which) -> showLaundryApproveDialog(laundryPending.get(which)))
+            .setNegativeButton("← 返回", null)
+            .show();
+    }
+    /** 💰 加载待审批积分 */
+    private void loadPendingEarnings() {
+        List<com.sister.habits.data.models.CoinEarning> pendings = db.coinEarningDao().getPending();
+        selectedEarningIds.clear();
+        rvPendingEarnings.setAdapter(new EarningApprovalAdapter(pendings, selectedEarningIds, this::processEarningApproval));
+    }
+    private void processEarningApproval(com.sister.habits.data.models.CoinEarning e, boolean approved) {
+        if (approved) {
+            e.status = "confirmed";
+            e.confirmedAt = System.currentTimeMillis();
+            db.coinEarningDao().update(e);
+            Integer balance = db.coinTransactionDao().getBalance("sister");
+            int newBal = (balance != null ? balance : 0) + e.amount;
+            com.sister.habits.data.models.CoinTransaction ct = new com.sister.habits.data.models.CoinTransaction(
+                    "sister", e.amount, newBal, e.sourceType, e.description,
+                    com.sister.habits.sync.SyncManager.getInstance(ParentActivity.this).getDeviceId());
+            db.coinTransactionDao().insert(ct);
+        } else {
+            e.status = "rejected";
+            e.rejectedAt = System.currentTimeMillis();
+            db.coinEarningDao().update(e);
+        }
+        syncManager.onDataChanged();
+        refreshAll();
+        Toast.makeText(this, (approved ? "✅ 已确认 +" : "❌ 已拒绝 ") + e.amount + "分", Toast.LENGTH_SHORT).show();
+    }
+    /** 批量批准/拒绝 */
+    private void approveSelected(boolean approved) {
+        int total = selectedApprovalIds.size() + selectedTaskIds.size() + selectedEarningIds.size();
+        if (total == 0) {
+            Toast.makeText(this, "请先在列表中勾选要审批的项目", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // 兑换审批
+        for (Redemption r : db.redemptionDao().getByStatus("pending")) {
+            if (selectedApprovalIds.contains(r.id)) processApproval(r, approved);
+        }
+        // 任务审批
+        for (Task t : db.taskDao().getPending()) {
+            if (selectedTaskIds.contains(t.id)) processTaskApproval(t, approved);
+        }
+        // 积分审批
+        for (com.sister.habits.data.models.CoinEarning e : db.coinEarningDao().getPending()) {
+            if (selectedEarningIds.contains(e.id)) processEarningApproval(e, approved);
+        }
+        refreshAll();
+        Toast.makeText(this, (approved ? "✅ 已批量批准 " : "❌ 已批量拒绝 ") + total + " 项", Toast.LENGTH_SHORT).show();
     }
 
     private void processTaskApproval(Task task, boolean approved) {
@@ -715,41 +817,90 @@ public class ParentActivity extends AppCompatActivity {
 
     private static class TaskApprovalAdapter extends RecyclerView.Adapter<TaskApprovalAdapter.ViewHolder> {
         private final List<Task> tasks;
+        private final java.util.Set<Long> selected;
         private final OnTaskApprovalListener listener;
-
         interface OnTaskApprovalListener { void onApprove(Task task, boolean approved); }
-
-        TaskApprovalAdapter(List<Task> tasks, OnTaskApprovalListener listener) {
+        TaskApprovalAdapter(List<Task> tasks, java.util.Set<Long> selected, OnTaskApprovalListener listener) {
             this.tasks = tasks;
+            this.selected = selected;
             this.listener = listener;
         }
-
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = android.view.LayoutInflater.from(parent.getContext())
-                    .inflate(android.R.layout.simple_list_item_1, parent, false);
+                    .inflate(android.R.layout.simple_list_item_multiple_choice, parent, false);
             return new ViewHolder(v);
         }
-
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             Task task = tasks.get(position);
             holder.textView.setText("📋 " + task.title + "  🪙+" + task.rewardCoins);
+            holder.itemView.setActivated(selected.contains(task.id));
             holder.itemView.setOnClickListener(v -> {
+                if (selected.contains(task.id)) selected.remove(task.id);
+                else selected.add(task.id);
+                holder.itemView.setActivated(selected.contains(task.id));
+            });
+            holder.itemView.setOnLongClickListener(v -> {
                 String nickname = ProfileManager.getInstance(v.getContext()).getNickname();
                 new AlertDialog.Builder(v.getContext())
                         .setTitle("确认任务完成")
                         .setMessage("任务: " + task.title + "\n描述: " + task.description + "\n奖励: 🪙" + task.rewardCoins + "\n\n确认" + nickname + "已完成此任务吗？")
                         .setPositiveButton("✅ 确认发金币", (d, w) -> listener.onApprove(task, true))
-                        .setNegativeButton("❌ 未完成", (d, w) -> listener.onApprove(task, false))
+                        .setNegativeButton("❌ 拒绝", (d, w) -> listener.onApprove(task, false))
                         .setNeutralButton("稍后", null)
                         .show();
+                return true;
             });
         }
-
         @Override
         public int getItemCount() { return tasks.size(); }
-
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            android.widget.TextView textView;
+            ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
+        }
+    }
+    /** 💰 待审批积分适配器（点击=勾选，长按=单项审批） */
+    private static class EarningApprovalAdapter extends RecyclerView.Adapter<EarningApprovalAdapter.ViewHolder> {
+        private final List<com.sister.habits.data.models.CoinEarning> items;
+        private final java.util.Set<Long> selected;
+        private final OnEarningApprovalListener listener;
+        interface OnEarningApprovalListener { void onApprove(com.sister.habits.data.models.CoinEarning item, boolean approved); }
+        EarningApprovalAdapter(List<com.sister.habits.data.models.CoinEarning> items, java.util.Set<Long> selected, OnEarningApprovalListener listener) {
+            this.items = items;
+            this.selected = selected;
+            this.listener = listener;
+        }
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = android.view.LayoutInflater.from(parent.getContext())
+                    .inflate(android.R.layout.simple_list_item_multiple_choice, parent, false);
+            return new ViewHolder(v);
+        }
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            com.sister.habits.data.models.CoinEarning item = items.get(position);
+            String desc = item.description != null ? item.description : "未知";
+            holder.textView.setText("💰 +" + item.amount + "分 " + desc);
+            holder.itemView.setActivated(selected.contains(item.id));
+            holder.itemView.setOnClickListener(v -> {
+                if (selected.contains(item.id)) selected.remove(item.id);
+                else selected.add(item.id);
+                holder.itemView.setActivated(selected.contains(item.id));
+            });
+            holder.itemView.setOnLongClickListener(v -> {
+                new AlertDialog.Builder(v.getContext())
+                        .setTitle("审批: " + desc)
+                        .setMessage("金额: +" + item.amount + "分\n来源: " + item.sourceType)
+                        .setPositiveButton("✅ 确认", (d, w) -> listener.onApprove(item, true))
+                        .setNegativeButton("❌ 拒绝", (d, w) -> listener.onApprove(item, false))
+                        .setNeutralButton("稍后", null)
+                        .show();
+                return true;
+            });
+        }
+        @Override
+        public int getItemCount() { return items.size(); }
         static class ViewHolder extends RecyclerView.ViewHolder {
             android.widget.TextView textView;
             ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
@@ -1673,6 +1824,7 @@ public class ParentActivity extends AppCompatActivity {
                 "👤 孩子信息（昵称/头像/标题）",
                 "🏠 启动模式 & Hub中枢",
                 "💰 完整经济参数",
+                "📅 假期与折扣（假期范围/周末开关）",
                 "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
                 "📋 任务模板库（20+预设任务）",
                 "💰 积分审批（待审积分确认）",
@@ -1689,7 +1841,8 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showProfileSettings(); break;
                         case 1: showHubSettings(); break;
                         case 2: showEconomySettings(); break;
-                        case 3: showAcceleratorSettings(); break;
+                        case 3: showGateManageDialog(); break;
+                        case 4: showAcceleratorSettings(); break;
                         case 4: showTaskTemplates(); break;
                         case 5: showEarningApprovals(); break;
                         case 6: showBindKeyDialog(); break;
@@ -2626,30 +2779,34 @@ private void showProfileSettings() {
                 .show();
     }
 
-    // 审批适配器
+    // 审批适配器（点击=勾选，长按=单项审批）
     private static class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHolder> {
         private final List<Redemption> items;
+        private final java.util.Set<Long> selected;
         private final OnApprovalListener listener;
-
         interface OnApprovalListener { void onApprove(Redemption item, boolean approved); }
-
-        ApprovalAdapter(List<Redemption> items, OnApprovalListener listener) {
+        ApprovalAdapter(List<Redemption> items, java.util.Set<Long> selected, OnApprovalListener listener) {
             this.items = items;
+            this.selected = selected;
             this.listener = listener;
         }
-
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = android.view.LayoutInflater.from(parent.getContext())
-                    .inflate(android.R.layout.simple_list_item_1, parent, false);
+                    .inflate(android.R.layout.simple_list_item_multiple_choice, parent, false);
             return new ViewHolder(v);
         }
-
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             Redemption item = items.get(position);
             holder.textView.setText("🪙 " + item.itemName + "  (" + item.coinsCost + "金币)");
+            holder.itemView.setActivated(selected.contains(item.id));
             holder.itemView.setOnClickListener(v -> {
+                if (selected.contains(item.id)) selected.remove(item.id);
+                else selected.add(item.id);
+                holder.itemView.setActivated(selected.contains(item.id));
+            });
+            holder.itemView.setOnLongClickListener(v -> {
                 new AlertDialog.Builder(v.getContext())
                         .setTitle("审批兑换申请")
                         .setMessage("兑换: " + item.itemName + "\n消耗: " + item.coinsCost + " 金币\n申请时间: " +
@@ -2658,17 +2815,16 @@ private void showProfileSettings() {
                         .setNegativeButton("❌ 拒绝", (d, w) -> listener.onApprove(item, false))
                         .setNeutralButton("稍后", null)
                         .show();
+                return true;
             });
         }
-
         @Override
         public int getItemCount() { return items.size(); }
-
         static class ViewHolder extends RecyclerView.ViewHolder {
             android.widget.TextView textView;
             ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
         }
-    }
+    }    }
 
     // ==================== 数据导出备份 ====================
     private void showBackupRestoreDialog() {
@@ -2716,11 +2872,70 @@ private void showProfileSettings() {
     }
 
     private void doImportBackup() {
-        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
-        if (backups == null || backups.length == 0) {
-            Toast.makeText(this, "❌ 未在 Download 目录找到 .habitbak 备份文件", Toast.LENGTH_LONG).show();
+        // Android 11+ 使用 SAF 文件选择器（无需存储权限）
+        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        try {
+            openBackupLauncher.launch(intent);
+        } catch (Exception e) {
+            // 兼容无 launcher 注册的情况
+            java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
+            if (backups == null || backups.length == 0) {
+                Toast.makeText(this, "❌ 未找到备份文件，请检查 Download 目录", Toast.LENGTH_LONG).show();
+                return;
+            }
+            showBackupListDialog(backups);
             return;
         }
+        showBackupListDialog(backups);
+    }
+    private void showRestorePasswordDialog(android.net.Uri uri) {
+        String name = "";
+        try {
+            android.database.Cursor c = getContentResolver().query(uri, null, null, null, null);
+            if (c != null && c.moveToFirst()) {
+                int idxName = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (idxName >= 0) name = c.getString(idxName);
+                c.close();
+            }
+        } catch (Exception ignored) {}
+        android.widget.EditText etPwd = new android.widget.EditText(this);
+        etPwd.setHint("输入备份密码");
+        etPwd.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        new AlertDialog.Builder(this)
+                .setTitle("恢复: " + (name.isEmpty() ? uri.getLastPathSegment() : name))
+                .setMessage("⚠️ 恢复将覆盖当前所有数据！确定继续？")
+                .setView(etPwd)
+                .setPositiveButton("恢复", (d2, w2) -> {
+                    String pwd = etPwd.getText().toString();
+                    new Thread(() -> {
+                        try {
+                            java.io.InputStream is = getContentResolver().openInputStream(uri);
+                            byte[] encrypted = readAllBytes(is);
+                            com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
+                            helper.importBackupBytes(encrypted, pwd);
+                            runOnUiThread(() -> {
+                                Toast.makeText(this, "✅ 恢复成功！请重启App", Toast.LENGTH_LONG).show();
+                                refreshAll();
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(() -> Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        }
+                    }).start();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+    private byte[] readAllBytes(java.io.InputStream is) throws Exception {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = is.read(buf)) > 0) baos.write(buf, 0, n);
+        is.close();
+        return baos.toByteArray();
+    }
+        private void showBackupListDialog(java.io.File[] backups) {
         String[] names = new String[backups.length];
         for (int i = 0; i < backups.length; i++) {
             names[i] = backups[i].getName();
