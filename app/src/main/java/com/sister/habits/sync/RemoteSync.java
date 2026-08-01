@@ -11,7 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Base64;
+import android.util.Base64;
 
 /**
  * 远程云端同步模块（WebDAV 实现）
@@ -139,7 +139,7 @@ public class RemoteSync {
         conn.setConnectTimeout(CONNECT_TIMEOUT);
         conn.setReadTimeout(READ_TIMEOUT);
         String auth = user + ":" + pass;
-        String encoded = Base64.getEncoder().encodeToString(auth.getBytes("UTF-8"));
+        String encoded = Base64.encodeToString(auth.getBytes("UTF-8"), Base64.NO_WRAP);
         conn.setRequestProperty("Authorization", "Basic " + encoded);
         conn.setRequestProperty("User-Agent", "HabitTracker/2.1 WebDAV");
         return conn;
