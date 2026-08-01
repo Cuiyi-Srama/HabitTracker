@@ -1773,10 +1773,71 @@ public class ParentActivity extends AppCompatActivity {
     }
     
     private void showLotteryPrizeEditDialog(LotteryPrize prize) {
+        final android.widget.EditText etName = new android.widget.EditText(this);
+        etName.setHint("奖品名称");
+        etName.setText(prize.name);
+        final android.widget.EditText etIcon = new android.widget.EditText(this);
+        etIcon.setHint("图标emoji");
+        etIcon.setText(prize.icon);
+        final android.widget.EditText etProb = new android.widget.EditText(this);
+        etProb.setHint("中奖概率 % 0-100");
+        etProb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etProb.setText(String.valueOf(prize.probability));
+        final android.widget.EditText etPoints = new android.widget.EditText(this);
+        etPoints.setHint("积分奖品价值 (积分+多少)");
+        etPoints.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etPoints.setText(String.valueOf(prize.pointsValue));
+        final android.widget.EditText etStock = new android.widget.EditText(this);
+        etStock.setHint("库存 (-1=无限)");
+        etStock.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        etStock.setText(String.valueOf(prize.stock));
+        final android.widget.Spinner spType = new android.widget.Spinner(this);
+        android.widget.ArrayAdapter<String> typeAdapter = new android.widget.ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, new String[]{"🎯 积分奖品", "🎁 礼物奖品"});
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spType.setAdapter(typeAdapter);
+        spType.setSelection("points".equals(prize.prizeType) ? 0 : 1);
+        
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 0);
+        layout.addView(etName);
+        layout.addView(etIcon);
+        layout.addView(spType);
+        layout.addView(etPoints);
+        layout.addView(etProb);
+        layout.addView(etStock);
+        
         new AlertDialog.Builder(this)
-            .setTitle(prize.icon + " " + prize.name)
-            .setMessage("概率: " + prize.probability + "% | 消耗: " + prize.cost + "分\n库存: " + (prize.stock == -1 ? "无限" : String.valueOf(prize.stock)))
-            .setPositiveButton(prize.enabled ? "🔴 禁用" : "🟢 启用", (d, w) -> {
+            .setTitle("✏️ 编辑奖品: " + prize.icon + " " + prize.name)
+            .setView(layout)
+            .setPositiveButton("💾 保存", (d, w) -> {
+                String name = etName.getText().toString().trim();
+                if (name.isEmpty()) { Toast.makeText(this, "名称不能为空", Toast.LENGTH_SHORT).show(); return; }
+                int prob = etProb.getText().toString().trim().isEmpty() ? prize.probability : Integer.parseInt(etProb.getText().toString().trim());
+                if (prob < 0 || prob > 100) { Toast.makeText(this, "概率需在0-100之间", Toast.LENGTH_SHORT).show(); return; }
+                // 概率总和校验（排除自身）
+                int currentTotal = 0;
+                for (LotteryPrize p : db.lotteryDao().getEnabledPrizes()) {
+                    if (p.id != prize.id) currentTotal += p.probability;
+                }
+                if (currentTotal + prob > 100) {
+                    Toast.makeText(this, "❌ 概率总和将超过100% (其他奖品已占" + currentTotal + "%)", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                prize.name = name;
+                prize.icon = etIcon.getText().toString().trim().isEmpty() ? "🎁" : etIcon.getText().toString().trim();
+                prize.prizeType = spType.getSelectedItemPosition() == 0 ? "points" : "gift";
+                String ptsStr = etPoints.getText().toString().trim();
+                if (!ptsStr.isEmpty()) prize.pointsValue = Integer.parseInt(ptsStr);
+                prize.probability = prob;
+                String stockStr = etStock.getText().toString().trim();
+                if (!stockStr.isEmpty()) prize.stock = Integer.parseInt(stockStr);
+                db.lotteryDao().updatePrize(prize);
+                Toast.makeText(this, "✅ 已保存", Toast.LENGTH_SHORT).show();
+                showLotteryManageDialog();
+            })
+            .setNeutralButton(prize.enabled ? "🔴 禁用" : "🟢 启用", (d, w) -> {
                 prize.enabled = !prize.enabled;
                 db.lotteryDao().updatePrize(prize);
                 Toast.makeText(this, prize.enabled ? "已启用" : "已禁用", Toast.LENGTH_SHORT).show();
@@ -1787,7 +1848,67 @@ public class ParentActivity extends AppCompatActivity {
                 Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
                 showLotteryManageDialog();
             })
-            .setNeutralButton("← 返回", (d2, w2) -> showLotteryManageDialog())
+            .show();
+    }
+    /** 🏪 从商城商品添加为奖品 */
+    private void showAddPrizeFromShopDialog() {
+        List<ShopItem> items = db.shopItemDao().getAll();
+        if (items.isEmpty()) {
+            Toast.makeText(this, "商城暂无商品，请先上架商品", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[items.size()];
+        for (int i = 0; i < items.size(); i++) {
+            ShopItem s = items.get(i);
+            labels[i] = (s.iconUrl != null && !s.iconUrl.isEmpty() ? "🖼️" : "🏪") + " " + s.name + " (" + s.priceCoins + "分)";
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("🏪 选择商城商品作为奖品")
+            .setItems(labels, (d, which) -> {
+                ShopItem shop = items.get(which);
+                final android.widget.EditText etProb = new android.widget.EditText(this);
+                etProb.setHint("中奖概率 % 0-100");
+                etProb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+                final android.widget.EditText etStock = new android.widget.EditText(this);
+                etStock.setHint("奖品库存 (默认同步商品库存)");
+                etStock.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+                LinearLayout layout = new LinearLayout(this);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(48, 24, 48, 0);
+                layout.addView(etProb);
+                layout.addView(etStock);
+                new AlertDialog.Builder(this)
+                    .setTitle("奖品: " + shop.name)
+                    .setMessage("抽中后自动向家长发送礼物审批")
+                    .setView(layout)
+                    .setPositiveButton("添加", (d2, w2) -> {
+                        String probStr = etProb.getText().toString().trim();
+                        if (probStr.isEmpty()) { Toast.makeText(this, "请输入概率", Toast.LENGTH_SHORT).show(); return; }
+                        int prob = Integer.parseInt(probStr);
+                        if (prob < 0 || prob > 100) { Toast.makeText(this, "概率需在0-100之间", Toast.LENGTH_SHORT).show(); return; }
+                        int currentTotal = 0;
+                        for (LotteryPrize p : db.lotteryDao().getEnabledPrizes()) currentTotal += p.probability;
+                        if (currentTotal + prob > 100) {
+                            Toast.makeText(this, "❌ 概率总和将超过100% (当前" + currentTotal + "%)", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        LotteryPrize prize = new LotteryPrize();
+                        prize.name = shop.name;
+                        prize.icon = shop.iconUrl != null && !shop.iconUrl.isEmpty() ? "🎁" : "🎁";
+                        prize.prizeType = "gift";
+                        prize.pointsValue = shop.priceCoins;
+                        prize.probability = prob;
+                        String stockStr = etStock.getText().toString().trim();
+                        prize.stock = stockStr.isEmpty() ? (shop.stock > 0 ? shop.stock : -1) : Integer.parseInt(stockStr);
+                        prize.shopItemId = shop.id;
+                        db.lotteryDao().insertPrize(prize);
+                        Toast.makeText(this, "✅ 奖品已添加 (礼物类型，库存联动)", Toast.LENGTH_SHORT).show();
+                        showLotteryManageDialog();
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+            })
+            .setNegativeButton("取消", null)
             .show();
     }
     
