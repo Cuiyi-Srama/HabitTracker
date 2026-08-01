@@ -468,7 +468,6 @@ public class ParentActivity extends AppCompatActivity {
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
         btnSettings = findViewById(R.id.btn_settings);
         btnSync = findViewById(R.id.btn_sync);
-        btnRefresh = findViewById(R.id.btn_refresh);
 
         // ✅ 设置监听器
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
