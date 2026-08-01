@@ -83,6 +83,7 @@ public class ParentActivity extends AppCompatActivity {
 
     // 相册选图 — 当前选中的商品图片路径
     private String selectedShopImagePath;
+    private String pendingBackupPassword;  // SAF导出等待中的备份密码
     // 当前打开的商品对话框View（用于图片预览更新）
     private View currentShopDialogView;
 
@@ -105,6 +106,34 @@ public class ParentActivity extends AppCompatActivity {
                     }
                 });
 
+    // 备份导出位置选择器（SAF创建文档）
+    private final androidx.activity.result.ActivityResultLauncher<android.content.Intent> createBackupLauncher =
+            registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                        android.net.Uri uri = result.getData().getData();
+                        if (uri != null && pendingBackupPassword != null) {
+                            final String pwd = pendingBackupPassword;
+                            pendingBackupPassword = null;
+                            new Thread(() -> {
+                                try {
+                                    com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
+                                    byte[] data = helper.createEncryptedBackup(pwd);
+                                    java.io.OutputStream os = getContentResolver().openOutputStream(uri, "w");
+                                    if (os != null) {
+                                        os.write(data);
+                                        os.flush();
+                                        os.close();
+                                        runOnUiThread(() -> Toast.makeText(this, "✅ 备份成功！已保存到你选择的位置", Toast.LENGTH_LONG).show());
+                                    }
+                                } catch (Exception e) {
+                                    runOnUiThread(() -> Toast.makeText(this, "❌ 备份失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                                }
+                            }).start();
+                        }
+                    }
+                });
     // 备份文件选择器（SAF，无需存储权限）
     private final androidx.activity.result.ActivityResultLauncher<android.content.Intent> openBackupLauncher =
             registerForActivityResult(
@@ -3011,12 +3040,16 @@ private void showProfileSettings() {
     // ==================== 数据导出备份 ====================
     private void showBackupRestoreDialog() {
         String[] items = {
-            "📤 导出加密备份（AES-256-GCM）",
-            "📥 从备份文件恢复",
+            "📤 导出加密备份（可选择保存位置）",
+            "📥 从备份文件恢复（选择文件）",
             "📂 查看已有备份文件"
         };
+        String backupInfo = "📁 默认位置: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir() +
+                "\n📄 命名规则: HabitTracker_backup_设备码_日期时间" + com.sister.habits.utils.BackupExportHelper.getBackupExt() +
+                "\n💡 导出/导入时均可自定义选择位置";
         new AlertDialog.Builder(this)
                 .setTitle("🔐 数据备份与恢复")
+                .setMessage(backupInfo)
                 .setItems(items, (d, which) -> {
                     switch (which) {
                         case 0: doExportBackup(); break;
@@ -3034,20 +3067,30 @@ private void showProfileSettings() {
         etPwd.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         new AlertDialog.Builder(this)
                 .setTitle("📤 导出加密备份")
-                .setMessage("将导出所有数据为 .habitbak 加密备份文件\n保存到 /Download 目录")
+                .setMessage("将导出全部数据（加密）\n\n默认文件名: " + new com.sister.habits.utils.BackupExportHelper(this).generateDefaultFileName() +
+                        "\n导出时可自由选择保存位置和文件名")
                 .setView(etPwd)
-                .setPositiveButton("导出", (d, w) -> {
+                .setPositiveButton("下一步：选择位置", (d, w) -> {
                     String pwd = etPwd.getText().toString();
                     if (pwd.length() < 4) { Toast.makeText(this, "密码至少4位", Toast.LENGTH_SHORT).show(); return; }
-                    new Thread(() -> {
+                    pendingBackupPassword = pwd;
+                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                    intent.setType("application/octet-stream");
+                    intent.putExtra(android.content.Intent.EXTRA_TITLE,
+                            new com.sister.habits.utils.BackupExportHelper(this).generateDefaultFileName());
+                    try {
+                        createBackupLauncher.launch(intent);
+                    } catch (Exception e) {
+                        // 无launcher时退回默认目录
                         try {
                             com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
                             java.io.File f = helper.exportBackup(pwd);
-                            runOnUiThread(() -> Toast.makeText(this, "✅ 备份成功: " + f.getName(), Toast.LENGTH_LONG).show());
-                        } catch (Exception e) {
-                            runOnUiThread(() -> Toast.makeText(this, "❌ 备份失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                            Toast.makeText(this, "✅ 备份成功: " + f.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                        } catch (Exception e2) {
+                            Toast.makeText(this, "❌ 备份失败: " + e2.getMessage(), Toast.LENGTH_LONG).show();
                         }
-                    }).start();
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
