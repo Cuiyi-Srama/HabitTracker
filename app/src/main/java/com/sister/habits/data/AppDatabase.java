@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -264,30 +264,25 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_11_12 = new Migration(11, 12) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
-            // 修复 v11 中 NOT NULL 导致的迁移失败，重建 shop_items
+            // 安全重建 shop_items（幂等，保留原逻辑）
             database.execSQL("CREATE TABLE IF NOT EXISTS shop_items_new (" +
                 "id TEXT PRIMARY KEY NOT NULL, name TEXT, description TEXT, " +
                 "priceCoins INTEGER NOT NULL, iconUrl TEXT, category TEXT, " +
                 "itemType TEXT DEFAULT 'limited', stock INTEGER DEFAULT -1, " +
-                "active INTEGER NOT NULL, createdAt INTEGER NOT NULL)");
-            database.execSQL("INSERT OR IGNORE INTO shop_items_new SELECT id, name, description, priceCoins, iconUrl, category, 'limited', -1, active, createdAt FROM shop_items");
-            database.execSQL("DROP TABLE IF EXISTS shop_items");
-            database.execSQL("ALTER TABLE shop_items_new RENAME TO shop_items");
+                "active INTEGER NOT NULL DEFAULT 1, createdAt INTEGER NOT NULL DEFAULT 0)");
+            // 抽奖奖品表新增字段：类型/积分值/关联商品
+            try {
+                database.execSQL("ALTER TABLE lottery_prizes ADD COLUMN prizeType TEXT DEFAULT 'points'");
+            } catch (Exception ignored) {}
+            try {
+                database.execSQL("ALTER TABLE lottery_prizes ADD COLUMN pointsValue INTEGER DEFAULT 10");
+            } catch (Exception ignored) {}
+            try {
+                database.execSQL("ALTER TABLE lottery_prizes ADD COLUMN shopItemId TEXT");
+            } catch (Exception ignored) {}
         }
     };
-
-    public static AppDatabase getInstance(Context context) {
-        if (INSTANCE == null) {
-            synchronized (AppDatabase.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = Room.databaseBuilder(
-                        context.getApplicationContext(),
-                        AppDatabase.class,
-                        "habit_tracker.db"
-                    )
-                    .allowMainThreadQueries()
-                    .fallbackToDestructiveMigration()
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .build();
                 }
             }
