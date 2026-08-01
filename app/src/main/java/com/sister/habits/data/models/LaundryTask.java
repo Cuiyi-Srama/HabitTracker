@@ -45,6 +45,8 @@ public class LaundryTask {
     public static final String TYPE_SHEET = "床单";
     public static final String TYPE_PILLOWCASE = "枕套";
     public static final String TYPE_OTHER = "其他";
+    public static final String TYPE_PENCIL_CASE = "文具袋";
+    public static final String TYPE_SCHOOL_BAG = "书包";
 
     public static final String[][] CLOTHING_TYPES = {
         {TYPE_TSHIRT, "6分"},
@@ -59,6 +61,8 @@ public class LaundryTask {
         {TYPE_SHEET, "10分"},
         {TYPE_PILLOWCASE, "5分"},
         {TYPE_OTHER, "4分"},
+        {TYPE_PENCIL_CASE, "4分"},
+        {TYPE_SCHOOL_BAG, "6分"},
     };
 
     // ===== 状态常量 =====
@@ -81,6 +85,8 @@ public class LaundryTask {
             case TYPE_SHEET: return 10;
             case TYPE_PILLOWCASE: return 5;
             case TYPE_OTHER: return 4;
+            case TYPE_PENCIL_CASE: return 4;
+            case TYPE_SCHOOL_BAG: return 6;
             default: return 4;
         }
     }
