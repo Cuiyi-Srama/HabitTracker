@@ -3341,4 +3341,4 @@ private void showProfileSettings() {
             tv.setText(sb.toString().trim());
         }
     }
-
+}
