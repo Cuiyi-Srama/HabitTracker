@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -282,6 +282,30 @@ public abstract class AppDatabase extends RoomDatabase {
             } catch (Exception ignored) {}
         }
     };
+    static final Migration MIGRATION_12_13 = new Migration(12, 13) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // 重建 lottery_prizes 表，修正 schema（v12 的 ALTER 带 DEFAULT 导致校验失败）
+            database.execSQL("CREATE TABLE IF NOT EXISTS lottery_prizes_new (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "name TEXT, icon TEXT, " +
+                "cost INTEGER NOT NULL, probability INTEGER NOT NULL, " +
+                "stock INTEGER NOT NULL, enabled INTEGER NOT NULL, " +
+                "createdAt INTEGER NOT NULL, " +
+                "prizeType TEXT, " +
+                "pointsValue INTEGER NOT NULL DEFAULT 10, " +
+                "shopItemId TEXT)");
+            // 复制数据（旧列可能不存在，用 COALESCE 兜底）
+            try {
+                database.execSQL("INSERT INTO lottery_prizes_new (id, name, icon, cost, probability, stock, enabled, createdAt, prizeType, pointsValue, shopItemId) " +
+                    "SELECT id, name, icon, cost, probability, stock, enabled, createdAt, " +
+                    "COALESCE(prizeType, 'points'), COALESCE(pointsValue, 10), shopItemId FROM lottery_prizes");
+            } catch (Exception ignored) {}
+            database.execSQL("DROP TABLE lottery_prizes");
+            database.execSQL("ALTER TABLE lottery_prizes_new RENAME TO lottery_prizes");
+        }
+    };
+
     /**
      * 获取单例
      */
@@ -293,7 +317,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             "habit_tracker.db")
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .build();
                 }
             }
