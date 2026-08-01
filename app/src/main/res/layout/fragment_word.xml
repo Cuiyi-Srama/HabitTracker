@@ -147,6 +147,18 @@
             android:textAllCaps="false" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btn_dont_know"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:text="😅 我不会（查看详情并加入复习）"
+        android:textSize="15sp"
+        android:textAllCaps="false"
+        android:backgroundTint="#FFF3E0"
+        android:textColor="#E65100"
+        android:visibility="gone" />
+
     <!-- 底部操作栏 -->
     <LinearLayout
         android:layout_width="match_parent"
