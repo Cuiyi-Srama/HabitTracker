@@ -2824,7 +2824,7 @@ private void showProfileSettings() {
             android.widget.TextView textView;
             ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
         }
-    }    }
+    }
 
     // ==================== 数据导出备份 ====================
     private void showBackupRestoreDialog() {
