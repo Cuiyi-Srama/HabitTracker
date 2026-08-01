@@ -356,7 +356,7 @@ public class ChildActivity extends AppCompatActivity {
             .show();
     }
     
-    /** 执行抽奖 */
+        /** 执行抽奖 */
     private void performLottery(List<LotteryPrize> prizes, int cost) {
         // 加权随机：按probability权重抽取
         int totalWeight = 0;
@@ -368,14 +368,14 @@ public class ChildActivity extends AppCompatActivity {
             cumulative += p.probability;
             if (rand < cumulative) { won = p; break; }
         }
-        
+
         // 扣积分
         Integer balance = db.coinTransactionDao().getBalance("sister");
         int newBalance = (balance != null ? balance : 0) - cost;
         com.sister.habits.data.models.CoinTransaction tx = new com.sister.habits.data.models.CoinTransaction(
             "sister", -cost, newBalance, "lottery", "🎰抽奖 → " + won.name, syncManager.getDeviceId());
         db.coinTransactionDao().insert(tx);
-        
+
         // 记录
         LotteryRecord record = new LotteryRecord();
         record.prizeName = won.name;
@@ -383,24 +383,94 @@ public class ChildActivity extends AppCompatActivity {
         record.cost = cost;
         record.deviceId = syncManager.getDeviceId();
         db.lotteryDao().insertRecord(record);
-        
+
         // 库存减1
         if (won.stock > 0) {
             won.stock--;
             if (won.stock == 0) won.enabled = false;
             db.lotteryDao().updatePrize(won);
         }
-        
+
         refreshCoinBalance();
         soundHelper.playCheckInSound();
-        
+
+        // 🎰 老虎机动效揭晓
+        showLotteryMachineAnimation(prizes, won, cost, newBalance);
+    }
+
+    /** 🎰 抽奖机滚动动画 */
+    private void showLotteryMachineAnimation(List<LotteryPrize> prizes, LotteryPrize won, int cost, int newBalance) {
+        android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        try {
+            dialog.setContentView(R.layout.dialog_lottery_machine);
+        } catch (Exception e) {
+            // 布局异常时直接弹结果
+            showLotteryResultDialog(won, cost, newBalance);
+            return;
+        }
+        TextView tvRoll = dialog.findViewById(R.id.tv_lottery_roll);
+        TextView tvStatus = dialog.findViewById(R.id.tv_lottery_status);
+        dialog.setCancelable(false);
+        dialog.show();
+
+        // 滚动序列：延迟逐渐增大（模拟减速），共约 2.5 秒
+        final long[] delays = {60, 60, 65, 65, 70, 70, 75, 80, 85, 90, 95, 105, 115, 125, 140, 155, 175, 200, 230, 260, 300, 350, 400, 450};
+        final int[] step = {0};
+        final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        final java.util.Random rnd = new java.util.Random();
+
+        final Runnable tick = new Runnable() {
+            @Override
+            public void run() {
+                if (step[0] < delays.length) {
+                    // 快速轮换奖品图标（跳跃感）
+                    LotteryPrize p = prizes.get(rnd.nextInt(prizes.size()));
+                    tvRoll.setText(p.icon);
+                    tvRoll.setScaleX(1.3f);
+                    tvRoll.setScaleY(1.3f);
+                    tvRoll.animate().scaleX(1f).scaleY(1f).setDuration(delays[step[0]]).start();
+                    tvStatus.setText("🎲 抽奖中...");
+                    step[0]++;
+                    handler.postDelayed(this, delays[step[0] - 1]);
+                } else {
+                    // 揭晓！放大 + 闪光
+                    tvRoll.setText(won.icon);
+                    tvRoll.animate().scaleX(2.2f).scaleY(2.2f).setDuration(350).start();
+                    tvStatus.setText("🎉 恭喜抽中: " + won.name);
+                    tvStatus.setTextColor(0xFFF57C00);
+                    tvStatus.setScaleX(0.6f);
+                    tvStatus.setScaleY(0.6f);
+                    tvStatus.animate().scaleX(1f).scaleY(1f).setDuration(350).start();
+                    // 闪光背景
+                    android.animation.ValueAnimator flash = android.animation.ValueAnimator.ofFloat(0.3f, 1f);
+                    flash.setDuration(300);
+                    flash.setRepeatCount(5);
+                    flash.setRepeatMode(android.animation.ValueAnimator.REVERSE);
+                    flash.addUpdateListener(a -> {
+                        float v = (Float) a.getAnimatedValue();
+                        tvRoll.setAlpha(v);
+                        tvRoll.setRotation(tvRoll.getRotation() + 3);
+                    });
+                    flash.start();
+                    // 1.5秒后显示结果弹窗
+                    handler.postDelayed(() -> {
+                        try { if (dialog.isShowing()) dialog.dismiss(); } catch (Exception ignored) {}
+                        showLotteryResultDialog(won, cost, newBalance);
+                    }, 1500);
+                }
+            }
+        };
+        handler.postDelayed(tick, 100);
+    }
+
+    /** 抽奖结果弹窗 */
+    private void showLotteryResultDialog(LotteryPrize won, int cost, int newBalance) {
         new android.app.AlertDialog.Builder(this)
             .setTitle("🎉 恭喜中奖！")
             .setMessage(won.icon + " " + won.name + "\n\n消耗: " + cost + "分\n余额: " + newBalance + "分")
             .setPositiveButton("🎉 太棒了", null)
             .show();
     }
-    
     /** 抽奖记录 */
     private void showLotteryRecords() {
         List<LotteryRecord> records = db.lotteryDao().getRecentRecords();
