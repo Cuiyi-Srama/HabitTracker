@@ -1,4 +1,5 @@
 package com.sister.habits.data.models;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 @Entity(tableName = "lottery_prizes")
@@ -12,6 +13,7 @@ public class LotteryPrize {
     public int stock;            // 库存（-1=无限）
     public boolean enabled;      // 是否启用
     public String prizeType;     // "points"=积分奖品 | "gift"=礼物奖品 | "other"=其他
+    @ColumnInfo(defaultValue = "10")
     public int pointsValue;      // 积分奖品的中奖积分数（type=points时有效）
     public String shopItemId;    // 关联商城商品ID（type=gift时有效，库存联动）
     public long createdAt;
