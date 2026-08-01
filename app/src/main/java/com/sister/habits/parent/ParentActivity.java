@@ -820,7 +820,7 @@ public class ParentActivity extends AppCompatActivity {
         private final java.util.Set<String> selected;
         private final OnTaskApprovalListener listener;
         interface OnTaskApprovalListener { void onApprove(Task task, boolean approved); }
-        TaskApprovalAdapter(List<Task> tasks, java.util.Set<Long> selected, OnTaskApprovalListener listener) {
+        TaskApprovalAdapter(List<Task> tasks, java.util.Set<String> selected, OnTaskApprovalListener listener) {
             this.tasks = tasks;
             this.selected = selected;
             this.listener = listener;
@@ -866,7 +866,7 @@ public class ParentActivity extends AppCompatActivity {
         private final java.util.Set<String> selected;
         private final OnEarningApprovalListener listener;
         interface OnEarningApprovalListener { void onApprove(com.sister.habits.data.models.CoinEarning item, boolean approved); }
-        EarningApprovalAdapter(List<com.sister.habits.data.models.CoinEarning> items, java.util.Set<Long> selected, OnEarningApprovalListener listener) {
+        EarningApprovalAdapter(List<com.sister.habits.data.models.CoinEarning> items, java.util.Set<String> selected, OnEarningApprovalListener listener) {
             this.items = items;
             this.selected = selected;
             this.listener = listener;
@@ -2785,7 +2785,7 @@ private void showProfileSettings() {
         private final java.util.Set<String> selected;
         private final OnApprovalListener listener;
         interface OnApprovalListener { void onApprove(Redemption item, boolean approved); }
-        ApprovalAdapter(List<Redemption> items, java.util.Set<Long> selected, OnApprovalListener listener) {
+        ApprovalAdapter(List<Redemption> items, java.util.Set<String> selected, OnApprovalListener listener) {
             this.items = items;
             this.selected = selected;
             this.listener = listener;
