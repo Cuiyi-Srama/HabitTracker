@@ -224,7 +224,7 @@
         <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="📋 待审批兑换"
+        android:text="💳 待审批兑换（点击单项审批）"
         android:textSize="18sp"
         android:textColor="@color/text_primary"
         android:textStyle="bold"
@@ -240,7 +240,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🪙 待审批积分"
+        android:text="💰 待审批积分（孩子申请的额外积分）"
         android:textSize="18sp"
         android:textColor="@color/text_primary"
         android:textStyle="bold"
@@ -255,7 +255,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="⏳ 待确认任务"
+        android:text="⏳ 待确认任务（孩子提交的完成任务，含洗衣）"
         android:textSize="18sp"
         android:textColor="@color/text_primary"
         android:textStyle="bold"
