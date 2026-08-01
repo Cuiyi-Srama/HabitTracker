@@ -360,7 +360,7 @@ public class ChildActivity extends AppCompatActivity {
                 performLottery(enabledPrizes, costPerDraw);
             })
             .setNeutralButton("📋 抽奖记录", (d, w) -> showLotteryRecords())
-            .setNegativeButton("🏆 荣誉墙", (d, w) -> showHonorWall())
+            .setNegativeButton("关闭", null)
             .show();
     }
     
@@ -547,27 +547,6 @@ public class ChildActivity extends AppCompatActivity {
             .show();
     }
     
-    /** 🏆 荣誉墙 */
-    private void showHonorWall() {
-        List<SchoolReward> rewards = db.schoolRewardDao().getAll();
-        int totalPoints = db.schoolRewardDao().getTotalPoints();
-        if (rewards.isEmpty()) {
-            Toast.makeText(this, "🏆 还没有学校奖励记录哦~", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("累计学校奖励: ").append(totalPoints).append("分\n\n");
-        for (SchoolReward r : rewards) {
-            sb.append(r.badge).append(" ").append(r.name)
-              .append(" +" + r.points + "分")
-              .append(" (").append(r.date).append(")\n");
-        }
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("🏆 荣誉墙")
-            .setMessage(sb.toString())
-            .setPositiveButton("继续努力 💪", null)
-            .show();
-    }
     /** 🧺 洗衣任务 - 购物车模式：选类型+数量 → 一并提交 */
     private void showLaundryCartDialog() {
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
