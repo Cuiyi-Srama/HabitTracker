@@ -42,6 +42,7 @@ public class WordFragment extends Fragment {
 
     private TextView tvStats, tvWord, tvPhonetic, tvPrompt, tvStreak, btnSpeak;
     private Button btnOption1, btnOption2, btnOption3, btnOption4;
+    private Button btnDontKnow;
     private Button btnNewWords, btnReview;
 
     private final List<Button> optionButtons = new ArrayList<>();
@@ -86,6 +87,10 @@ public class WordFragment extends Fragment {
             }
         });
 
+        btnDontKnow = view.findViewById(R.id.btn_dont_know);
+        if (btnDontKnow != null) {
+            btnDontKnow.setOnClickListener(v -> showDontKnowDialog());
+        }
         btnOption1 = view.findViewById(R.id.btn_option_1);
         btnOption2 = view.findViewById(R.id.btn_option_2);
         btnOption3 = view.findViewById(R.id.btn_option_3);
@@ -286,6 +291,7 @@ public class WordFragment extends Fragment {
         Collections.shuffle(options);
 
         isAnswering = true;
+        if (btnDontKnow != null) btnDontKnow.setVisibility(View.VISIBLE);
         for (int i = 0; i < optionButtons.size(); i++) {
             Button btn = optionButtons.get(i);
             btn.setVisibility(View.VISIBLE);
@@ -305,6 +311,7 @@ public class WordFragment extends Fragment {
         boolean correct = selected.equals(currentWord.meaning);
 
         // 锁定并高亮正确答案
+        if (btnDontKnow != null) btnDontKnow.setVisibility(View.GONE);
         for (Button btn : optionButtons) {
             btn.setEnabled(false);
             if (btn.getText().toString().equals(currentWord.meaning)) {
