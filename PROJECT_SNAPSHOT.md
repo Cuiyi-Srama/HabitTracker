@@ -1,3 +1,41 @@
+📦 好习惯养成 (HabitTracker) 项目状态快照 @ 2026-08-01（v2.2.0 — WebDAV远程同步完成）
+├─ 项目信息:
+│  ├─ 名称: 好习惯养成 (HabitTracker)
+│  ├─ 包名: com.sister.habits
+│  ├─ 类型: Android原生App（Java 17 + Gradle + Room v13 + NanoHTTPD + ZXing + Glide）
+│  ├─ 当前版本: v2.2.0 / versionCode 36
+│  └─ 当前阶段: ✅ 六批计划全部完成（H/I已实现，J待用户双设备实测）
+│
+├─ 已完成核心功能:
+│  ✅ 打卡/单词/商城/任务/洗衣/作业/抽奖 全闭环
+│  ✅ 抽奖系统：固定积分+百分比概率+中奖审批闭环+老虎机动效
+│  ✅ 商品链接导入（淘宝/京东/拼多多，1元=10积分，自动解析标题/价格/封面）
+│  ✅ 背单词「我不会」：详情弹窗+TTS双语朗读+自动加入复习
+│  ✅ 备份：SAF自定义导出导入+位置命名标注+AES-256-GCM加密
+│  ✅ 同步：Hub中枢/局域网P2P/WebDAV云端(RemoteSync)/QR码 四层
+│  ✅ Key绑定跨设备同步（随WebDAV快照自动恢复）
+│  ✅ 经济参数/假期折扣/加速器/审批中心批量操作
+│
+├─ 数据库:
+│  ├─ Room Database v13（lottery_prizes含prizeType/pointsValue/shopItemId）
+│  └─ 固定调试签名，versionCode连续升级，更新不丢数据
+│
+├─ 文档状态:
+│  ├─ README.md → v2.2.0 ✅
+│  ├─ CHANGELOG.md → v1.0.0~v2.2.0 完整历史 ✅
+│  └─ 本文件 → 2026-08-01 ✅
+│
+├─ 待办:
+│  ├─ [J] 双设备 WebDAV 同步实测（需用户提供坚果云账号+第二台设备）
+│  └─ [可选] Tailscale 外网访问 Hub
+│
+└─ 踩坑索引:
+   ├─ Room迁移ALTER带DEFAULT会schema校验失败 → 重建表+COALESCE
+   ├─ java.util.Base64仅API26+ → android.util.Base64
+   ├─ 模拟器通知栏下拉挡安装确认 → input swipe收起再pm install
+   └─ 版本号不更新→INSTALL_FAILED_ABORTED→禁止pm uninstall
+
+---
 📦 好习惯养成 (HabitTracker) 项目状态快照 @ 2026-07-26（v2 — 新增Hub模式）
 ├─ 项目信息:
 │  ├─ 名称: 好习惯养成 (HabitTracker)
