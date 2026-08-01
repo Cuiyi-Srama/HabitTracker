@@ -937,7 +937,6 @@ public class ParentActivity extends AppCompatActivity {
                 this::showLearningMenu,
                 this::showShopMenu,
                 this::showTaskMenu,
-                this::showGateManageDialog,
                 this::showLaundryManageDialog,
                 this::showLotteryManageDialog,
                 this::showSchoolRewardDialog,
