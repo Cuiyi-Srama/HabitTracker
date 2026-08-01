@@ -3406,6 +3406,7 @@ private void showProfileSettings() {
             "🔍 扫描网络设备",
             "🏠 切换Hub中枢",
             "🔄 开始同步",
+            "☁️ 远程同步 (WebDAV)",
             "🧹 清除发现缓存"
         };
         for (int i = 0; i < labels.length; i++) {
@@ -3546,7 +3547,11 @@ private void showProfileSettings() {
                         });
                         break;
                     }
-                    case 5: { // 清除发现缓存
+                    case 5: { // 远程同步 WebDAV
+                        showRemoteSyncDialog();
+                        break;
+                    }
+                    case 6: { // 清除发现缓存
                         syncManager.getHubSync().clearDiscoveredHubs();
                         deviceListContainer.removeAllViews();
                         deviceListContainer.addView(tvEmpty);
@@ -3616,11 +3621,7 @@ private void showProfileSettings() {
 
         new AlertDialog.Builder(this)
                 .setTitle("☁️ 远程同步 (WebDAV)")
-                .setMessage("通过WebDAV云盘（坚果云免费版即可）加密同步全部数据
-
-💡 获取方式：坚果云→账户信息→安全选项→添加应用密码
-
-🔐 同步内容：全部数据+家长Key绑定（新设备同步后自动恢复）")
+                .setMessage("通过WebDAV云盘（坚果云免费版即可）加密同步全部数据\n\n💡 获取方式：坚果云→账户信息→安全选项→添加应用密码\n\n🔐 同步内容：全部数据+家长Key绑定（新设备同步后自动恢复）")
                 .setView(layout)
                 .setPositiveButton("⚡ 保存并立即同步", (d, w) -> {
                     String url = etUrl.getText().toString().trim();
