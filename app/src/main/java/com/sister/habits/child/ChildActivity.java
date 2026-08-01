@@ -328,45 +328,75 @@ public class ChildActivity extends AppCompatActivity {
         Integer balance = db.coinTransactionDao().getBalance("sister");
         int currentBalance = balance != null ? balance : 0;
         
-        String[] items = new String[prizes.size() + 2];
-        for (int i = 0; i < prizes.size(); i++) {
-            LotteryPrize p = prizes.get(i);
-            items[i] = p.icon + " " + p.name + " (概率" + p.probability + "%)";
+        // 统计启用奖品概率总和（剩余=未中奖概率）
+        int totalProb = 0;
+        List<LotteryPrize> enabledPrizes = new java.util.ArrayList<>();
+        for (LotteryPrize p : prizes) {
+            if (p.enabled) {
+                enabledPrizes.add(p);
+                totalProb += p.probability;
+            }
         }
-        items[prizes.size()] = "📋 查看抽奖记录";
-        items[prizes.size() + 1] = "🏆 荣誉墙（学校奖励）";
+        int noWinProb = Math.max(0, 100 - totalProb);
+        
+        StringBuilder sb = new StringBuilder("🎯 消耗 " + costPerDraw + " 分/次\n\n");
+        for (int i = 0; i < enabledPrizes.size(); i++) {
+            LotteryPrize p = enabledPrizes.get(i);
+            String typeDesc = "points".equals(p.prizeType) ? "(积分+" + p.pointsValue + ")" : "(礼物)";
+            sb.append(p.icon).append(" ").append(p.name).append(" ").append(typeDesc)
+              .append(" 概率").append(p.probability).append("%\n");
+        }
+        if (noWinProb > 0) sb.append("💨 未中奖 ").append(noWinProb).append("%\n");
+        sb.append("\n余额: ").append(currentBalance).append("分");
         
         new android.app.AlertDialog.Builder(this)
-            .setTitle("🎰 积分抽奖 (余额: " + currentBalance + "分, " + costPerDraw + "分/次)")
-            .setItems(items, (dialog, which) -> {
-                if (which < prizes.size()) {
-                    // 抽奖
-                    if (currentBalance < costPerDraw) {
-                        Toast.makeText(this, "积分不足！需要 " + costPerDraw + " 分", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    performLottery(prizes, costPerDraw);
-                } else if (which == prizes.size()) {
-                    showLotteryRecords();
-                } else {
-                    showHonorWall();
+            .setTitle("🎰 积分抽奖")
+            .setMessage(sb.toString())
+            .setPositiveButton("🎯 开始抽奖 (" + costPerDraw + "分)", (dialog, which) -> {
+                if (currentBalance < costPerDraw) {
+                    Toast.makeText(this, "积分不足！需要 " + costPerDraw + " 分", Toast.LENGTH_SHORT).show();
+                    return;
                 }
+                performLottery(enabledPrizes, costPerDraw);
             })
-            .setNegativeButton("关闭", null)
+            .setNeutralButton("📋 抽奖记录", (d, w) -> showLotteryRecords())
+            .setNegativeButton("🏆 荣誉墙", (d, w) -> showHonorWall())
             .show();
     }
     
         /** 执行抽奖 */
     private void performLottery(List<LotteryPrize> prizes, int cost) {
-        // 加权随机：按probability权重抽取
-        int totalWeight = 0;
-        for (LotteryPrize p : prizes) totalWeight += p.probability;
-        int rand = new java.util.Random().nextInt(totalWeight);
+        // 百分比概率：0-100随机，落在累计区间即中奖；剩余区间=未中奖
+        int totalProb = 0;
+        for (LotteryPrize p : prizes) totalProb += p.probability;
+        int rand = new java.util.Random().nextInt(100);  // 0-99
         int cumulative = 0;
-        LotteryPrize won = prizes.get(0);
+        LotteryPrize won = null;
         for (LotteryPrize p : prizes) {
             cumulative += p.probability;
             if (rand < cumulative) { won = p; break; }
+        }
+        // 未中奖或概率总和为0：无奖品
+        if (won == null || totalProb <= 0) {
+            // 仍扣积分，记录未中奖
+            Integer bal = db.coinTransactionDao().getBalance("sister");
+            int nb = (bal != null ? bal : 0) - cost;
+            com.sister.habits.data.models.CoinTransaction tx0 = new com.sister.habits.data.models.CoinTransaction(
+                "sister", -cost, nb, "lottery", "🎰抽奖未中奖", syncManager.getDeviceId());
+            db.coinTransactionDao().insert(tx0);
+            LotteryRecord rec0 = new LotteryRecord();
+            rec0.prizeName = "未中奖";
+            rec0.prizeIcon = "💨";
+            rec0.cost = cost;
+            rec0.deviceId = syncManager.getDeviceId();
+            db.lotteryDao().insertRecord(rec0);
+            refreshCoinBalance();
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("💨 未中奖")
+                .setMessage("差一点点！再试一次吧~\n\n消耗: " + cost + "分")
+                .setPositiveButton("好的", null)
+                .show();
+            return;
         }
 
         // 扣积分
@@ -390,6 +420,32 @@ public class ChildActivity extends AppCompatActivity {
             if (won.stock == 0) won.enabled = false;
             db.lotteryDao().updatePrize(won);
         }
+
+        // 🔄 中奖闭环：自动向家长发送审批
+        boolean isPoints = "points".equals(won.prizeType);
+        if (isPoints) {
+            // 积分奖品 → CoinEarning 待审批
+            com.sister.habits.data.models.CoinEarning earn = new com.sister.habits.data.models.CoinEarning();
+            earn.amount = won.pointsValue;
+            earn.sourceType = "lottery";
+            earn.sourceId = String.valueOf(won.id);
+            earn.description = "🎰抽奖中奖: " + won.name + " (+" + won.pointsValue + "分)";
+            db.coinEarningDao().insert(earn);
+        } else {
+            // 礼物奖品 → Redemption 待审批（0金币兑换申请）
+            com.sister.habits.data.models.Redemption red = new com.sister.habits.data.models.Redemption();
+            red.shopItemId = won.shopItemId != null ? won.shopItemId : "";
+            red.itemName = won.icon + " " + won.name;
+            red.coinsCost = 0;  // 抽奖奖品免费
+            red.note = "🎰抽奖中奖礼物";
+            db.redemptionDao().insert(red);
+        }
+        // 通知家长（复用兑换通知渠道）
+        try {
+            com.sister.habits.utils.NotificationHelper.notifyRedemption(this,
+                (isPoints ? "🎰抽奖积分+" + won.pointsValue + "分" : "🎰抽奖礼物: " + won.name),
+                String.valueOf(won.id));
+        } catch (Exception ignored) {}
 
         refreshCoinBalance();
         soundHelper.playCheckInSound();
