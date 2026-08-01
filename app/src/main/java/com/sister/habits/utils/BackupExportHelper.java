@@ -61,6 +61,26 @@ public class BackupExportHelper {
         Log.i(TAG, "备份已导出: " + backupFile.getAbsolutePath() + " (" + backupFile.length() + " bytes)");
         return backupFile;
     }
+    /** 生成默认备份文件名（用于SAF导出默认名） */
+    public String generateDefaultFileName() {
+        String dateStr = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA).format(new Date());
+        String deviceKey = DeviceIdentity.getDeviceKey(context);
+        String shortKey = deviceKey != null && deviceKey.length() >= 8 ? deviceKey.substring(0, 8) : "UNKNOWN";
+        return "HabitTracker_backup_" + shortKey + "_" + dateStr + BACKUP_EXT;
+    }
+    /** 生成加密备份字节流（用于SAF自定义位置导出） */
+    public byte[] createEncryptedBackup(String password) throws Exception {
+        byte[] zipData = buildFullZip();
+        return encrypt(zipData, password);
+    }
+    /** 获取默认备份目录（用于界面提示） */
+    public static String getDefaultBackupDir() {
+        return BACKUP_DIR;
+    }
+    /** 获取备份扩展名 */
+    public static String getBackupExt() {
+        return BACKUP_EXT;
+    }
 
     /** 从加密备份全量恢复 */
     public boolean importBackup(File file, String password) throws Exception {
