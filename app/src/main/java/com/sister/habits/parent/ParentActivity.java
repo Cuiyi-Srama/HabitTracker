@@ -97,6 +97,14 @@ public class ParentActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK) {
                         if (deviceLockSuccessCallback != null) {
                             deviceLockSuccessCallback.run();
+                            deviceLockSuccessCallback = null;
+                        }
+                    } else {
+                        Toast.makeText(this, "\u274c 设备锁验证失败", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                });
+
     // 备份文件选择器（SAF，无需存储权限）
     private final androidx.activity.result.ActivityResultLauncher<android.content.Intent> openBackupLauncher =
             registerForActivityResult(
@@ -107,13 +115,6 @@ public class ParentActivity extends AppCompatActivity {
                         if (uri != null) {
                             showRestorePasswordDialog(uri);
                         }
-                    }
-                });
-                            deviceLockSuccessCallback = null;
-                        }
-                    } else {
-                        Toast.makeText(this, "\u274c 设备锁验证失败", Toast.LENGTH_SHORT).show();
-                        finish();
                     }
                 });
 
