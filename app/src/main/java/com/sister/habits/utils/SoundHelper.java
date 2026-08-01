@@ -106,6 +106,21 @@ public class SoundHelper {
             Log.e(TAG, "TTS朗读失败: " + word, e);
         }
     }
+    /** TTS朗读中文释义 */
+    public void speakChinese(String text) {
+        if (!ttsEnabled || !ttsReady || tts == null) return;
+        try {
+            tts.setLanguage(java.util.Locale.CHINA);
+            tts.setSpeechRate(ttsSpeed);
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+            // 读完后恢复英文，避免影响后续单词朗读
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                try { if (tts != null) tts.setLanguage(java.util.Locale.US); } catch (Exception ignored) {}
+            }, text.length() * 200L + 300);
+        } catch (Exception e) {
+            Log.e(TAG, "TTS中文朗读失败: " + text, e);
+        }
+    }
 
     /**
      * 答对音效 + 愉悦确认震动
