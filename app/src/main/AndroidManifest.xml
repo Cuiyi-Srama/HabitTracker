@@ -24,7 +24,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HabitTracker"
         android:networkSecurityConfig="@xml/network_security_config"
-        tools:targetApi="34">
+        tools:targetApi="34" android:usesCleartextTraffic="true">
 
         <!-- 主入口：双模式选择 -->
         <activity
