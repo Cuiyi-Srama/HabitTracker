@@ -77,9 +77,9 @@ public class ParentActivity extends AppCompatActivity {
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync;
     private View btnLaundryReview, btnGateManage, btnApprovalCenter;
     private View btnApproveSelected, btnRejectSelected;
-    private final java.util.Set<Long> selectedApprovalIds = new java.util.HashSet<>();
-    private final java.util.Set<Long> selectedTaskIds = new java.util.HashSet<>();
-    private final java.util.Set<Long> selectedEarningIds = new java.util.HashSet<>();
+    private final java.util.Set<String> selectedApprovalIds = new java.util.HashSet<>();
+    private final java.util.Set<String> selectedTaskIds = new java.util.HashSet<>();
+    private final java.util.Set<String> selectedEarningIds = new java.util.HashSet<>();
 
     // 相册选图 — 当前选中的商品图片路径
     private String selectedShopImagePath;
@@ -817,7 +817,7 @@ public class ParentActivity extends AppCompatActivity {
 
     private static class TaskApprovalAdapter extends RecyclerView.Adapter<TaskApprovalAdapter.ViewHolder> {
         private final List<Task> tasks;
-        private final java.util.Set<Long> selected;
+        private final java.util.Set<String> selected;
         private final OnTaskApprovalListener listener;
         interface OnTaskApprovalListener { void onApprove(Task task, boolean approved); }
         TaskApprovalAdapter(List<Task> tasks, java.util.Set<Long> selected, OnTaskApprovalListener listener) {
@@ -863,7 +863,7 @@ public class ParentActivity extends AppCompatActivity {
     /** 💰 待审批积分适配器（点击=勾选，长按=单项审批） */
     private static class EarningApprovalAdapter extends RecyclerView.Adapter<EarningApprovalAdapter.ViewHolder> {
         private final List<com.sister.habits.data.models.CoinEarning> items;
-        private final java.util.Set<Long> selected;
+        private final java.util.Set<String> selected;
         private final OnEarningApprovalListener listener;
         interface OnEarningApprovalListener { void onApprove(com.sister.habits.data.models.CoinEarning item, boolean approved); }
         EarningApprovalAdapter(List<com.sister.habits.data.models.CoinEarning> items, java.util.Set<Long> selected, OnEarningApprovalListener listener) {
@@ -1843,13 +1843,13 @@ public class ParentActivity extends AppCompatActivity {
                         case 2: showEconomySettings(); break;
                         case 3: showGateManageDialog(); break;
                         case 4: showAcceleratorSettings(); break;
-                        case 4: showTaskTemplates(); break;
-                        case 5: showEarningApprovals(); break;
-                        case 6: showBindKeyDialog(); break;
-                        case 7: showBackupRestoreDialog(); break;
-                        case 8: showSyncDashboardDialog(); break;
-                        case 9: checkForUpdate(); break;
-                        case 10: showPinManageDialog(); break;
+                        case 5: showTaskTemplates(); break;
+                        case 6: showEarningApprovals(); break;
+                        case 7: showBindKeyDialog(); break;
+                        case 8: showBackupRestoreDialog(); break;
+                        case 9: showSyncDashboardDialog(); break;
+                        case 10: checkForUpdate(); break;
+                        case 11: showPinManageDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -2782,7 +2782,7 @@ private void showProfileSettings() {
     // 审批适配器（点击=勾选，长按=单项审批）
     private static class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHolder> {
         private final List<Redemption> items;
-        private final java.util.Set<Long> selected;
+        private final java.util.Set<String> selected;
         private final OnApprovalListener listener;
         interface OnApprovalListener { void onApprove(Redemption item, boolean approved); }
         ApprovalAdapter(List<Redemption> items, java.util.Set<Long> selected, OnApprovalListener listener) {
@@ -2888,7 +2888,6 @@ private void showProfileSettings() {
             showBackupListDialog(backups);
             return;
         }
-        showBackupListDialog(backups);
     }
     private void showRestorePasswordDialog(android.net.Uri uri) {
         String name = "";
