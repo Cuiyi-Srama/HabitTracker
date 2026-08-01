@@ -2178,23 +2178,13 @@ private void showProfileSettings() {
         etMaxWords.setText(String.valueOf(finalConfig.maxDailyWords));
         etMaxReview.setText(String.valueOf(finalConfig.maxDailyReview));
 
-        android.widget.EditText etTaskDailyMin = view.findViewById(R.id.et_task_daily_min);
-        android.widget.EditText etTaskDailyMax = view.findViewById(R.id.et_task_daily_max);
-        android.widget.EditText etTaskChallengeMin = view.findViewById(R.id.et_task_challenge_min);
-        android.widget.EditText etTaskChallengeMax = view.findViewById(R.id.et_task_challenge_max);
-        android.widget.EditText etScreen15 = view.findViewById(R.id.et_screen_15min);
-        android.widget.EditText etScreen30 = view.findViewById(R.id.et_screen_30min);
-        android.widget.EditText etScreen60 = view.findViewById(R.id.et_screen_60min);
+
+
         android.widget.EditText etSoftWeekday = view.findViewById(R.id.et_soft_limit_weekday);
         android.widget.EditText etSoftWeekend = view.findViewById(R.id.et_soft_limit_weekend);
 
-        etTaskDailyMin.setText(String.valueOf(finalConfig.taskDailyMin));
-        etTaskDailyMax.setText(String.valueOf(finalConfig.taskDailyMax));
-        etTaskChallengeMin.setText(String.valueOf(finalConfig.taskChallengeMin));
-        etTaskChallengeMax.setText(String.valueOf(finalConfig.taskChallengeMax));
-        etScreen15.setText(String.valueOf(finalConfig.screenTime15min));
-        etScreen30.setText(String.valueOf(finalConfig.screenTime30min));
-        etScreen60.setText(String.valueOf(finalConfig.screenTime60min));
+
+
         etSoftWeekday.setText(String.valueOf(finalConfig.softLimitWeekday));
         etSoftWeekend.setText(String.valueOf(finalConfig.softLimitWeekend));
 
@@ -2212,13 +2202,8 @@ private void showProfileSettings() {
                     finalConfig.maxDailyCoins = parseInt(etMaxDailyCoins, 500);
                     finalConfig.maxDailyWords = parseInt(etMaxWords, 10);
                     finalConfig.maxDailyReview = parseInt(etMaxReview, 30);
-                    finalConfig.taskDailyMin = parseInt(etTaskDailyMin, 5);
-                    finalConfig.taskDailyMax = parseInt(etTaskDailyMax, 15);
-                    finalConfig.taskChallengeMin = parseInt(etTaskChallengeMin, 20);
-                    finalConfig.taskChallengeMax = parseInt(etTaskChallengeMax, 50);
-                    finalConfig.screenTime15min = parseInt(etScreen15, 10);
-                    finalConfig.screenTime30min = parseInt(etScreen30, 18);
-                    finalConfig.screenTime60min = parseInt(etScreen60, 30);
+
+
                     finalConfig.softLimitWeekday = parseInt(etSoftWeekday, 60);
                     finalConfig.softLimitWeekend = parseInt(etSoftWeekend, 100);
                     db.economyConfigDao().setConfig(finalConfig);
