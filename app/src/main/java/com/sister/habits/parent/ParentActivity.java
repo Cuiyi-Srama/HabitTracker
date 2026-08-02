@@ -1289,6 +1289,98 @@ public class ParentActivity extends AppCompatActivity {
                 .setNegativeButton("← 返回上级",(d,w2)->showLearningMenu()).show();
     }
 
+    /** 📥 AI批量导入（读取AI生成的 items.json + 图片） */
+    private void showAiImportDialog() {
+        java.io.File importDir = new java.io.File("/sdcard/Download/habit_import");
+        java.io.File jsonFile = new java.io.File(importDir, "items.json");
+        if (!jsonFile.exists()) {
+            Toast.makeText(this, "📥 未找到导入文件\n请在对话中把商品截图发给AI，生成后即可导入", Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("📥 AI批量导入")
+                .setMessage("将读取 Download/habit_import/ 下的商品数据并批量上架\n\n⚠️ 导入前请确认信息准确")
+                .setPositiveButton("开始导入", (d, w) -> {
+                    new Thread(() -> {
+                        try {
+                            String json = readFileAsString(jsonFile);
+                            org.json.JSONObject root = new org.json.JSONObject(json);
+                            org.json.JSONArray arr = root.getJSONArray("items");
+                            int ok = 0;
+                            StringBuilder errs = new StringBuilder();
+                            java.io.File imgDir = new java.io.File(getFilesDir(), "shop_images");
+                            imgDir.mkdirs();
+                            for (int i = 0; i < arr.length(); i++) {
+                                try {
+                                    org.json.JSONObject item = arr.getJSONObject(i);
+                                    com.sister.habits.data.models.ShopItem shop = new com.sister.habits.data.models.ShopItem();
+                                    shop.name = item.optString("name", "").trim();
+                                    if (shop.name.isEmpty()) { errs.append("#").append(i + 1).append(" 无名称;"); continue; }
+                                    shop.priceCoins = item.optInt("priceCoins", 0);
+                                    shop.description = item.optString("desc", "");
+                                    String cat = item.optString("category", "toy");
+                                    if (!cat.equals("snack") && !cat.equals("toy") && !cat.equals("game_time") && !cat.equals("outing") && !cat.equals("other")) cat = "toy";
+                                    shop.category = cat;
+                                    shop.itemType = item.optString("itemType", "limited");
+                                    shop.stock = item.optInt("stock", -1);
+                                    // 图片：复制到内部存储
+                                    String imgName = item.optString("image", "");
+                                    if (!imgName.isEmpty()) {
+                                        java.io.File src = new java.io.File(importDir, imgName);
+                                        if (src.exists()) {
+                                            java.io.File dst = new java.io.File(imgDir, "ai_" + System.currentTimeMillis() + "_" + imgName);
+                                            java.io.InputStream is = new java.io.FileInputStream(src);
+                                            java.io.OutputStream os = new java.io.FileOutputStream(dst);
+                                            byte[] buf = new byte[8192];
+                                            int n;
+                                            while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
+                                            is.close(); os.close();
+                                            shop.iconUrl = dst.getAbsolutePath();
+                                        }
+                                    }
+                                    db.shopItemDao().insert(shop);
+                                    ok++;
+                                } catch (Exception e) {
+                                    errs.append("#").append(i + 1).append("失败:").append(e.getMessage()).append(";");
+                                }
+                            }
+                            // 导入完成：删除导入目录
+                            try { deleteRecursive(importDir); } catch (Exception ignored) {}
+                            final int okCount = ok;
+                            final String errMsg = errs.toString();
+                            runOnUiThread(() -> {
+                                String msg = "✅ 成功导入 " + okCount + " 件商品";
+                                if (!errMsg.isEmpty()) msg += "\n⚠️ " + errMsg;
+                                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(() -> Toast.makeText(this, "❌ 导入失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        }
+                    }).start();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+    /** 递归删除（清理导入目录） */
+    private void deleteRecursive(java.io.File f) {
+        if (f == null || !f.exists()) return;
+        if (f.isDirectory()) {
+            java.io.File[] children = f.listFiles();
+            if (children != null) for (java.io.File c : children) deleteRecursive(c);
+        }
+        f.delete();
+    }
+
+    /** 读取文件为UTF-8字符串（兼容API24） */
+    private String readFileAsString(java.io.File f) throws Exception {
+        java.io.FileInputStream fis = new java.io.FileInputStream(f);
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = fis.read(buf)) > 0) bos.write(buf, 0, n);
+        fis.close();
+        return new String(bos.toByteArray(), "UTF-8");
+    }
     /** 二级菜单：🏪 商城管理 */
     private void showShopMenu() {
         int shopCount = db.shopItemDao().getAll().size();
@@ -1296,8 +1388,7 @@ public class ParentActivity extends AppCompatActivity {
         String[] items = {
                 "➕ 上架新商品",
                 "✏️ 管理已有商品（" + shopCount + "件）",
-                "✅ 兑换审批（" + pendingCount + "项待处理）",
-                "📥 AI批量导入（对话发图识别）"
+                "✅ 兑换审批（" + pendingCount + "项待处理）"
         };
         new AlertDialog.Builder(this)
                 .setTitle("🏪 商城管理")
@@ -1306,7 +1397,6 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showAddShopItemDialog(); break;
                         case 1: showManageShopDialog(); break;
                         case 2: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
-                        case 3: showAiImportDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
