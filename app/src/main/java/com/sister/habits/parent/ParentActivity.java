@@ -3039,28 +3039,51 @@ private void showProfileSettings() {
 
     // ==================== 数据导出备份 ====================
     private void showBackupRestoreDialog() {
-        String[] items = {
+        String backupInfo = "📁 默认: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir() +
+                "\n📄 命名: HabitTracker_backup_设备码_日期" + com.sister.habits.utils.BackupExportHelper.getBackupExt() +
+                "\n💡 导出/导入可自定义位置";
+        // 自定义View：避免setMessage+setItems组合在小屏上items被挤压隐藏
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(48, 8, 48, 8);
+        android.widget.TextView tvInfo = new android.widget.TextView(this);
+        tvInfo.setText(backupInfo);
+        tvInfo.setTextSize(13);
+        tvInfo.setTextColor(0xFF666666);
+        tvInfo.setPadding(0, 0, 0, 16);
+        layout.addView(tvInfo);
+        String[] btnLabels = {
             "📤 导出加密备份（可选择保存位置）",
             "📥 从备份文件恢复（选择文件）",
             "📂 查看已有备份文件"
         };
-        String backupInfo = "📁 默认: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir() +
-                "\n📄 命名: HabitTracker_backup_设备码_日期" + com.sister.habits.utils.BackupExportHelper.getBackupExt() +
-                "\n💡 导出/导入可自定义位置";
+        final Runnable[] actions = new Runnable[] {
+            this::doExportBackup,
+            this::doImportBackup,
+            this::listBackupFiles
+        };
+        for (int i = 0; i < btnLabels.length; i++) {
+            final int idx = i;
+            android.widget.Button btn = new android.widget.Button(this);
+            btn.setText(btnLabels[i]);
+            btn.setTextSize(14);
+            btn.setAllCaps(false);
+            btn.setTextColor(0xFF333333);
+            btn.setBackgroundColor(0xFFF5F5F5);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, 0, 12);
+            btn.setLayoutParams(lp);
+            btn.setOnClickListener(v -> actions[idx].run());
+            layout.addView(btn);
+        }
         new AlertDialog.Builder(this)
                 .setTitle("🔐 数据备份与恢复")
-                .setMessage(backupInfo)
-                .setItems(items, (d, which) -> {
-                    switch (which) {
-                        case 0: doExportBackup(); break;
-                        case 1: doImportBackup(); break;
-                        case 2: listBackupFiles(); break;
-                    }
-                })
+                .setView(layout)
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
                 .show();
     }
-
     private void doExportBackup() {
         android.widget.EditText etPwd = new android.widget.EditText(this);
         etPwd.setHint("设置备份密码（用于加密保护）");
