@@ -1113,10 +1113,7 @@ public class ParentActivity extends AppCompatActivity {
                                 } catch (Exception ignored) {}
                             }).start();
                         }
-                        String tip = priceYuan > 0
-                                ? "✅ 已自动填充，请确认后上架"
-                                : "✅ 标题已填充，价格/图片请手动补充";
-                        Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "✅ 已自动填充，请确认后上架", Toast.LENGTH_SHORT).show();
                     });
                 } catch (Exception e) {
                     runOnUiThread(() -> {
@@ -1299,7 +1296,8 @@ public class ParentActivity extends AppCompatActivity {
         String[] items = {
                 "➕ 上架新商品",
                 "✏️ 管理已有商品（" + shopCount + "件）",
-                "✅ 兑换审批（" + pendingCount + "项待处理）"
+                "✅ 兑换审批（" + pendingCount + "项待处理）",
+                "📥 AI批量导入（对话发图识别）"
         };
         new AlertDialog.Builder(this)
                 .setTitle("🏪 商城管理")
@@ -1308,6 +1306,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: showAddShopItemDialog(); break;
                         case 1: showManageShopDialog(); break;
                         case 2: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
+                        case 3: showAiImportDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
