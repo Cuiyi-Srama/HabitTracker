@@ -1113,7 +1113,10 @@ public class ParentActivity extends AppCompatActivity {
                                 } catch (Exception ignored) {}
                             }).start();
                         }
-                        Toast.makeText(this, "✅ 已自动填充，请确认后上架", Toast.LENGTH_SHORT).show();
+                        String tip = priceYuan > 0
+                                ? "✅ 已自动填充，请确认后上架"
+                                : "✅ 标题已填充，价格/图片请手动补充";
+                        Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
                     });
                 } catch (Exception e) {
                     runOnUiThread(() -> {
@@ -3230,28 +3233,11 @@ private void showProfileSettings() {
         is.close();
         return baos.toByteArray();
     }
-            /** 🔗 解析商品链接（淘宝/京东/拼多多）— v2.2.6：URL清洗+短链302+分享文案标题兜底 */
-    private java.util.Map<String, String> parseProductLink(String raw) throws Exception {
+        /** 🔗 解析商品链接（淘宝/京东/拼多多） */
+    private java.util.Map<String, String> parseProductLink(String link) throws Exception {
         java.util.Map<String, String> result = new java.util.HashMap<>();
-        String link = raw == null ? "" : raw.trim();
-        // ===== 1. 清洗输入：从混合文本中提取第一个有效URL（去除空格/中文/尾部文案）=====
-        String url = null;
-        java.util.regex.Matcher urlM = java.util.regex.Pattern.compile("https?://[^\\s\\u4e00-\\u9fff「」『』【】（）()]+").matcher(link);
-        if (urlM.find()) url = urlM.group(0).trim();
-        if (url == null) {
-            int idx = link.indexOf("http");
-            if (idx >= 0) {
-                java.util.regex.Matcher urlM2 = java.util.regex.Pattern.compile("https?://[^\\s\\u4e00-\\u9fff「」『』【】（）()]+").matcher(link.substring(idx));
-                if (urlM2.find()) url = urlM2.group(0).trim();
-            }
-        }
-        if (url == null) throw new Exception("未找到有效商品链接，请检查粘贴内容");
-        // 京东短链带分享参数(?jkl=)会跳转App拦截页 → 去掉问号后全部参数
-        int qIdx = url.indexOf('?');
-        if (qIdx > 0 && (url.contains("3.cn") || url.contains("m.jd.com") || url.contains("item.jd.com"))) {
-            url = url.substring(0, qIdx);
-        }
-        // ===== 2. 请求页面（跟随302重定向）=====
+        String url = link;
+        if (!url.startsWith("http")) url = "https://" + url;
         java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
         conn.setInstanceFollowRedirects(true);
         conn.setConnectTimeout(10000);
@@ -3268,7 +3254,8 @@ private void showProfileSettings() {
         is.close();
         String html = new String(baos.toByteArray(), "UTF-8");
         conn.disconnect();
-        // ===== 3. 标题提取（三级降级：og:title → <title> → 分享文案「」）=====
+
+        // 提取标题：og:title > <title>
         String title = null;
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:title[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
         if (m.find()) title = android.text.Html.fromHtml(m.group(1)).toString().trim();
@@ -3276,34 +3263,30 @@ private void showProfileSettings() {
             m = java.util.regex.Pattern.compile("<title>([^<]+)</title>").matcher(html);
             if (m.find()) title = m.group(1).trim();
         }
-        // 京东/反爬壳页识别：通用标题时改用分享文案中的商品名（「」内）
-        boolean isShellPage = title == null || title.isEmpty()
-                || title.contains("京东(JD.COM)") || title.contains("多快好省，购物上京东")
-                || title.contains("页面不存在") || title.contains("访问验证");
-        if (isShellPage) {
-            java.util.regex.Matcher shareM = java.util.regex.Pattern.compile("[「『\\[]([^」』\\]]{2,60})[」』\\]]").matcher(link);
-            if (shareM.find()) title = shareM.group(1).trim();
-        }
         if (title != null) {
             title = title.replaceAll("(?i)(-淘宝网|-京东|【.*?】)\\s*$", "").trim();
         }
         result.put("title", title != null ? title : "");
-        // ===== 4. 价格（失败留空，由家长手动填写）=====
+
+        // 提取价格（人民币符号后数字）
         double price = 0;
         java.util.regex.Matcher pm2 = java.util.regex.Pattern.compile("(?:¥|\\uFFE5|\\u00a5)([0-9]+(?:\\.[0-9]{1,2})?)").matcher(html);
         if (pm2.find()) {
             try { price = Double.parseDouble(pm2.group(1)); } catch (Exception ignored) {}
         }
+        // 京东常见 JSON 格式 "p":"xx.xx"
         if (price <= 0) {
             java.util.regex.Matcher jm = java.util.regex.Pattern.compile("\\\"p\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
             if (jm.find()) { try { price = Double.parseDouble(jm.group(1)); } catch (Exception ignored) {} }
         }
+        // 拼多多 JSON: "price": xx.xx
         if (price <= 0) {
             java.util.regex.Matcher gm = java.util.regex.Pattern.compile("\\\"price\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
             if (gm.find()) { try { price = Double.parseDouble(gm.group(1)); } catch (Exception ignored) {} }
         }
         result.put("price", String.valueOf(price));
-        // ===== 5. 图片（失败留空，可手动选图）=====
+
+        // 提取图片：og:image
         String img = null;
         java.util.regex.Matcher im = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:image[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
         if (im.find()) img = im.group(1).trim();
@@ -3315,8 +3298,7 @@ private void showProfileSettings() {
         result.put("image", img != null ? img : "");
         return result;
     }
-
-/** 下载商品图片到App内部存储 */
+    /** 下载商品图片到App内部存储 */
     private String downloadShopImage(String imgUrl) throws Exception {
         String url = imgUrl.startsWith("http") ? imgUrl : "https:" + imgUrl;
         java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
