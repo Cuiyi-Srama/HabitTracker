@@ -1291,15 +1291,20 @@ public class ParentActivity extends AppCompatActivity {
 
     /** 📥 AI批量导入（读取AI生成的 items.json + 图片） */
     private void showAiImportDialog() {
-        java.io.File importDir = new java.io.File("/sdcard/Download/habit_import");
+        // 优先 App 专属外部目录（无需存储权限），Download 目录作兜底
+        java.io.File importDir = new java.io.File(getExternalFilesDir(null), "habit_import");
         java.io.File jsonFile = new java.io.File(importDir, "items.json");
+        if (!jsonFile.exists()) {
+            importDir = new java.io.File("/sdcard/Download/habit_import");
+            jsonFile = new java.io.File(importDir, "items.json");
+        }
         if (!jsonFile.exists()) {
             Toast.makeText(this, "📥 未找到导入文件\n请在对话中把商品截图发给AI，生成后即可导入", Toast.LENGTH_LONG).show();
             return;
         }
         new AlertDialog.Builder(this)
                 .setTitle("📥 AI批量导入")
-                .setMessage("将读取 Download/habit_import/ 下的商品数据并批量上架\n\n⚠️ 导入前请确认信息准确")
+                .setMessage("将读取导入目录(habit_import/)下的商品数据并批量上架\n\n⚠️ 导入前请确认信息准确")
                 .setPositiveButton("开始导入", (d, w) -> {
                     new Thread(() -> {
                         try {
