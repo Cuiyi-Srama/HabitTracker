@@ -443,6 +443,7 @@ public class ParentActivity extends AppCompatActivity {
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
         soundHelper = SoundHelper.getInstance(this);
+        shopManager = new ShopManager(this, db, soundHelper);
         profile = ProfileManager.getInstance(this);
 
         // ✅ 初始化UI控件
@@ -512,7 +513,6 @@ public class ParentActivity extends AppCompatActivity {
         }    }
 
     @Override
-    private void initShopManager() { shopManager = new ShopManager(this, db, soundHelper); }
     /** 打开图片选择器（供 ShopManager 使用） */
     public void launchShopImagePicker() { pickShopImageLauncher.launch("image/*"); }
 
