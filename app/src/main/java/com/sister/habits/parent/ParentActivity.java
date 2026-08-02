@@ -3119,9 +3119,7 @@ private void showProfileSettings() {
         if (items.size() > 3) names += "\n· 等" + items.size() + "件商品";
         new AlertDialog.Builder(this)
                 .setTitle("🗑 删除商品")
-                .setMessage("确定删除 " + items.size() + " 件商品？" + names + "
-
-此操作不可恢复！")
+                .setMessage("确定删除 " + items.size() + " 件商品？" + names + "\n\n此操作不可恢复！")
                 .setPositiveButton("删除", (d, w) -> {
                     int ok = 0;
                     for (ShopItem it : items) {
