@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.bumptech.glide.Glide;
+import com.sister.habits.R;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.ShopItem;
 import com.sister.habits.utils.MenuHelper;
@@ -81,7 +82,7 @@ public class ShopManager {
         }
     }
 
-    private void showShopMenu() {
+    public void showShopMenu() {
         int shopCount = db.shopItemDao().getAll().size();
         int pendingCount = db.redemptionDao().getByStatus("pending").size();
         String[] items = {
@@ -96,14 +97,14 @@ public class ShopManager {
                     switch (which) {
                         case 0: showAddShopItemDialog(); break;
                         case 1: showManageShopDialog(); break;
-                        case 2: loadPendingApprovals(); Toast.makeText(activity, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
+                        case 2: activity.loadPendingApprovals(); Toast.makeText(activity, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
                         case 3: showAiImportDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> activity.showSettingsDialog())
                 .show();
     }
-    private void showAddShopItemDialog() {
+    public void showAddShopItemDialog() {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
         android.widget.EditText etName = view.findViewById(R.id.et_item_name);
         android.widget.EditText etDesc = view.findViewById(R.id.et_item_desc);
@@ -203,7 +204,7 @@ public class ShopManager {
                 .setNegativeButton("取消", null)
                 .show();
     }
-    private void showManageShopDialog() {
+    public void showManageShopDialog() {
         soundHelper.playClickSound();
         java.util.List<ShopItem> allItems = db.shopItemDao().getAll();
         if (allItems.isEmpty()) {
@@ -332,7 +333,7 @@ public class ShopManager {
                 .setPositiveButton("关闭", null)
                 .show();
     }
-    private void showEditShopItemDialog(ShopItem item) {
+    public void showEditShopItemDialog(ShopItem item) {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
         android.widget.EditText etName = view.findViewById(R.id.et_item_name);
         android.widget.EditText etDesc = view.findViewById(R.id.et_item_desc);
@@ -379,7 +380,7 @@ public class ShopManager {
                 .setNegativeButton("取消", null)
                 .show();
     }
-    private void showAiImportDialog() {
+    public void showAiImportDialog() {
         // 目录优先级：①内部存储(App私有,免权限) ②App专属外部目录 ③Download(需存储权限)
         final java.io.File appDir = new java.io.File(activity.getFilesDir(), "habit_import");
         final java.io.File appJson = new java.io.File(appDir, "items.json");
