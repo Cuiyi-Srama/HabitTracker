@@ -3115,10 +3115,8 @@ private void showProfileSettings() {
     private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
         if (items.isEmpty()) return;
         String names = "";
-        for (int i = 0; i < items.size() && i < 3; i++) names += "
-· " + items.get(i).name;
-        if (items.size() > 3) names += "
-· 等" + items.size() + "件商品";
+        for (int i = 0; i < items.size() && i < 3; i++) names += "\n· " + items.get(i).name;
+        if (items.size() > 3) names += "\n· 等" + items.size() + "件商品";
         new AlertDialog.Builder(this)
                 .setTitle("🗑 删除商品")
                 .setMessage("确定删除 " + items.size() + " 件商品？" + names + "
