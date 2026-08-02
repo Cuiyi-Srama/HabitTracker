@@ -670,7 +670,7 @@ public class ParentActivity extends AppCompatActivity {
         );
     }
 
-    private void loadPendingApprovals() {
+    public void loadPendingApprovals() {
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
         selectedApprovalIds.clear();
         rvPendingApprovals.setAdapter(new ApprovalAdapter(pending, selectedApprovalIds, this::processApproval));
@@ -1028,7 +1028,7 @@ public class ParentActivity extends AppCompatActivity {
     private void showAiImportDialog() { shopManager.showAiImportDialog(); }
 
 
-    private void showSettingsDialog() {
+    public void showSettingsDialog() {
         soundHelper.playClickSound();
         int pendingTotal = db.redemptionDao().getByStatus("pending").size()
             + db.taskDao().getByStatus("pending").size()
