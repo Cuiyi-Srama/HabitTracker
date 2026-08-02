@@ -2982,7 +2982,7 @@ private void showProfileSettings() {
         return baos.toByteArray();
     }
         /** 🔗 解析商品链接（淘宝/京东/拼多多） */
-    private java.util.Map<String, String> parseProductLink(String link) throws Exception {
+    public java.util.Map<String, String> parseProductLink(String link) throws Exception {
         java.util.Map<String, String> result = new java.util.HashMap<>();
         String url = link;
         if (!url.startsWith("http")) url = "https://" + url;
@@ -3047,7 +3047,7 @@ private void showProfileSettings() {
         return result;
     }
     /** 下载商品图片到App内部存储 */
-    private String downloadShopImage(String imgUrl) throws Exception {
+    public String downloadShopImage(String imgUrl) throws Exception {
         String url = imgUrl.startsWith("http") ? imgUrl : "https:" + imgUrl;
         java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
         conn.setConnectTimeout(10000);
