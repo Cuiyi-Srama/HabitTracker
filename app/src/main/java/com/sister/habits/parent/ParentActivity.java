@@ -3044,9 +3044,9 @@ private void showProfileSettings() {
             "📥 从备份文件恢复（选择文件）",
             "📂 查看已有备份文件"
         };
-        String backupInfo = "📁 默认位置: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir() +
-                "\n📄 命名规则: HabitTracker_backup_设备码_日期时间" + com.sister.habits.utils.BackupExportHelper.getBackupExt() +
-                "\n💡 导出/导入时均可自定义选择位置";
+        String backupInfo = "📁 默认: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir() +
+                "\n📄 命名: HabitTracker_backup_设备码_日期" + com.sister.habits.utils.BackupExportHelper.getBackupExt() +
+                "\n💡 导出/导入可自定义位置";
         new AlertDialog.Builder(this)
                 .setTitle("🔐 数据备份与恢复")
                 .setMessage(backupInfo)
