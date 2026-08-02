@@ -183,7 +183,8 @@ public class WordFragment extends Fragment {
             cal.set(java.util.Calendar.MINUTE, 0);
             cal.set(java.util.Calendar.SECOND, 0);
             cal.set(java.util.Calendar.MILLISECOND, 0);
-            int learnedToday = db.wordReviewDao().getNewCount(cal.getTimeInMillis(), bankId);
+            long todayStart = cal.getTimeInMillis();
+            int learnedToday = db.wordReviewDao().getNewCount(todayStart, bankId);
             int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
 
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
@@ -191,7 +192,7 @@ public class WordFragment extends Fragment {
             if (remainingNew > 0) {
                 for (Vocabulary v : allActive) {
                     WordReview wr = db.wordReviewDao().getByWordId(v.id, bankId);
-                    if (wr == null) {
+                    if (wr == null || wr.lastReviewedAt < todayStart) {
                         words.add(v);
                         if (words.size() >= remainingNew) break;
                     }
