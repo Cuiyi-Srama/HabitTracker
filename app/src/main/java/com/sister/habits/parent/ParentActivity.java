@@ -512,8 +512,7 @@ public class ParentActivity extends AppCompatActivity {
             refreshAll();
         }    }
 
-    @Override
-    /** 打开图片选择器（供 ShopManager 使用） */
+        /** 打开图片选择器（供 ShopManager 使用） */
     public void launchShopImagePicker() { pickShopImageLauncher.launch("image/*"); }
 
     protected void onResume() {
