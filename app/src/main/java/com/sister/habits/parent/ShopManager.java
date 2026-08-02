@@ -129,7 +129,7 @@ public class ShopManager {
             new Thread(() -> {
                 try {
                     // 解析链接获取商品信息
-                    java.util.Map<String, String> info = parseProductLink(link);
+                    java.util.Map<String, String> info = activity.parseProductLink(link);
                     String title = info.get("title");
                     double priceYuan = Double.parseDouble(info.getOrDefault("price", "0"));
                     final String imgUrl = info.get("image");
@@ -146,7 +146,7 @@ public class ShopManager {
                         if (imgUrl != null && !imgUrl.isEmpty()) {
                             new Thread(() -> {
                                 try {
-                                    String saved = downloadShopImage(imgUrl);
+                                    String saved = activity.downloadShopImage(imgUrl);
                                     if (saved != null) {
                                         activity.runOnUiThread(() -> {
                                             selectedShopImagePath = saved;
@@ -390,7 +390,7 @@ public class ShopManager {
             importDir = appDir;
             jsonFile = appJson;
         } else {
-            final java.io.File extDir = new java.io.File(getExternalFilesDir(null), "habit_import");
+            final java.io.File extDir = new java.io.File(activity.getExternalFilesDir(null), "habit_import");
             final java.io.File extJson = new java.io.File(extDir, "items.json");
             if (extJson.exists()) {
                 importDir = extDir;
