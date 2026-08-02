@@ -1,10 +1,8 @@
 package com.sister.habits.parent;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.net.Uri;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -12,7 +10,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
 import com.bumptech.glide.Glide;
 import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.models.ShopItem;
@@ -105,6 +102,7 @@ public class ShopManager {
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> activity.showSettingsDialog())
                 .show();
+    }
     private void showAddShopItemDialog() {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
         android.widget.EditText etName = view.findViewById(R.id.et_item_name);
@@ -183,7 +181,7 @@ public class ShopManager {
         btnPickImage.setOnClickListener(v -> {
             soundHelper.playClickSound();
             currentShopDialogView = view;  // 保存引用，图片选择后更新预览
-            activity.launchShopImagePicker()("image/*");
+            activity.launchShopImagePicker();
         });
 
         new AlertDialog.Builder(activity)
@@ -204,6 +202,7 @@ public class ShopManager {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
     private void showManageShopDialog() {
         soundHelper.playClickSound();
         java.util.List<ShopItem> allItems = db.shopItemDao().getAll();
@@ -332,6 +331,7 @@ public class ShopManager {
                 .setView(scrollView)
                 .setPositiveButton("关闭", null)
                 .show();
+    }
     private void showEditShopItemDialog(ShopItem item) {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
         android.widget.EditText etName = view.findViewById(R.id.et_item_name);
@@ -357,7 +357,7 @@ public class ShopManager {
 
         btnPickImage.setOnClickListener(v -> {
             currentShopDialogView = view;
-            activity.launchShopImagePicker()("image/*");
+            activity.launchShopImagePicker();
         });
 
         new AlertDialog.Builder(activity)
@@ -378,6 +378,7 @@ public class ShopManager {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
     private void showAiImportDialog() {
         // 目录优先级：①内部存储(App私有,免权限) ②App专属外部目录 ③Download(需存储权限)
         final java.io.File appDir = new java.io.File(activity.getFilesDir(), "habit_import");
@@ -465,6 +466,7 @@ public class ShopManager {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
     private void deleteRecursive(java.io.File f) {
         if (f == null || !f.exists()) return;
         if (f.isDirectory()) {
@@ -472,6 +474,7 @@ public class ShopManager {
             if (children != null) for (java.io.File c : children) deleteRecursive(c);
         }
         f.delete();
+    }
     private String readFileAsString(java.io.File f) throws Exception {
         java.io.FileInputStream fis = new java.io.FileInputStream(f);
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
@@ -480,6 +483,7 @@ public class ShopManager {
         while ((n = fis.read(buf)) > 0) bos.write(buf, 0, n);
         fis.close();
         return new String(bos.toByteArray(), "UTF-8");
+    }
     private Button makeCompactButton(String text) {
         Button b = new Button(activity);
         b.setText(text);
@@ -490,6 +494,7 @@ public class ShopManager {
         int p = (int) (6 * activity.getResources().getDisplayMetrics().density);
         b.setPadding(p, 2, p, 2);
         return b;
+    }
     private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
         if (items.isEmpty()) return;
         String names = "";
@@ -517,4 +522,5 @@ public class ShopManager {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
 }
