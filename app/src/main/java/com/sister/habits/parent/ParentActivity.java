@@ -83,6 +83,8 @@ public class ParentActivity extends AppCompatActivity {
 
     // 相册选图 — 当前选中的商品图片路径
     private String selectedShopImagePath;
+    private boolean shopMultiSelect = false;
+    private final java.util.Set<String> shopSelectedIds = new java.util.HashSet<>();
     private String pendingBackupPassword;  // SAF导出等待中的备份密码
     // 当前打开的商品对话框View（用于图片预览更新）
     private View currentShopDialogView;
@@ -2984,74 +2986,164 @@ private void showProfileSettings() {
             Toast.makeText(this, "暂无商品，请先上架", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // 创建可滚动列表
+        final boolean multi = shopMultiSelect;
         android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(16, 16, 16, 16);
         scrollView.addView(container);
-
+        // 标题行：标题 + 批量删除按钮
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        titleRow.setPadding(0, 0, 0, 8);
         TextView tvTitle = new TextView(this);
-        tvTitle.setText("🏪 管理已有商品（点击编辑）");
+        tvTitle.setText("🏪 管理已有商品（" + allItems.size() + "件）" + (multi ? " — 勾选后批量删除" : ""));
         tvTitle.setTextSize(14);
         tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvTitle.setPadding(0, 0, 0, 12);
-        container.addView(tvTitle);
-
+        LinearLayout.LayoutParams tvTitleP = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+        tvTitle.setLayoutParams(tvTitleP);
+        titleRow.addView(tvTitle);
+        Button btnBatch = new Button(this);
+        btnBatch.setText(multi ? "✅ 完成" : "🗑 批量删除");
+        btnBatch.setTextSize(12);
+        btnBatch.setOnClickListener(v -> {
+            shopMultiSelect = !shopMultiSelect;
+            if (!shopMultiSelect) shopSelectedIds.clear();
+            showManageShopDialog();
+        });
+        titleRow.addView(btnBatch);
+        container.addView(titleRow);
+        // 批量删除按钮引用（勾选变化时更新计数）
+        final Button[] delSelRef = new Button[1];
+        // 商品行
         for (ShopItem item : allItems) {
-            android.widget.LinearLayout row = new android.widget.LinearLayout(this);
-            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-            row.setPadding(8, 10, 8, 10);
-            android.widget.LinearLayout.LayoutParams rowParams = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(8, 8, 8, 8);
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
             rowParams.setMargins(0, 2, 0, 2);
             row.setLayoutParams(rowParams);
             row.setBackgroundColor(item.active ? 0xFFF5F5F5 : 0xFFFFF0F0);
-
+            // 缩略图（40dp）
+            ImageView ivThumb = new ImageView(this);
+            int thumbPx = (int) (40 * getResources().getDisplayMetrics().density);
+            LinearLayout.LayoutParams ivP = new LinearLayout.LayoutParams(thumbPx, thumbPx);
+            ivP.setMargins(0, 0, 8, 0);
+            ivThumb.setLayoutParams(ivP);
+            ivThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            ivThumb.setBackgroundColor(0xFFDDDDDD);
+            if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
+                try { Glide.with(this).load(new java.io.File(item.iconUrl)).into(ivThumb); }
+                catch (Exception ignored) {}
+            }
+            row.addView(ivThumb);
+            // 多选勾选框
+            CheckBox cb = new CheckBox(this);
+            cb.setVisibility(multi ? View.VISIBLE : View.GONE);
+            cb.setChecked(shopSelectedIds.contains(item.id));
+            cb.setOnCheckedChangeListener((b, checked) -> {
+                if (checked) shopSelectedIds.add(item.id); else shopSelectedIds.remove(item.id);
+                tvTitle.setText("🏪 管理已有商品（" + allItems.size() + "件）" + (multi ? " — 已选" + shopSelectedIds.size() + "件" : ""));
+                if (delSelRef[0] != null) delSelRef[0].setText("🗑 删除选中（" + shopSelectedIds.size() + "）");
+            });
+            row.addView(cb);
+            // 文本
             TextView tvItem = new TextView(this);
             String status = item.active ? "" : " [已下架]";
             tvItem.setText((item.active ? "🟢 " : "🔴 ") + item.name + status + "  🪙" + item.priceCoins);
             tvItem.setTextSize(13);
-            android.widget.LinearLayout.LayoutParams tvParams = new android.widget.LinearLayout.LayoutParams(
-                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
             tvItem.setLayoutParams(tvParams);
             row.addView(tvItem);
-
-            // 编辑按钮
-            Button btnEdit = new Button(this);
-            btnEdit.setText("✏️");
-            btnEdit.setTextSize(11);
-            btnEdit.setOnClickListener(v -> showEditShopItemDialog(item));
-            row.addView(btnEdit);
-
-            // 下架/上架按钮
-            Button btnToggle = new Button(this);
-            btnToggle.setText(item.active ? "⬇" : "⬆");
-            btnToggle.setTextSize(11);
-            btnToggle.setOnClickListener(v -> {
-                item.active = !item.active;
-                db.shopItemDao().update(item);
-                Toast.makeText(this, (item.active ? "✅ 已上架: " : "⬇ 已下架: ") + item.name, Toast.LENGTH_SHORT).show();
-                // 关闭当前对话框，重新打开
-                if (v.getRootView() != null) {
-                    ((ViewGroup) v.getRootView()).removeAllViews();
-                }
-                showManageShopDialog();
-            });
-            row.addView(btnToggle);
-
+            if (multi) {
+                // 多选模式：行点击切换勾选
+                row.setOnClickListener(v -> cb.setChecked(!cb.isChecked()));
+            } else {
+                // 编辑按钮
+                Button btnEdit = new Button(this);
+                btnEdit.setText("✏️");
+                btnEdit.setTextSize(11);
+                btnEdit.setOnClickListener(v -> showEditShopItemDialog(item));
+                row.addView(btnEdit);
+                // 删除按钮（单项）
+                Button btnDel = new Button(this);
+                btnDel.setText("🗑");
+                btnDel.setTextSize(11);
+                btnDel.setOnClickListener(v -> confirmDeleteShopItems(java.util.Collections.singletonList(item)));
+                row.addView(btnDel);
+                // 下架/上架按钮
+                Button btnToggle = new Button(this);
+                btnToggle.setText(item.active ? "⬇" : "⬆");
+                btnToggle.setTextSize(11);
+                btnToggle.setOnClickListener(v -> {
+                    item.active = !item.active;
+                    db.shopItemDao().update(item);
+                    Toast.makeText(this, (item.active ? "✅ 已上架: " : "⬇ 已下架: ") + item.name, Toast.LENGTH_SHORT).show();
+                    showManageShopDialog();
+                });
+                row.addView(btnToggle);
+            }
             container.addView(row);
         }
-
+        // 多选模式下底部批量删除按钮
+        if (multi) {
+            Button btnDelSel = new Button(this);
+            btnDelSel.setText("🗑 删除选中（" + shopSelectedIds.size() + "）");
+            btnDelSel.setTextSize(14);
+            btnDelSel.setPadding(0, 16, 0, 16);
+            delSelRef[0] = btnDelSel;
+            btnDelSel.setOnClickListener(v -> {
+                if (shopSelectedIds.isEmpty()) { Toast.makeText(this, "请先勾选要删除的商品", Toast.LENGTH_SHORT).show(); return; }
+                java.util.List<ShopItem> toDelete = new java.util.ArrayList<>();
+                for (ShopItem it : allItems) if (shopSelectedIds.contains(it.id)) toDelete.add(it);
+                confirmDeleteShopItems(toDelete);
+            });
+            container.addView(btnDelSel);
+        }
         new AlertDialog.Builder(this)
                 .setTitle("🏪 商城管理")
                 .setView(scrollView)
                 .setPositiveButton("关闭", null)
                 .show();
     }
+    /** 确认删除商品（单项或批量） */
+    private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
+        if (items.isEmpty()) return;
+        String names = "";
+        for (int i = 0; i < items.size() && i < 3; i++) names += "
+· " + items.get(i).name;
+        if (items.size() > 3) names += "
+· 等" + items.size() + "件商品";
+        new AlertDialog.Builder(this)
+                .setTitle("🗑 删除商品")
+                .setMessage("确定删除 " + items.size() + " 件商品？" + names + "
 
+此操作不可恢复！")
+                .setPositiveButton("删除", (d, w) -> {
+                    int ok = 0;
+                    for (ShopItem it : items) {
+                        try {
+                            if (it.iconUrl != null && it.iconUrl.contains("shop_images")) {
+                                java.io.File f = new java.io.File(it.iconUrl);
+                                if (f.exists()) f.delete();
+                            }
+                            db.shopItemDao().delete(it);
+                            ok++;
+                        } catch (Exception ignored) {}
+                    }
+                    shopSelectedIds.clear();
+                    shopMultiSelect = false;
+                    Toast.makeText(this, "🗑 已删除 " + ok + " 件商品", Toast.LENGTH_SHORT).show();
+                    showManageShopDialog();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
     /** 编辑商品 */
     private void showEditShopItemDialog(ShopItem item) {
         View view = getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
