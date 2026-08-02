@@ -3097,7 +3097,34 @@ private void showProfileSettings() {
     }
 
     private void doImportBackup() {
-        // Android 11+ 使用 SAF 文件选择器（无需存储权限）
+        // 优先列出默认目录（Download）的备份文件，用户可直接选择恢复
+        // 避免部分设备系统文件选择器（DocumentsUI）无法导航目录的问题
+        java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
+        if (backups != null && backups.length > 0) {
+            String[] names = new String[backups.length + 1];
+            for (int i = 0; i < backups.length; i++) {
+                names[i] = "📄 " + backups[i].getName() + " (" + (backups[i].length() / 1024) + " KB)";
+            }
+            names[backups.length] = "📂 选择其他位置（系统文件选择器）";
+            final java.io.File[] finalBackups = backups;
+            new AlertDialog.Builder(this)
+                    .setTitle("📥 选择备份文件恢复")
+                    .setMessage("📁 默认位置: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir())
+                    .setItems(names, (d, which) -> {
+                        if (which == finalBackups.length) {
+                            launchSystemFilePicker();
+                            return;
+                        }
+                        restoreFromBackupFile(finalBackups[which]);
+                    })
+                    .setNegativeButton("📂 选择其他位置", (d, w) -> launchSystemFilePicker())
+                    .show();
+        } else {
+            launchSystemFilePicker();
+        }
+    }
+    /** 系统文件选择器（SAF） */
+    private void launchSystemFilePicker() {
         android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -3105,14 +3132,35 @@ private void showProfileSettings() {
             openBackupLauncher.launch(intent);
         } catch (Exception e) {
             // 兼容无 launcher 注册的情况
-            java.io.File[] backups = com.sister.habits.utils.BackupExportHelper.findBackupFiles(this);
-            if (backups == null || backups.length == 0) {
-                Toast.makeText(this, "❌ 未找到备份文件，请检查 Download 目录", Toast.LENGTH_LONG).show();
-                return;
-            }
-            showBackupListDialog(backups);
-            return;
+            Toast.makeText(this, "❌ 无法打开文件选择器", Toast.LENGTH_LONG).show();
         }
+    }
+    /** 从本地备份文件恢复（含密码确认） */
+    private void restoreFromBackupFile(final java.io.File selected) {
+        android.widget.EditText etPwd = new android.widget.EditText(this);
+        etPwd.setHint("输入备份密码");
+        etPwd.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        new AlertDialog.Builder(this)
+                .setTitle("恢复: " + selected.getName())
+                .setMessage("⚠️ 恢复将覆盖当前所有数据！确定继续？")
+                .setView(etPwd)
+                .setPositiveButton("恢复", (d2, w2) -> {
+                    String pwd = etPwd.getText().toString();
+                    new Thread(() -> {
+                        try {
+                            com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
+                            helper.importBackup(selected, pwd);
+                            runOnUiThread(() -> {
+                                Toast.makeText(this, "✅ 恢复成功！请重启App", Toast.LENGTH_LONG).show();
+                                refreshAll();
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(() -> Toast.makeText(this, "❌ 恢复失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                        }
+                    }).start();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
     private void showRestorePasswordDialog(android.net.Uri uri) {
         String name = "";
