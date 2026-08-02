@@ -2987,16 +2987,17 @@ private void showProfileSettings() {
             return;
         }
         final boolean multi = shopMultiSelect;
+        final float den = getResources().getDisplayMetrics().density;
         android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
-        container.setPadding(16, 16, 16, 16);
+        container.setPadding((int)(8*den), (int)(8*den), (int)(8*den), (int)(8*den));
         scrollView.addView(container);
         // 标题行：标题 + 批量删除按钮
         LinearLayout titleRow = new LinearLayout(this);
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
         titleRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        titleRow.setPadding(0, 0, 0, 8);
+        titleRow.setPadding(0, 0, 0, (int)(6*den));
         TextView tvTitle = new TextView(this);
         tvTitle.setText("🏪 管理已有商品（" + allItems.size() + "件）" + (multi ? " — 勾选后批量删除" : ""));
         tvTitle.setTextSize(14);
@@ -3004,9 +3005,7 @@ private void showProfileSettings() {
         LinearLayout.LayoutParams tvTitleP = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
         tvTitle.setLayoutParams(tvTitleP);
         titleRow.addView(tvTitle);
-        Button btnBatch = new Button(this);
-        btnBatch.setText(multi ? "✅ 完成" : "🗑 批量删除");
-        btnBatch.setTextSize(12);
+        Button btnBatch = makeCompactButton(multi ? "✅ 完成" : "🗑 批量删除");
         btnBatch.setOnClickListener(v -> {
             shopMultiSelect = !shopMultiSelect;
             if (!shopMultiSelect) shopSelectedIds.clear();
@@ -3014,25 +3013,23 @@ private void showProfileSettings() {
         });
         titleRow.addView(btnBatch);
         container.addView(titleRow);
-        // 批量删除按钮引用（勾选变化时更新计数）
         final Button[] delSelRef = new Button[1];
-        // 商品行
         for (ShopItem item : allItems) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            row.setPadding(8, 8, 8, 8);
+            row.setPadding((int)(6*den), (int)(4*den), (int)(6*den), (int)(4*den));
             LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            rowParams.setMargins(0, 2, 0, 2);
+            rowParams.setMargins(0, (int)(1*den), 0, (int)(1*den));
             row.setLayoutParams(rowParams);
             row.setBackgroundColor(item.active ? 0xFFF5F5F5 : 0xFFFFF0F0);
-            // 缩略图（40dp）
+            // 缩略图（36dp）
             ImageView ivThumb = new ImageView(this);
-            int thumbPx = (int) (40 * getResources().getDisplayMetrics().density);
+            int thumbPx = (int) (36 * den);
             LinearLayout.LayoutParams ivP = new LinearLayout.LayoutParams(thumbPx, thumbPx);
-            ivP.setMargins(0, 0, 8, 0);
+            ivP.setMargins(0, 0, (int)(8*den), 0);
             ivThumb.setLayoutParams(ivP);
             ivThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
             ivThumb.setBackgroundColor(0xFFDDDDDD);
@@ -3051,35 +3048,36 @@ private void showProfileSettings() {
                 if (delSelRef[0] != null) delSelRef[0].setText("🗑 删除选中（" + shopSelectedIds.size() + "）");
             });
             row.addView(cb);
-            // 文本
-            TextView tvItem = new TextView(this);
-            String status = item.active ? "" : " [已下架]";
-            tvItem.setText((item.active ? "🟢 " : "🔴 ") + item.name + status + "  🪙" + item.priceCoins);
-            tvItem.setTextSize(13);
-            LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
+            // 文本两行：名称 / 价格+状态
+            LinearLayout textCol = new LinearLayout(this);
+            textCol.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-            tvItem.setLayoutParams(tvParams);
-            row.addView(tvItem);
+            textCol.setLayoutParams(textColP);
+            TextView tvName = new TextView(this);
+            tvName.setText(item.name);
+            tvName.setTextSize(14);
+            tvName.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvName.setMaxLines(1);
+            tvName.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            textCol.addView(tvName);
+            TextView tvInfo = new TextView(this);
+            String status = item.active ? "" : "  [已下架]";
+            tvInfo.setText("🪙 " + item.priceCoins + status);
+            tvInfo.setTextSize(12);
+            tvInfo.setTextColor(0xFF666666);
+            textCol.addView(tvInfo);
+            row.addView(textCol);
             if (multi) {
-                // 多选模式：行点击切换勾选
                 row.setOnClickListener(v -> cb.setChecked(!cb.isChecked()));
             } else {
-                // 编辑按钮
-                Button btnEdit = new Button(this);
-                btnEdit.setText("✏️");
-                btnEdit.setTextSize(11);
+                Button btnEdit = makeCompactButton("✏️");
                 btnEdit.setOnClickListener(v -> showEditShopItemDialog(item));
                 row.addView(btnEdit);
-                // 删除按钮（单项）
-                Button btnDel = new Button(this);
-                btnDel.setText("🗑");
-                btnDel.setTextSize(11);
+                Button btnDel = makeCompactButton("🗑");
                 btnDel.setOnClickListener(v -> confirmDeleteShopItems(java.util.Collections.singletonList(item)));
                 row.addView(btnDel);
-                // 下架/上架按钮
-                Button btnToggle = new Button(this);
-                btnToggle.setText(item.active ? "⬇" : "⬆");
-                btnToggle.setTextSize(11);
+                Button btnToggle = makeCompactButton(item.active ? "⬇" : "⬆");
                 btnToggle.setOnClickListener(v -> {
                     item.active = !item.active;
                     db.shopItemDao().update(item);
@@ -3090,12 +3088,11 @@ private void showProfileSettings() {
             }
             container.addView(row);
         }
-        // 多选模式下底部批量删除按钮
         if (multi) {
             Button btnDelSel = new Button(this);
             btnDelSel.setText("🗑 删除选中（" + shopSelectedIds.size() + "）");
             btnDelSel.setTextSize(14);
-            btnDelSel.setPadding(0, 16, 0, 16);
+            btnDelSel.setPadding(0, (int)(12*den), 0, (int)(12*den));
             delSelRef[0] = btnDelSel;
             btnDelSel.setOnClickListener(v -> {
                 if (shopSelectedIds.isEmpty()) { Toast.makeText(this, "请先勾选要删除的商品", Toast.LENGTH_SHORT).show(); return; }
@@ -3111,6 +3108,21 @@ private void showProfileSettings() {
                 .setPositiveButton("关闭", null)
                 .show();
     }
+
+    /** 紧凑小按钮（减少默认高度内边距） */
+    private Button makeCompactButton(String text) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextSize(12);
+        b.setAllCaps(false);
+        b.setMinWidth(0);
+        b.setMinHeight(0);
+        int p = (int) (6 * getResources().getDisplayMetrics().density);
+        b.setPadding(p, 2, p, 2);
+        return b;
+    }
+
+    /** 确认删除商品（单项或批量） */
     /** 确认删除商品（单项或批量） */
     private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
         if (items.isEmpty()) return;
