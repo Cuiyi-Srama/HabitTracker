@@ -1291,13 +1291,11 @@ public class ParentActivity extends AppCompatActivity {
 
     /** 📥 AI批量导入（读取AI生成的 items.json + 图片） */
     private void showAiImportDialog() {
-        // 优先 App 专属外部目录（无需存储权限），Download 目录作兜底
-        java.io.File importDir = new java.io.File(getExternalFilesDir(null), "habit_import");
-        java.io.File jsonFile = new java.io.File(importDir, "items.json");
-        if (!jsonFile.exists()) {
-            importDir = new java.io.File("/sdcard/Download/habit_import");
-            jsonFile = new java.io.File(importDir, "items.json");
-        }
+        // 优先 App 专属外部目录（无需存储权限），Download 目录作兜底（final，供lambda使用）
+        final java.io.File appDir = new java.io.File(getExternalFilesDir(null), "habit_import");
+        final java.io.File appJson = new java.io.File(appDir, "items.json");
+        final java.io.File importDir = appJson.exists() ? appDir : new java.io.File("/sdcard/Download/habit_import");
+        final java.io.File jsonFile = appJson.exists() ? appJson : new java.io.File(importDir, "items.json");
         if (!jsonFile.exists()) {
             Toast.makeText(this, "📥 未找到导入文件\n请在对话中把商品截图发给AI，生成后即可导入", Toast.LENGTH_LONG).show();
             return;
