@@ -221,52 +221,21 @@
         </LinearLayout>
     </LinearLayout>
 
-        <TextView
-        android:layout_width="wrap_content"
+            <!-- ✅ 集成审批中心：三类合并显示，点击勾选，长按单项审批 -->
+    <TextView
+        android:id="@+id/tv_hub_title"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/tv_approval_title"
-        android:text="💳 待审批兑换（点击单项审批）"
-        android:textSize="18sp"
-        android:textColor="@color/text_primary"
-        android:textStyle="bold"
+        android:padding="10dp"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_pending_approvals"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/tv_earning_title"
-        android:text="💰 待审批积分（孩子申请的额外积分）"
-        android:textSize="18sp"
-        android:textColor="@color/text_primary"
+        android:layout_marginBottom="4dp"
+        android:background="#E8F5E9"
+        android:text="✅ 审批中心（点击勾选 · 长按单项审批 · 支持批量）"
+        android:textSize="15sp"
         android:textStyle="bold"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="8dp" />
+        android:textColor="#2E7D32" />
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_pending_earnings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/tv_task_title"
-        android:text="⏳ 待确认任务（孩子提交的完成任务，含洗衣）"
-        android:textSize="18sp"
-        android:textColor="@color/text_primary"
-        android:textStyle="bold"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="8dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_pending_tasks"
+        android:id="@+id/rv_approval_hub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:nestedScrollingEnabled="false" />
