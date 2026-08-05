@@ -326,6 +326,8 @@ public class ParentActivity extends AppCompatActivity {
                                     progress.setProgress(Math.min(pct, 99));
                                     progress.setMessage("下载中: " + (read / 1024) + "KB / " + (contentLength / 1024) + "KB");
                                 } else {
+                                    // 服务器未返回Content-Length：切换不确定进度条，避免"进度条不走"
+                                    if (!progress.isIndeterminate()) progress.setIndeterminate(true);
                                     progress.setMessage("下载中: " + (read / 1024) + "KB...");
                                 }
                             });
