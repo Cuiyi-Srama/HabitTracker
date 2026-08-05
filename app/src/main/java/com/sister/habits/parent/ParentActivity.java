@@ -735,8 +735,6 @@ public class ParentActivity extends AppCompatActivity {
             for (Redemption x : db.redemptionDao().getByStatus("pending")) { if (x.id.equals(item.id)) { r = x; break; } }
             if (r == null) return;
             final Redemption fr = r;
-            final Redemption fr = r;
-            final Redemption fr = r;
             new AlertDialog.Builder(this)
                     .setTitle("审批兑换申请")
                     .setMessage("兑换: " + r.itemName + "\n消耗: " + r.coinsCost + " 金币\n申请时间: " + item.timeText)
@@ -748,8 +746,6 @@ public class ParentActivity extends AppCompatActivity {
             com.sister.habits.data.models.CoinEarning e = null;
             for (com.sister.habits.data.models.CoinEarning x : db.coinEarningDao().getPending()) { if (x.id.equals(item.id)) { e = x; break; } }
             if (e == null) return;
-            final com.sister.habits.data.models.CoinEarning fe = e;
-            final com.sister.habits.data.models.CoinEarning fe = e;
             final com.sister.habits.data.models.CoinEarning fe = e;
             new AlertDialog.Builder(this)
                     .setTitle("审批积分申请")
@@ -763,8 +759,6 @@ public class ParentActivity extends AppCompatActivity {
             for (Task x : db.taskDao().getPending()) { if (x.id.equals(item.id)) { t = x; break; } }
             if (t == null) return;
             final Task ft = t;
-            final Task ft = t;
-            final Task ft = t;
             new AlertDialog.Builder(this)
                     .setTitle("确认任务完成")
                     .setMessage("任务: " + t.title + "\n奖励: 🪙" + t.rewardCoins + "\n" + item.timeText)
@@ -776,8 +770,6 @@ public class ParentActivity extends AppCompatActivity {
             LaundryTask lt = null;
             for (LaundryTask x : db.laundryDao().getPending()) { if (String.valueOf(x.id).equals(item.id)) { lt = x; break; } }
             if (lt == null) return;
-            final LaundryTask flt = lt;
-            final LaundryTask flt = lt;
             final LaundryTask flt = lt;
             new AlertDialog.Builder(this)
                     .setTitle("审批洗衣任务")
