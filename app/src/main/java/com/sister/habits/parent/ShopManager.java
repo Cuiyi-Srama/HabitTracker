@@ -91,7 +91,7 @@ public class ShopManager {
                 "✅ 兑换审批（" + pendingCount + "项待处理）",
                 "📥 AI批量导入（对话发图识别）"
         };
-        new AlertDialog.Builder(activity)
+        AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle("🏪 商城管理")
                 .setItems(items, (d, which) -> {
                     switch (which) {
@@ -327,11 +327,13 @@ public class ShopManager {
             });
             container.addView(btnDelSel);
         }
-        new AlertDialog.Builder(activity)
+        AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle("🏪 商城管理")
                 .setView(scrollView)
                 .setPositiveButton("关闭", null)
-                .show();
+                .create();
+        dialog.show();
+        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
     }
     public void showEditShopItemDialog(ShopItem item) {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
