@@ -46,8 +46,8 @@ public class DatabaseInitializer {
 
         boolean needsReload = false;
         if (currentVersion != lastVersion && vocabDao.getActiveCount("builtin") > 0) {
-            // 年级配置变了 → 清空并重新加载
-            vocabDao.deleteAll();
+            // 年级配置变了 → 只清空内置词库重新加载（绝不删除外部词库词汇）
+            vocabDao.deleteByBankId("builtin");
             prefs.edit().putInt(KEY_LAST_GRADE_VERSION, currentVersion).apply();
             needsReload = true;
             Log.d(TAG, "年级配置变化，重新加载词库 (v" + lastVersion + "→ v" + currentVersion + ")");
