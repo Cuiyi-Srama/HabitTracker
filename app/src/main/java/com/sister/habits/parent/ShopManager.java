@@ -238,8 +238,35 @@ public class ShopManager {
         });
         titleRow.addView(btnBatch);
         container.addView(titleRow);
+        // 搜索框
+        android.widget.EditText etSearch = new android.widget.EditText(activity);
+        etSearch.setHint("🔍 搜索商品名称...");
+        etSearch.setTextSize(13);
+        etSearch.setSingleLine(true);
+        etSearch.setPadding((int)(8*den), 0, (int)(8*den), 0);
+        LinearLayout.LayoutParams etP = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        etP.setMargins(0, 0, 0, (int)(6*den));
+        etSearch.setLayoutParams(etP);
+        container.addView(etSearch);
+        // 列表构建（可搜索重建）
+        buildShopRows(allItems, container, multi, tvTitle);
+        etSearch.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+                String q = s.toString().trim();
+                java.util.List<ShopItem> filtered = new java.util.ArrayList<>();
+                if (q.isEmpty()) { filtered = allItems; }
+                else { for (ShopItem it : allItems) { if (it.name != null && it.name.contains(q)) filtered.add(it); } }
+                while (container.getChildCount() > 2) container.removeViewAt(container.getChildCount() - 1);
+                buildShopRows(filtered, container, multi, tvTitle);
+            }
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+    }
+    private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
         final Button[] delSelRef = new Button[1];
-        for (ShopItem item : allItems) {
+        for (ShopItem item : items) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(android.view.Gravity.CENTER_VERTICAL);
@@ -276,10 +303,12 @@ public class ShopManager {
             // 文本两行：名称 / 价格+状态
             LinearLayout textCol = new LinearLayout(activity);
             textCol.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+            // 确定性宽度：dialog为92%屏宽，减去缩略图/按钮/边距后显式计算，不依赖weight
+            int screenW = (int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f);
+            int textColW = screenW - thumbPx - (int)((8 + 12 + 16 + 102) * den);
+            if (textColW < (int)(80 * den)) textColW = (int)(80 * den);
+            LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(textColW, LinearLayout.LayoutParams.WRAP_CONTENT);
             textCol.setLayoutParams(textColP);
-            textCol.setMinimumWidth((int)(80 * den));
             TextView tvName = new TextView(activity);
             tvName.setText(item.name);
             tvName.setTextSize(14);
@@ -496,8 +525,11 @@ public class ShopManager {
         b.setAllCaps(false);
         b.setMinWidth(0);
         b.setMinHeight(0);
-        int p = (int) (6 * activity.getResources().getDisplayMetrics().density);
+        float den = activity.getResources().getDisplayMetrics().density;
+        int p = (int) (4 * den);
         b.setPadding(p, 2, p, 2);
+        b.setWidth((int)(34 * den));
+        b.setHeight((int)(34 * den));
         return b;
     }
     private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
