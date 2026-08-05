@@ -847,6 +847,7 @@ public class ParentActivity extends AppCompatActivity {
         }
     }
     public void loadPendingApprovals() {
+        if (rvPendingApprovals == null) return;  // 集成审批模式已移除旧rv
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
         selectedApprovalIds.clear();
         rvPendingApprovals.setAdapter(new ApprovalAdapter(pending, selectedApprovalIds, this::processApproval));
@@ -877,6 +878,7 @@ public class ParentActivity extends AppCompatActivity {
 
     // ===== 任务审批 =====
     private void loadPendingTasks() {
+        if (rvPendingTasks == null) return;  // 集成审批模式已移除旧rv
         List<Task> pending = db.taskDao().getPending();
         selectedTaskIds.clear();
         rvPendingTasks.setAdapter(new TaskApprovalAdapter(pending, selectedTaskIds, this::processTaskApproval));
@@ -1012,6 +1014,7 @@ public class ParentActivity extends AppCompatActivity {
     }
     /** 💰 加载待审批积分 */
     private void loadPendingEarnings() {
+        if (rvPendingEarnings == null) return;  // 集成审批模式已移除旧rv
         List<com.sister.habits.data.models.CoinEarning> pendings = db.coinEarningDao().getPending();
         selectedEarningIds.clear();
         rvPendingEarnings.setAdapter(new EarningApprovalAdapter(pendings, selectedEarningIds, this::processEarningApproval));
