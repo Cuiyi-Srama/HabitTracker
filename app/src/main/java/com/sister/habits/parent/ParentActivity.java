@@ -1038,24 +1038,27 @@ public class ParentActivity extends AppCompatActivity {
     }
     /** 批量批准/拒绝 */
     private void approveSelected(boolean approved) {
-        int total = selectedApprovalIds.size() + selectedTaskIds.size() + selectedEarningIds.size();
-        if (total == 0) {
+        if (selectedApprovalHub.isEmpty()) {
             Toast.makeText(this, "请先在列表中勾选要审批的项目", Toast.LENGTH_SHORT).show();
             return;
         }
-        // 兑换审批
-        for (Redemption r : db.redemptionDao().getByStatus("pending")) {
-            if (selectedApprovalIds.contains(r.id)) processApproval(r, approved);
+        int total = selectedApprovalHub.size();
+        java.util.List<Redemption> reds = db.redemptionDao().getByStatus("pending");
+        java.util.List<Task> tasks = db.taskDao().getPending();
+        java.util.List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
+        java.util.List<LaundryTask> laundries = db.laundryDao().getPending();
+        for (String key : new java.util.ArrayList<>(selectedApprovalHub)) {
+            String[] p = key.split(":", 2);
+            if (p.length != 2) continue;
+            int type = Integer.parseInt(p[0]);
+            String id = p[1];
+            if (type == 0) { for (Redemption r : reds) if (r.id.equals(id)) processApproval(r, approved); }
+            else if (type == 1) { for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(id)) processEarningApproval(e, approved); }
+            else if (type == 2) { for (Task t : tasks) if (t.id.equals(id)) processTaskApproval(t, approved); }
+            else if (type == 3) { for (LaundryTask lt : laundries) if (lt.id.equals(id)) laundryApprove(lt, approved); }
         }
-        // 任务审批
-        for (Task t : db.taskDao().getPending()) {
-            if (selectedTaskIds.contains(t.id)) processTaskApproval(t, approved);
-        }
-        // 积分审批
-        for (com.sister.habits.data.models.CoinEarning e : db.coinEarningDao().getPending()) {
-            if (selectedEarningIds.contains(e.id)) processEarningApproval(e, approved);
-        }
-        refreshAll();
+        selectedApprovalHub.clear();
+        loadApprovalHub();
         Toast.makeText(this, (approved ? "✅ 已批量批准 " : "❌ 已批量拒绝 ") + total + " 项", Toast.LENGTH_SHORT).show();
     }
 
