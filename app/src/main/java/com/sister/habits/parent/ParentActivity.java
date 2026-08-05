@@ -757,7 +757,7 @@ public class ParentActivity extends AppCompatActivity {
         for (com.sister.habits.data.models.CoinEarning e : earns) {
             final com.sister.habits.data.models.CoinEarning fe = e;
             String desc = e.description != null ? e.description : "额外积分";
-            container.addView(makeHubRow("💰 +" + e.amount + "分 " + desc, e.createdAt,
+            container.addView(makeHubRow("💰 +" + e.amount + "分 " + desc, e.requestedAt,
                     () -> { processEarningApproval(fe, true); if (hubRef[0] != null) hubRef[0].dismiss(); },
                     () -> { processEarningApproval(fe, false); if (hubRef[0] != null) hubRef[0].dismiss(); }, den));
         }
