@@ -328,6 +328,7 @@ public class ShopManager {
             });
             container.addView(btnDelSel);
         }
+    }
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle("🏪 商城管理")
                 .setView(scrollView)
