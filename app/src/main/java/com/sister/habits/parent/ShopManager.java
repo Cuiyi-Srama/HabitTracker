@@ -273,6 +273,7 @@ public class ShopManager {
     }
     private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
         final Button[] delSelRef = new Button[1];
+        float den = activity.getResources().getDisplayMetrics().density;
         for (ShopItem item : items) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
