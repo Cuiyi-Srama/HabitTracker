@@ -263,6 +263,13 @@ public class ShopManager {
             }
             public void afterTextChanged(android.text.Editable s) {}
         });
+        AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle("🏪 商城管理")
+                .setView(scrollView)
+                .setPositiveButton("关闭", null)
+                .create();
+        dialog.show();
+        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
     }
     private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
         final Button[] delSelRef = new Button[1];
@@ -357,14 +364,6 @@ public class ShopManager {
             });
             container.addView(btnDelSel);
         }
-    }
-        AlertDialog dialog = new AlertDialog.Builder(activity)
-                .setTitle("🏪 商城管理")
-                .setView(scrollView)
-                .setPositiveButton("关闭", null)
-                .create();
-        dialog.show();
-        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
     }
     public void showEditShopItemDialog(ShopItem item) {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_add_shop_item, null);
