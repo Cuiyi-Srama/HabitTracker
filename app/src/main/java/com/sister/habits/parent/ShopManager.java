@@ -269,7 +269,7 @@ public class ShopManager {
                 .setPositiveButton("关闭", null)
                 .create();
         dialog.show();
-        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.85f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
     }
     private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
         final Button[] delSelRef = new Button[1];
@@ -313,7 +313,7 @@ public class ShopManager {
             LinearLayout textCol = new LinearLayout(activity);
             textCol.setOrientation(LinearLayout.VERTICAL);
             // 确定性宽度：dialog为92%屏宽，减去缩略图/按钮/边距后显式计算，不依赖weight
-            int screenW = (int)(activity.getResources().getDisplayMetrics().widthPixels * 0.92f);
+            int screenW = (int)(activity.getResources().getDisplayMetrics().widthPixels * 0.85f);
             int textColW = screenW - thumbPx - (int)((8 + 12 + 16 + 102) * den);
             if (textColW < (int)(80 * den)) textColW = (int)(80 * den);
             LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(textColW, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -529,8 +529,7 @@ public class ShopManager {
         float den = activity.getResources().getDisplayMetrics().density;
         int p = (int) (4 * den);
         b.setPadding(p, 2, p, 2);
-        b.setWidth((int)(34 * den));
-        b.setHeight((int)(34 * den));
+        b.setLayoutParams(new LinearLayout.LayoutParams((int)(34 * den), (int)(34 * den)));
         return b;
     }
     private void confirmDeleteShopItems(java.util.List<ShopItem> items) {
