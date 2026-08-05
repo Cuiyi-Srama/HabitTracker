@@ -268,8 +268,8 @@ public class ShopManager {
                 .setView(scrollView)
                 .setPositiveButton("关闭", null)
                 .create();
+        dialog.setOnShowListener(d -> dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.80f), android.view.WindowManager.LayoutParams.WRAP_CONTENT));
         dialog.show();
-        dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.80f), android.view.WindowManager.LayoutParams.WRAP_CONTENT);
     }
     private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
         final Button[] delSelRef = new Button[1];
@@ -312,12 +312,10 @@ public class ShopManager {
             // 文本两行：名称 / 价格+状态
             LinearLayout textCol = new LinearLayout(activity);
             textCol.setOrientation(LinearLayout.VERTICAL);
-            // 确定性宽度：dialog为92%屏宽，减去缩略图/按钮/边距后显式计算，不依赖weight
-            int screenW = (int)(activity.getResources().getDisplayMetrics().widthPixels * 0.80f);
-            int textColW = screenW - thumbPx - (int)((8 + 12 + 16 + 90) * den);
-            if (textColW < (int)(80 * den)) textColW = (int)(80 * den);
-            LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(textColW, LinearLayout.LayoutParams.WRAP_CONTENT);
+            // weight方案：dialog宽度在onShow时已确定(80%屏宽)，weight正常分配，永不溢出
+            LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
             textCol.setLayoutParams(textColP);
+            textCol.setMinimumWidth((int)(60 * den));
             TextView tvName = new TextView(activity);
             tvName.setText(item.name);
             tvName.setTextSize(14);
