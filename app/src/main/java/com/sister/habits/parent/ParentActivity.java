@@ -814,8 +814,7 @@ public class ParentActivity extends AppCompatActivity {
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
         row.setLayoutParams(rp);
         android.widget.TextView tv = new android.widget.TextView(this);
-        tv.setText(text + (time > 0 ? "
-" + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(time)) : ""));
+        tv.setText(text + (time > 0 ? "\n" + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(time)) : ""));
         tv.setTextSize(14);
         tv.setTextColor(0xFF333333);
         android.widget.LinearLayout.LayoutParams tp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
