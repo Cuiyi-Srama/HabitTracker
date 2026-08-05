@@ -750,9 +750,7 @@ public class ParentActivity extends AppCompatActivity {
             if (e == null) return;
             new AlertDialog.Builder(this)
                     .setTitle("审批积分申请")
-                    .setMessage("金额: +" + e.amount + "分
-来源: " + e.sourceType + "
-" + item.timeText)
+                    .setMessage("金额: +" + e.amount + "分\n来源: " + e.sourceType + "\n" + item.timeText)
                     .setPositiveButton("✅ 确认", (d, w) -> { processEarningApproval(e, true); loadApprovalHub(); })
                     .setNegativeButton("❌ 拒绝", (d, w) -> { processEarningApproval(e, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
@@ -763,9 +761,7 @@ public class ParentActivity extends AppCompatActivity {
             if (t == null) return;
             new AlertDialog.Builder(this)
                     .setTitle("确认任务完成")
-                    .setMessage("任务: " + t.title + "
-奖励: 🪙" + t.rewardCoins + "
-" + item.timeText)
+                    .setMessage("任务: " + t.title + "\n奖励: 🪙" + t.rewardCoins + "\n" + item.timeText)
                     .setPositiveButton("✅ 确认发金币", (d, w) -> { processTaskApproval(t, true); loadApprovalHub(); })
                     .setNegativeButton("❌ 拒绝", (d, w) -> { processTaskApproval(t, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
@@ -776,9 +772,7 @@ public class ParentActivity extends AppCompatActivity {
             if (lt == null) return;
             new AlertDialog.Builder(this)
                     .setTitle("审批洗衣任务")
-                    .setMessage("衣物: " + lt.clothingType + " ×" + lt.quantity + "
-积分: " + lt.totalPoints + "分
-" + item.timeText)
+                    .setMessage("衣物: " + lt.clothingType + " ×" + lt.quantity + "\n积分: " + lt.totalPoints + "分\n" + item.timeText)
                     .setPositiveButton("✅ 通过", (d, w) -> { laundryApprove(lt, true); loadApprovalHub(); })
                     .setNegativeButton("❌ 拒绝", (d, w) -> { laundryApprove(lt, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
