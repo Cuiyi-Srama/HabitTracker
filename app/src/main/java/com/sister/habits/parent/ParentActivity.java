@@ -451,9 +451,6 @@ public class ParentActivity extends AppCompatActivity {
 
         // ✅ 初始化UI控件
         tvStats = findViewById(R.id.tv_parent_stats);
-        rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
-        rvPendingTasks = findViewById(R.id.rv_pending_tasks);
-        rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
         rvApprovalHub = findViewById(R.id.rv_approval_hub);
         btnAddTask = findViewById(R.id.btn_add_task);
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
@@ -716,7 +713,7 @@ public class ParentActivity extends AppCompatActivity {
         List<LaundryTask> laundries = db.laundryDao().getPending();
         for (LaundryTask lt : laundries) {
             ApprovalItem it = new ApprovalItem();
-            it.type = 3; it.id = lt.id;
+            it.type = 3; it.id = String.valueOf(lt.id);
             it.title = "🧺 " + lt.clothingType + " ×" + lt.quantity + " = " + lt.totalPoints + "分";
             it.ts = lt.submittedAt;
             it.timeText = sdf.format(new Date(lt.submittedAt));
