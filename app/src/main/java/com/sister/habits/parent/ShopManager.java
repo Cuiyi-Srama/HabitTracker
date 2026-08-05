@@ -279,6 +279,7 @@ public class ShopManager {
             LinearLayout.LayoutParams textColP = new LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
             textCol.setLayoutParams(textColP);
+            textCol.setMinimumWidth((int)(80 * den));
             TextView tvName = new TextView(activity);
             tvName.setText(item.name);
             tvName.setTextSize(14);
