@@ -202,11 +202,24 @@ public class WordFragment extends Fragment {
         }
 
         if (words.isEmpty()) {
-            tvWord.setText("🎉 全部完成！");
-            tvPhonetic.setText(isReviewMode ? "复习完了，真棒 🎉" : "今日新词已学完 🎉");
-            tvPrompt.setText(isReviewMode
-                    ? "所有单词都检测通过了！去逛逛商城吧 🏪"
-                    : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
+            // 学习模式下先检查词库是否有词：区分"词库为空"与"今日已学完"
+            boolean bankHasWords = false;
+            if (!isReviewMode) {
+                try {
+                    bankHasWords = db.vocabularyDao().getActiveCount(bankId) > 0;
+                } catch (Exception ignored) {}
+            }
+            if (!isReviewMode && !bankHasWords) {
+                tvWord.setText("📭 词库暂无单词");
+                tvPhonetic.setText("当前词库没有可用单词");
+                tvPrompt.setText("请家长在「家长管理 → 设置 → 词库管理」中检查词库或切换到其他词库");
+            } else {
+                tvWord.setText("🎉 全部完成！");
+                tvPhonetic.setText(isReviewMode ? "复习完了，真棒 🎉" : "今日新词已学完 🎉");
+                tvPrompt.setText(isReviewMode
+                        ? "所有单词都检测通过了！去逛逛商城吧 🏪"
+                        : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
+            }
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
             updateStats();
             return;
