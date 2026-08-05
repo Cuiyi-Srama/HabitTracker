@@ -74,11 +74,12 @@ public class ParentActivity extends AppCompatActivity {
     private ProfileManager profile;
 
     private TextView tvStats;
-    private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings;
+    private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings, rvApprovalHub;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync;
     private View btnLaundryReview, btnGateManage, btnApprovalCenter;
     private View btnApproveSelected, btnRejectSelected;
     private final java.util.Set<String> selectedApprovalIds = new java.util.HashSet<>();
+    private final java.util.Set<String> selectedApprovalHub = new java.util.HashSet<>();
     private final java.util.Set<String> selectedTaskIds = new java.util.HashSet<>();
     private final java.util.Set<String> selectedEarningIds = new java.util.HashSet<>();
 
