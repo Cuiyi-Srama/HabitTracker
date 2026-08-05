@@ -826,8 +826,7 @@ public class ParentActivity extends AppCompatActivity {
         public void onBindViewHolder(ViewHolder holder, int position) {
             ApprovalItem item = items.get(position);
             final String key = item.type + ":" + item.id;
-            holder.textView.setText(item.title + "
-" + item.timeText);
+            holder.textView.setText(item.title + "\n" + item.timeText);
             holder.itemView.setActivated(selected.contains(key));
             holder.itemView.setOnClickListener(v -> {
                 if (selected.contains(key)) selected.remove(key);
