@@ -734,44 +734,48 @@ public class ParentActivity extends AppCompatActivity {
             Redemption r = null;
             for (Redemption x : db.redemptionDao().getByStatus("pending")) { if (x.id.equals(item.id)) { r = x; break; } }
             if (r == null) return;
+            final Redemption fr = r;
             new AlertDialog.Builder(this)
                     .setTitle("审批兑换申请")
                     .setMessage("兑换: " + r.itemName + "\n消耗: " + r.coinsCost + " 金币\n申请时间: " + item.timeText)
-                    .setPositiveButton("✅ 确认", (d, w) -> { processApproval(r, true); loadApprovalHub(); })
-                    .setNegativeButton("❌ 拒绝", (d, w) -> { processApproval(r, false); loadApprovalHub(); })
+                    .setPositiveButton("✅ 确认", (d, w) -> { processApproval(fr, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processApproval(fr, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
                     .show();
         } else if (item.type == 1) {
             com.sister.habits.data.models.CoinEarning e = null;
             for (com.sister.habits.data.models.CoinEarning x : db.coinEarningDao().getPending()) { if (x.id.equals(item.id)) { e = x; break; } }
             if (e == null) return;
+            final com.sister.habits.data.models.CoinEarning fe = e;
             new AlertDialog.Builder(this)
                     .setTitle("审批积分申请")
                     .setMessage("金额: +" + e.amount + "分\n来源: " + e.sourceType + "\n" + item.timeText)
-                    .setPositiveButton("✅ 确认", (d, w) -> { processEarningApproval(e, true); loadApprovalHub(); })
-                    .setNegativeButton("❌ 拒绝", (d, w) -> { processEarningApproval(e, false); loadApprovalHub(); })
+                    .setPositiveButton("✅ 确认", (d, w) -> { processEarningApproval(fe, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processEarningApproval(fe, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
                     .show();
         } else if (item.type == 2) {
             Task t = null;
             for (Task x : db.taskDao().getPending()) { if (x.id.equals(item.id)) { t = x; break; } }
             if (t == null) return;
+            final Task ft = t;
             new AlertDialog.Builder(this)
                     .setTitle("确认任务完成")
                     .setMessage("任务: " + t.title + "\n奖励: 🪙" + t.rewardCoins + "\n" + item.timeText)
-                    .setPositiveButton("✅ 确认发金币", (d, w) -> { processTaskApproval(t, true); loadApprovalHub(); })
-                    .setNegativeButton("❌ 拒绝", (d, w) -> { processTaskApproval(t, false); loadApprovalHub(); })
+                    .setPositiveButton("✅ 确认发金币", (d, w) -> { processTaskApproval(ft, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processTaskApproval(ft, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
                     .show();
         } else if (item.type == 3) {
             LaundryTask lt = null;
             for (LaundryTask x : db.laundryDao().getPending()) { if (String.valueOf(x.id).equals(item.id)) { lt = x; break; } }
             if (lt == null) return;
+            final LaundryTask flt = lt;
             new AlertDialog.Builder(this)
                     .setTitle("审批洗衣任务")
                     .setMessage("衣物: " + lt.clothingType + " ×" + lt.quantity + "\n积分: " + lt.totalPoints + "分\n" + item.timeText)
-                    .setPositiveButton("✅ 通过", (d, w) -> { laundryApprove(lt, true); loadApprovalHub(); })
-                    .setNegativeButton("❌ 拒绝", (d, w) -> { laundryApprove(lt, false); loadApprovalHub(); })
+                    .setPositiveButton("✅ 通过", (d, w) -> { laundryApprove(flt, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { laundryApprove(flt, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
                     .show();
         }
