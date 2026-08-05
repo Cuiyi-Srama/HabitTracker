@@ -765,7 +765,7 @@ public class ParentActivity extends AppCompatActivity {
                     .show();
         } else if (item.type == 3) {
             LaundryTask lt = null;
-            for (LaundryTask x : db.laundryDao().getPending()) { if (x.id.equals(item.id)) { lt = x; break; } }
+            for (LaundryTask x : db.laundryDao().getPending()) { if (String.valueOf(x.id).equals(item.id)) { lt = x; break; } }
             if (lt == null) return;
             new AlertDialog.Builder(this)
                     .setTitle("审批洗衣任务")
