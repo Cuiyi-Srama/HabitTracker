@@ -475,7 +475,7 @@ public class ParentActivity extends AppCompatActivity {
             btnGateManage.setOnClickListener(v -> { soundHelper.playClickSound(); showGateManageDialog(); });
         }
         if (btnApprovalCenter != null) {
-            btnApprovalCenter.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); Toast.makeText(this, "✅ 审批中心已刷新", Toast.LENGTH_SHORT).show(); });
+            btnApprovalCenter.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); showApprovalHubDialog(0); });
         }
         if (btnApproveSelected != null) {
             btnApproveSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(true); });
@@ -483,6 +483,13 @@ public class ParentActivity extends AppCompatActivity {
         if (btnRejectSelected != null) {
             btnRejectSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(false); });
         }
+        // ✅ 三个审批标题可点击 → 打开审批Hub对应区
+        android.widget.TextView tvApprovalTitle = findViewById(R.id.tv_approval_title);
+        if (tvApprovalTitle != null) tvApprovalTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(0); });
+        android.widget.TextView tvEarningTitle = findViewById(R.id.tv_earning_title);
+        if (tvEarningTitle != null) tvEarningTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(1); });
+        android.widget.TextView tvTaskTitle = findViewById(R.id.tv_task_title);
+        if (tvTaskTitle != null) tvTaskTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(2); });
 
         // ✅ 通知渠道
         NotificationHelper.createChannel(this);
@@ -723,6 +730,118 @@ public class ParentActivity extends AppCompatActivity {
             .setItems(labels, (dialog, which) -> showLaundryApproveDialog(laundryPending.get(which)))
             .setNegativeButton("← 返回", null)
             .show();
+    }
+    /** ✅ 审批中心统一Hub（三区：兑换/积分/任务） */
+    private void showApprovalHubDialog(int tab) {
+        java.util.List<Redemption> reds = db.redemptionDao().getByStatus("pending");
+        java.util.List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
+        java.util.List<Task> tasks = db.taskDao().getPending();
+        java.util.List<LaundryTask> laundries = db.laundryDao().getPending();
+        final float den = getResources().getDisplayMetrics().density;
+        final android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setPadding((int)(14*den), (int)(10*den), (int)(14*den), (int)(10*den));
+        final AlertDialog[] hubRef = new AlertDialog[1];
+        // 区1: 兑换
+        container.addView(makeHubSectionTitle("💳 待审批兑换（" + reds.size() + "）", den));
+        if (reds.isEmpty()) container.addView(makeHubEmpty("暂无待审批兑换", den));
+        for (Redemption r : reds) {
+            final Redemption fr = r;
+            container.addView(makeHubRow("🪙 " + r.itemName + "（" + r.coinsCost + "金币）", r.requestedAt,
+                    () -> { processApproval(fr, true); if (hubRef[0] != null) hubRef[0].dismiss(); },
+                    () -> { processApproval(fr, false); if (hubRef[0] != null) hubRef[0].dismiss(); }, den));
+        }
+        // 区2: 积分
+        container.addView(makeHubSectionTitle("💰 待审批积分（" + earns.size() + "）", den));
+        if (earns.isEmpty()) container.addView(makeHubEmpty("暂无待审批积分", den));
+        for (com.sister.habits.data.models.CoinEarning e : earns) {
+            final com.sister.habits.data.models.CoinEarning fe = e;
+            String desc = e.description != null ? e.description : "额外积分";
+            container.addView(makeHubRow("💰 +" + e.amount + "分 " + desc, e.createdAt,
+                    () -> { processEarningApproval(fe, true); if (hubRef[0] != null) hubRef[0].dismiss(); },
+                    () -> { processEarningApproval(fe, false); if (hubRef[0] != null) hubRef[0].dismiss(); }, den));
+        }
+        // 区3: 任务（含洗衣）
+        int taskTotal = tasks.size() + laundries.size();
+        container.addView(makeHubSectionTitle("⏳ 待确认任务（" + taskTotal + "）", den));
+        if (taskTotal == 0) container.addView(makeHubEmpty("暂无待确认任务", den));
+        for (Task t : tasks) {
+            final Task ft = t;
+            container.addView(makeHubRow("📋 " + t.title + " 🪙+" + t.rewardCoins, t.createdAt,
+                    () -> { processTaskApproval(ft, true); if (hubRef[0] != null) hubRef[0].dismiss(); },
+                    () -> { processTaskApproval(ft, false); if (hubRef[0] != null) hubRef[0].dismiss(); }, den));
+        }
+        for (LaundryTask lt : laundries) {
+            container.addView(makeHubRow("🧺 " + lt.clothingType + " ×" + lt.quantity + " = " + lt.totalPoints + "分", lt.submittedAt,
+                    () -> showLaundryApproveDialog(lt), null, den));
+        }
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);
+        sv.addView(container);
+        AlertDialog dlg = new AlertDialog.Builder(this)
+                .setTitle("✅ 审批中心")
+                .setView(sv)
+                .setNegativeButton("关闭", null)
+                .create();
+        hubRef[0] = dlg;
+        dlg.show();
+    }
+    /** Hub分区标题 */
+    private TextView makeHubSectionTitle(String text, float den) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(15);
+        tv.setTypeface(null, android.graphics.Typeface.BOLD);
+        tv.setTextColor(0xFF2E7D32);
+        tv.setPadding(0, (int)(10*den), 0, (int)(4*den));
+        return tv;
+    }
+    /** Hub空提示 */
+    private TextView makeHubEmpty(String text, float den) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(13);
+        tv.setTextColor(0xFF999999);
+        tv.setPadding(0, 0, 0, (int)(8*den));
+        return tv;
+    }
+    /** Hub审批行：文字 + ✅/❌ 按钮 */
+    private android.widget.LinearLayout makeHubRow(String text, long time, Runnable onOk, Runnable onNo, float den) {
+        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(0, (int)(4*den), 0, (int)(4*den));
+        android.widget.LinearLayout.LayoutParams rp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        row.setLayoutParams(rp);
+        android.widget.TextView tv = new android.widget.TextView(this);
+        tv.setText(text + (time > 0 ? "
+" + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(time)) : ""));
+        tv.setTextSize(14);
+        tv.setTextColor(0xFF333333);
+        android.widget.LinearLayout.LayoutParams tp = new android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+        tv.setLayoutParams(tp);
+        row.addView(tv);
+        if (onOk != null) {
+            Button bOk = new Button(this);
+            bOk.setText("✅");
+            bOk.setTextSize(12);
+            bOk.setAllCaps(false);
+            bOk.setMinWidth(0); bOk.setMinHeight(0);
+            bOk.setPadding((int)(6*den), 2, (int)(6*den), 2);
+            bOk.setOnClickListener(v -> onOk.run());
+            row.addView(bOk);
+        }
+        if (onNo != null) {
+            Button bNo = new Button(this);
+            bNo.setText("❌");
+            bNo.setTextSize(12);
+            bNo.setAllCaps(false);
+            bNo.setMinWidth(0); bNo.setMinHeight(0);
+            bNo.setPadding((int)(6*den), 2, (int)(6*den), 2);
+            bNo.setOnClickListener(v -> onNo.run());
+            row.addView(bNo);
+        }
+        return row;
     }
     /** 💰 加载待审批积分 */
     private void loadPendingEarnings() {
