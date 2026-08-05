@@ -1046,7 +1046,7 @@ public class ParentActivity extends AppCompatActivity {
             if (type == 0) { for (Redemption r : reds) if (r.id.equals(id)) processApproval(r, approved); }
             else if (type == 1) { for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(id)) processEarningApproval(e, approved); }
             else if (type == 2) { for (Task t : tasks) if (t.id.equals(id)) processTaskApproval(t, approved); }
-            else if (type == 3) { for (LaundryTask lt : laundries) if (lt.id.equals(id)) laundryApprove(lt, approved); }
+            else if (type == 3) { for (LaundryTask lt : laundries) if (String.valueOf(lt.id).equals(id)) laundryApprove(lt, approved); }
         }
         selectedApprovalHub.clear();
         loadApprovalHub();
