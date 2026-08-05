@@ -739,9 +739,7 @@ public class ParentActivity extends AppCompatActivity {
             if (r == null) return;
             new AlertDialog.Builder(this)
                     .setTitle("审批兑换申请")
-                    .setMessage("兑换: " + r.itemName + "
-消耗: " + r.coinsCost + " 金币
-申请时间: " + item.timeText)
+                    .setMessage("兑换: " + r.itemName + "\n消耗: " + r.coinsCost + " 金币\n申请时间: " + item.timeText)
                     .setPositiveButton("✅ 确认", (d, w) -> { processApproval(r, true); loadApprovalHub(); })
                     .setNegativeButton("❌ 拒绝", (d, w) -> { processApproval(r, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
