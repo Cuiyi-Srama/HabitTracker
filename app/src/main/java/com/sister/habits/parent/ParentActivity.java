@@ -453,6 +453,7 @@ public class ParentActivity extends AppCompatActivity {
         rvPendingApprovals = findViewById(R.id.rv_pending_approvals);
         rvPendingTasks = findViewById(R.id.rv_pending_tasks);
         rvPendingEarnings = findViewById(R.id.rv_pending_earnings);
+        rvApprovalHub = findViewById(R.id.rv_approval_hub);
         btnAddTask = findViewById(R.id.btn_add_task);
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
         btnSettings = findViewById(R.id.btn_settings);
@@ -483,13 +484,9 @@ public class ParentActivity extends AppCompatActivity {
         if (btnRejectSelected != null) {
             btnRejectSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(false); });
         }
-        // ✅ 三个审批标题可点击 → 打开审批Hub对应区
-        android.widget.TextView tvApprovalTitle = findViewById(R.id.tv_approval_title);
-        if (tvApprovalTitle != null) tvApprovalTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(0); });
-        android.widget.TextView tvEarningTitle = findViewById(R.id.tv_earning_title);
-        if (tvEarningTitle != null) tvEarningTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(1); });
-        android.widget.TextView tvTaskTitle = findViewById(R.id.tv_task_title);
-        if (tvTaskTitle != null) tvTaskTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(2); });
+        // ✅ 集成审批中心标题可点击 → 打开Hub对话框（快速单项审批）
+        android.widget.TextView tvHubTitle = findViewById(R.id.tv_hub_title);
+        if (tvHubTitle != null) tvHubTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(0); });
 
         // ✅ 通知渠道
         NotificationHelper.createChannel(this);
@@ -638,9 +635,7 @@ public class ParentActivity extends AppCompatActivity {
 
     private void refreshAll() {
         refreshStats();
-        loadPendingApprovals();
-        loadPendingEarnings();
-        loadPendingTasks();
+        loadApprovalHub();
     }
 
         private void refreshStats() {
@@ -678,6 +673,178 @@ public class ParentActivity extends AppCompatActivity {
         );
     }
 
+    // ================= 集成审批中心（v3.0.8） =================
+    private static class ApprovalItem {
+        int type;   // 0兑换 1积分 2任务 3洗衣
+        String id;
+        String title;
+        String timeText;
+        long ts;
+    }
+    /** 加载集成审批列表（兑换+积分+任务+洗衣 合并） */
+    public void loadApprovalHub() {
+        java.util.List<ApprovalItem> items = new java.util.ArrayList<>();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.CHINA);
+        List<Redemption> reds = db.redemptionDao().getByStatus("pending");
+        for (Redemption r : reds) {
+            ApprovalItem it = new ApprovalItem();
+            it.type = 0; it.id = r.id;
+            it.title = "🪙 兑换 " + r.itemName + "（" + r.coinsCost + "金币）";
+            it.ts = r.requestedAt;
+            it.timeText = sdf.format(new Date(r.requestedAt));
+            items.add(it);
+        }
+        List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
+        for (com.sister.habits.data.models.CoinEarning e : earns) {
+            ApprovalItem it = new ApprovalItem();
+            it.type = 1; it.id = e.id;
+            it.title = "💰 +" + e.amount + "分 " + (e.description != null ? e.description : "额外积分");
+            it.ts = e.requestedAt;
+            it.timeText = sdf.format(new Date(e.requestedAt));
+            items.add(it);
+        }
+        List<Task> tasks = db.taskDao().getPending();
+        for (Task t : tasks) {
+            ApprovalItem it = new ApprovalItem();
+            it.type = 2; it.id = t.id;
+            it.title = "📋 " + t.title + " 🪙+" + t.rewardCoins;
+            it.ts = t.createdAt;
+            it.timeText = sdf.format(new Date(t.createdAt));
+            items.add(it);
+        }
+        List<LaundryTask> laundries = db.laundryDao().getPending();
+        for (LaundryTask lt : laundries) {
+            ApprovalItem it = new ApprovalItem();
+            it.type = 3; it.id = lt.id;
+            it.title = "🧺 " + lt.clothingType + " ×" + lt.quantity + " = " + lt.totalPoints + "分";
+            it.ts = lt.submittedAt;
+            it.timeText = sdf.format(new Date(lt.submittedAt));
+            items.add(it);
+        }
+        items.sort((a, b) -> Long.compare(b.ts, a.ts));
+        if (rvApprovalHub != null) {
+            rvApprovalHub.setAdapter(new ApprovalHubAdapter(items, selectedApprovalHub, this));
+        }
+        android.widget.TextView tvHub = findViewById(R.id.tv_hub_title);
+        if (tvHub != null) {
+            tvHub.setText("✅ 审批中心（" + items.size() + "项待处理 · 点击勾选 · 长按单项审批 · 支持批量）");
+        }
+    }
+    /** 单项审批详情对话框（操作后刷新列表，不跳转） */
+    public void showApprovalDetail(ApprovalItem item) {
+        if (item.type == 0) {
+            Redemption r = null;
+            for (Redemption x : db.redemptionDao().getByStatus("pending")) { if (x.id.equals(item.id)) { r = x; break; } }
+            if (r == null) return;
+            new AlertDialog.Builder(this)
+                    .setTitle("审批兑换申请")
+                    .setMessage("兑换: " + r.itemName + "
+消耗: " + r.coinsCost + " 金币
+申请时间: " + item.timeText)
+                    .setPositiveButton("✅ 确认", (d, w) -> { processApproval(r, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processApproval(r, false); loadApprovalHub(); })
+                    .setNeutralButton("稍后", null)
+                    .show();
+        } else if (item.type == 1) {
+            com.sister.habits.data.models.CoinEarning e = null;
+            for (com.sister.habits.data.models.CoinEarning x : db.coinEarningDao().getPending()) { if (x.id.equals(item.id)) { e = x; break; } }
+            if (e == null) return;
+            new AlertDialog.Builder(this)
+                    .setTitle("审批积分申请")
+                    .setMessage("金额: +" + e.amount + "分
+来源: " + e.sourceType + "
+" + item.timeText)
+                    .setPositiveButton("✅ 确认", (d, w) -> { processEarningApproval(e, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processEarningApproval(e, false); loadApprovalHub(); })
+                    .setNeutralButton("稍后", null)
+                    .show();
+        } else if (item.type == 2) {
+            Task t = null;
+            for (Task x : db.taskDao().getPending()) { if (x.id.equals(item.id)) { t = x; break; } }
+            if (t == null) return;
+            new AlertDialog.Builder(this)
+                    .setTitle("确认任务完成")
+                    .setMessage("任务: " + t.title + "
+奖励: 🪙" + t.rewardCoins + "
+" + item.timeText)
+                    .setPositiveButton("✅ 确认发金币", (d, w) -> { processTaskApproval(t, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { processTaskApproval(t, false); loadApprovalHub(); })
+                    .setNeutralButton("稍后", null)
+                    .show();
+        } else if (item.type == 3) {
+            LaundryTask lt = null;
+            for (LaundryTask x : db.laundryDao().getPending()) { if (x.id.equals(item.id)) { lt = x; break; } }
+            if (lt == null) return;
+            new AlertDialog.Builder(this)
+                    .setTitle("审批洗衣任务")
+                    .setMessage("衣物: " + lt.clothingType + " ×" + lt.quantity + "
+积分: " + lt.totalPoints + "分
+" + item.timeText)
+                    .setPositiveButton("✅ 通过", (d, w) -> { laundryApprove(lt, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 拒绝", (d, w) -> { laundryApprove(lt, false); loadApprovalHub(); })
+                    .setNeutralButton("稍后", null)
+                    .show();
+        }
+    }
+    /** 洗衣审批（批量与单项共用） */
+    private void laundryApprove(LaundryTask task, boolean approved) {
+        if (approved) {
+            task.status = LaundryTask.STATUS_APPROVED;
+            task.reviewedAt = System.currentTimeMillis();
+            db.laundryDao().update(task);
+            Integer balance = db.coinTransactionDao().getBalance("sister");
+            int newBalance = (balance != null ? balance : 0) + task.totalPoints;
+            com.sister.habits.data.models.CoinTransaction tx = new com.sister.habits.data.models.CoinTransaction(
+                    "sister", task.totalPoints, newBalance, "laundry",
+                    task.clothingType + "×" + task.quantity, syncManager.getDeviceId());
+            db.coinTransactionDao().insert(tx);
+        } else {
+            task.status = LaundryTask.STATUS_REJECTED;
+            task.reviewedAt = System.currentTimeMillis();
+            db.laundryDao().update(task);
+        }
+        syncManager.onDataChanged();
+    }
+    /** 集成审批适配器：点击=勾选，长按=单项审批 */
+    private static class ApprovalHubAdapter extends RecyclerView.Adapter<ApprovalHubAdapter.ViewHolder> {
+        private final java.util.List<ApprovalItem> items;
+        private final java.util.Set<String> selected;
+        private final ParentActivity activity;
+        ApprovalHubAdapter(java.util.List<ApprovalItem> items, java.util.Set<String> selected, ParentActivity activity) {
+            this.items = items;
+            this.selected = selected;
+            this.activity = activity;
+        }
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = android.view.LayoutInflater.from(parent.getContext())
+                    .inflate(android.R.layout.simple_list_item_multiple_choice, parent, false);
+            return new ViewHolder(v);
+        }
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            ApprovalItem item = items.get(position);
+            final String key = item.type + ":" + item.id;
+            holder.textView.setText(item.title + "
+" + item.timeText);
+            holder.itemView.setActivated(selected.contains(key));
+            holder.itemView.setOnClickListener(v -> {
+                if (selected.contains(key)) selected.remove(key);
+                else selected.add(key);
+                holder.itemView.setActivated(selected.contains(key));
+            });
+            holder.itemView.setOnLongClickListener(v -> {
+                activity.showApprovalDetail(item);
+                return true;
+            });
+        }
+        @Override
+        public int getItemCount() { return items.size(); }
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            android.widget.TextView textView;
+            ViewHolder(View v) { super(v); textView = v.findViewById(android.R.id.text1); }
+        }
+    }
     public void loadPendingApprovals() {
         List<Redemption> pending = db.redemptionDao().getByStatus("pending");
         selectedApprovalIds.clear();
