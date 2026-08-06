@@ -80,6 +80,7 @@ public class ParentActivity extends AppCompatActivity {
     private View btnApproveSelected, btnRejectSelected;
     private final java.util.Set<String> selectedApprovalIds = new java.util.HashSet<>();
     private final java.util.Set<String> selectedApprovalHub = new java.util.HashSet<>();
+    private java.util.List<ApprovalItem> currentApprovalItems = new java.util.ArrayList<>();
     private final java.util.Set<String> selectedTaskIds = new java.util.HashSet<>();
     private final java.util.Set<String> selectedEarningIds = new java.util.HashSet<>();
 
@@ -478,6 +479,14 @@ public class ParentActivity extends AppCompatActivity {
         if (btnRejectSelected != null) {
             btnRejectSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(false); });
         }
+        View btnApproveAll = findViewById(R.id.btn_approve_all);
+        View btnRejectAll = findViewById(R.id.btn_reject_all);
+        if (btnApproveAll != null) {
+            btnApproveAll.setOnClickListener(v -> { soundHelper.playClickSound(); approveAll(true); });
+        }
+        if (btnRejectAll != null) {
+            btnRejectAll.setOnClickListener(v -> { soundHelper.playClickSound(); approveAll(false); });
+        }
         // ✅ 集成审批中心标题可点击 → 打开Hub对话框（快速单项审批）
         android.widget.TextView tvHubTitle = findViewById(R.id.tv_hub_title);
         if (tvHubTitle != null) tvHubTitle.setOnClickListener(v -> { soundHelper.playClickSound(); showApprovalHubDialog(0); });
@@ -718,6 +727,7 @@ public class ParentActivity extends AppCompatActivity {
         }
         items.sort((a, b) -> Long.compare(b.ts, a.ts));
         if (rvApprovalHub != null) {
+            currentApprovalItems = items;
             rvApprovalHub.setAdapter(new ApprovalHubAdapter(items, selectedApprovalHub, this));
         }
         android.widget.TextView tvHub = findViewById(R.id.tv_hub_title);
@@ -817,11 +827,15 @@ public class ParentActivity extends AppCompatActivity {
             ApprovalItem item = items.get(position);
             final String key = item.type + ":" + item.id;
             holder.textView.setText(item.title + "\n" + item.timeText);
-            holder.itemView.setActivated(selected.contains(key));
+            boolean isSel = selected.contains(key);
+            holder.itemView.setActivated(isSel);
+            ((android.widget.CheckedTextView) holder.textView).setChecked(isSel);
             holder.itemView.setOnClickListener(v -> {
-                if (selected.contains(key)) selected.remove(key);
-                else selected.add(key);
-                holder.itemView.setActivated(selected.contains(key));
+                boolean now;
+                if (selected.contains(key)) { selected.remove(key); now = false; }
+                else { selected.add(key); now = true; }
+                holder.itemView.setActivated(now);
+                ((android.widget.CheckedTextView) holder.textView).setChecked(now);
             });
             holder.itemView.setOnLongClickListener(v -> {
                 activity.showApprovalDetail(item);
@@ -1040,18 +1054,45 @@ public class ParentActivity extends AppCompatActivity {
         java.util.List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
         java.util.List<LaundryTask> laundries = db.laundryDao().getPending();
         for (String key : new java.util.ArrayList<>(selectedApprovalHub)) {
-            String[] p = key.split(":", 2);
-            if (p.length != 2) continue;
-            int type = Integer.parseInt(p[0]);
-            String id = p[1];
-            if (type == 0) { for (Redemption r : reds) if (r.id.equals(id)) processApproval(r, approved); }
-            else if (type == 1) { for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(id)) processEarningApproval(e, approved); }
-            else if (type == 2) { for (Task t : tasks) if (t.id.equals(id)) processTaskApproval(t, approved); }
-            else if (type == 3) { for (LaundryTask lt : laundries) if (String.valueOf(lt.id).equals(id)) laundryApprove(lt, approved); }
+            processByKey(key, approved, reds, tasks, earns, laundries);
         }
         selectedApprovalHub.clear();
         loadApprovalHub();
         Toast.makeText(this, (approved ? "✅ 已批量批准 " : "❌ 已批量拒绝 ") + total + " 项", Toast.LENGTH_SHORT).show();
+    }
+
+    /** 按 key 分发到对应类型的审批处理（批量/全部共用） */
+    private void processByKey(String key, boolean approved,
+                              java.util.List<Redemption> reds, java.util.List<Task> tasks,
+                              java.util.List<com.sister.habits.data.models.CoinEarning> earns,
+                              java.util.List<LaundryTask> laundries) {
+        String[] p = key.split(":", 2);
+        if (p.length != 2) return;
+        int type = Integer.parseInt(p[0]);
+        String id = p[1];
+        if (type == 0) { for (Redemption r : reds) if (r.id.equals(id)) processApproval(r, approved); }
+        else if (type == 1) { for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(id)) processEarningApproval(e, approved); }
+        else if (type == 2) { for (Task t : tasks) if (t.id.equals(id)) processTaskApproval(t, approved); }
+        else if (type == 3) { for (LaundryTask lt : laundries) if (String.valueOf(lt.id).equals(id)) laundryApprove(lt, approved); }
+    }
+
+    /** ⚡ 一键全部批准/拒绝（不依赖勾选） */
+    private void approveAll(boolean approved) {
+        java.util.List<Redemption> reds = db.redemptionDao().getByStatus("pending");
+        java.util.List<Task> tasks = db.taskDao().getPending();
+        java.util.List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
+        java.util.List<LaundryTask> laundries = db.laundryDao().getPending();
+        int total = currentApprovalItems.size();
+        if (total == 0) {
+            Toast.makeText(this, "没有待审批的项目", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        for (ApprovalItem item : new java.util.ArrayList<>(currentApprovalItems)) {
+            processByKey(item.type + ":" + item.id, approved, reds, tasks, earns, laundries);
+        }
+        selectedApprovalHub.clear();
+        loadApprovalHub();
+        Toast.makeText(this, (approved ? "✅ 已全部批准 " : "❌ 已全部拒绝 ") + total + " 项", Toast.LENGTH_SHORT).show();
     }
 
     private void processTaskApproval(Task task, boolean approved) {
