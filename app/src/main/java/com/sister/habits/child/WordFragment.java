@@ -184,22 +184,43 @@ public class WordFragment extends Fragment {
             cal.set(java.util.Calendar.SECOND, 0);
             cal.set(java.util.Calendar.MILLISECOND, 0);
             long todayStart = cal.getTimeInMillis();
-            int learnedToday = db.wordReviewDao().getNewCount(todayStart, bankId);
-            int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
-
-            List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
-            Collections.shuffle(allActive);  // 先打乱词池，避免总是从 A 开头取词
-            words = new ArrayList<>();
-            if (remainingNew > 0) {
+            // 当天固定词表：首次进入随机锁定限额个词，当天不再变化
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String planKey = "plan_" + sdf.format(new java.util.Date()) + "_" + bankId;
+            SharedPreferences prefs = requireContext().getSharedPreferences("wordbank_prefs", 0);
+            String planJson = prefs.getString(planKey, null);
+            java.util.List<String> planIds = new ArrayList<>();
+            if (planJson == null || planJson.isEmpty()) {
+                // 首次：从全库随机抽限额个（跳过今天已学过的）
+                List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
+                Collections.shuffle(allActive);
                 for (Vocabulary v : allActive) {
                     WordReview wr = db.wordReviewDao().getByWordId(v.id, bankId);
                     if (wr == null || wr.lastReviewedAt < todayStart) {
-                        words.add(v);
-                        if (words.size() >= remainingNew) break;
+                        planIds.add(v.id);
+                        if (planIds.size() >= dailyWordLimit) break;
                     }
                 }
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < planIds.size(); i++) {
+                    if (i > 0) sb.append(',');
+                    sb.append(planIds.get(i));
+                }
+                prefs.edit().putString(planKey, sb.toString()).apply();
+            } else {
+                String[] arr = planJson.split(",");
+                for (String s : arr) if (!s.isEmpty()) planIds.add(s);
             }
-            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + dailyWordLimit + " 可学)  学习不给金币哦");
+            // 从词表中取今天未学过的词
+            words = new ArrayList<>();
+            for (String id : planIds) {
+                WordReview wr = db.wordReviewDao().getByWordId(id, bankId);
+                if (wr == null || wr.lastReviewedAt < todayStart) {
+                    Vocabulary v = db.vocabularyDao().getById(id);
+                    if (v != null && v.active && !v.mastered) words.add(v);
+                }
+            }
+            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + planIds.size() + " 可学)  学习不给金币哦");
         }
 
         if (words.isEmpty()) {
