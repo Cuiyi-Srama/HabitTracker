@@ -459,6 +459,7 @@ public class WordFragment extends Fragment {
         layout.addView(btnRow);
 
         new android.app.AlertDialog.Builder(getContext())
+            .setCancelable(false)  // 禁止点空白处/返回键关闭，避免跳过单词
             .setTitle("😅 看一下再记")
             .setView(layout)
             .setPositiveButton("下一个吧 ➡️", (d, w) -> {
