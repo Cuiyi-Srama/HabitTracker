@@ -790,8 +790,6 @@ public class ParentActivity extends AppCompatActivity {
                     .setNegativeButton("❌ 拒绝", (d, w) -> { laundryApprove(flt, false); loadApprovalHub(); })
                     .setNeutralButton("稍后", null)
                     .show();
-        }
-    }
         } else if (item.type == 4) {
             DailyGate g = db.dailyGateDao().getByDate(item.id);
             if (g == null) return;
@@ -804,6 +802,7 @@ public class ParentActivity extends AppCompatActivity {
                     .setNeutralButton("稍后", null)
                     .show();
         }
+    }
     /** 洗衣审批（批量与单项共用） */
     private void laundryApprove(LaundryTask task, boolean approved) {
         if (approved) {
