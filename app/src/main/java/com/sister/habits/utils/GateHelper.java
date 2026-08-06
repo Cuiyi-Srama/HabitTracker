@@ -48,8 +48,14 @@ public class GateHelper {
         DailyGate yesterdayGate = db.dailyGateDao().getByDate(yesterday);
 
         if (yesterdayGate == null) {
-            // 昨天没有记录 → 默认视为正常（第一天启动系统）
-            return 1.0;
+            // 昨天没有记录 → 区分两种情况：
+            // 1. 系统从未有记录（第一天启动）→ 正常，不打折
+            // 2. 有历史记录但昨天没提交作业 → 视为未完成 → 惩罚打折
+            java.util.List<DailyGate> recent = db.dailyGateDao().getRecent(2);
+            if (recent.isEmpty()) {
+                return 1.0;
+            }
+            return config.defaultPenaltyPercent / 100.0;
         }
 
         switch (yesterdayGate.status) {
