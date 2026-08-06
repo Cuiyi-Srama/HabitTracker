@@ -13,8 +13,8 @@ android {
         applicationId 'com.sister.habits'
         minSdk 24
         targetSdk 34
-        versionCode 60
-        versionName '3.0.9'
+        versionCode 61
+        versionName '3.0.10'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
