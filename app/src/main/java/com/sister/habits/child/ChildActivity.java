@@ -80,6 +80,8 @@ public class ChildActivity extends AppCompatActivity {
         // 📝 作业提交按钮
         TextView btnHomework = findViewById(R.id.btn_submit_homework);
         btnHomework.setOnClickListener(v -> submitTodayHomework());
+        // 未提交作业提醒（每天首次打开弹一次）
+        maybeShowHomeworkReminder();
 
         // 🧺 洗衣任务按钮
         TextView btnLaundry = findViewById(R.id.btn_laundry);
@@ -753,6 +755,24 @@ public class ChildActivity extends AppCompatActivity {
         task.totalPoints = finalPoints;
         task.deviceId = syncManager.getDeviceId();
         db.laundryDao().insert(task);
+    }
+    /** ⚠️ 今日作业未提交提醒（每天首次打开弹一次） */
+    private void maybeShowHomeworkReminder() {
+        try {
+            String today = new SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).format(new Date());
+            if (db.dailyGateDao().getByDate(today) != null) return;
+            android.content.SharedPreferences prefs = getSharedPreferences("wordbank_prefs", 0);
+            if (today.equals(prefs.getString("gate_remind_date", ""))) return;
+            prefs.edit().putString("gate_remind_date", today).apply();
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                new android.app.AlertDialog.Builder(ChildActivity.this)
+                        .setTitle("⚠️ 今日作业还未提交")
+                        .setMessage("不提交作业，明日积分可能会被打折哦！\n\n现在去提交吗？")
+                        .setPositiveButton("去提交", (d, w) -> submitTodayHomework())
+                        .setNegativeButton("稍后再说", null)
+                        .show();
+            }, 400);
+        } catch (Exception ignored) {}
     }
     /** 📝 提交今日作业 */
     private void submitTodayHomework() {
