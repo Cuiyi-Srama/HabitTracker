@@ -82,7 +82,8 @@ public class ShopFragment extends Fragment {
             case "all":
                 btnAll.setBackgroundColor(0xFFFF9800); btnAll.setTextColor(0xFFFFFFFF);
                 loadShopItems();
-                cartBar.setVisibility(View.GONE);
+                cartBar.setVisibility(View.VISIBLE);
+                updateCartBar();
                 break;
             case "normal":
                 btnNormal.setBackgroundColor(0xFFFF9800); btnNormal.setTextColor(0xFFFFFFFF);
@@ -93,12 +94,14 @@ public class ShopFragment extends Fragment {
             case "limited":
                 btnLimited.setBackgroundColor(0xFFFF9800); btnLimited.setTextColor(0xFFFFFFFF);
                 loadByType("limited");
-                cartBar.setVisibility(View.GONE);
+                cartBar.setVisibility(View.VISIBLE);
+                updateCartBar();
                 break;
             case "wishlist":
                 btnWish.setBackgroundColor(0xFFFF9800); btnWish.setTextColor(0xFFFFFFFF);
                 loadWishlistItems();
-                cartBar.setVisibility(View.GONE);
+                cartBar.setVisibility(View.VISIBLE);
+                updateCartBar();
                 break;
         }
     }
