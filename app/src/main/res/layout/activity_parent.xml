@@ -40,7 +40,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_approval_hub"
             android:layout_width="match_parent"
-            android:layout_height="320dp"
+            android:layout_height="160dp"
             android:nestedScrollingEnabled="false"
             android:clipToPadding="false" />
         <LinearLayout
