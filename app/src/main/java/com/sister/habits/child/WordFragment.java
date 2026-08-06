@@ -468,14 +468,6 @@ public class WordFragment extends Fragment {
                 soundHelper.playClickSound();
                 showNextWord();
             })
-            .setNegativeButton("再想想 🤔", (d, w) -> {
-                isAnswering = true;
-                if (btnDontKnow != null) btnDontKnow.setVisibility(View.VISIBLE);
-            })
-            .setOnCancelListener(d -> {
-                isAnswering = true;
-                if (btnDontKnow != null) btnDontKnow.setVisibility(View.VISIBLE);
-            })
             .show();
         soundHelper.speakWord(word.word);
     }
