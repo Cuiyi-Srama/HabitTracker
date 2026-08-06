@@ -199,6 +199,10 @@ public class ShopManager {
                     try { item.priceCoins = Integer.parseInt(etPrice.getText().toString()); }
                     catch (Exception e) { item.priceCoins = 50; }
                     item.category = etCategory.getText().toString();
+                    android.widget.RadioGroup rgType = view.findViewById(R.id.rg_item_type);
+                    item.itemType = (rgType.getCheckedRadioButtonId() == R.id.rb_limited) ? "limited" : "normal";
+                    try { item.stock = Integer.parseInt(((android.widget.EditText) view.findViewById(R.id.et_item_stock)).getText().toString()); }
+                    catch (Exception e) { item.stock = -1; }
                     item.iconUrl = selectedShopImagePath != null ? selectedShopImagePath : "";
                     db.shopItemDao().insert(item);
                     selectedShopImagePath = null;
@@ -388,6 +392,10 @@ public class ShopManager {
         etDesc.setText(item.description);
         etPrice.setText(String.valueOf(item.priceCoins));
         etCategory.setText(item.category);
+        android.widget.RadioGroup rgType = view.findViewById(R.id.rg_item_type);
+        if ("limited".equals(item.itemType)) rgType.check(R.id.rb_limited); else rgType.check(R.id.rb_normal);
+        android.widget.EditText etStock = view.findViewById(R.id.et_item_stock);
+        etStock.setText(String.valueOf(item.stock));
         selectedShopImagePath = item.iconUrl;
 
         if (item.iconUrl != null && !item.iconUrl.isEmpty()) {
@@ -411,6 +419,10 @@ public class ShopManager {
                     try { item.priceCoins = Integer.parseInt(etPrice.getText().toString()); }
                     catch (Exception e) { item.priceCoins = 50; }
                     item.category = etCategory.getText().toString();
+                    android.widget.RadioGroup rgType2 = view.findViewById(R.id.rg_item_type);
+                    item.itemType = (rgType2.getCheckedRadioButtonId() == R.id.rb_limited) ? "limited" : "normal";
+                    try { item.stock = Integer.parseInt(((android.widget.EditText) view.findViewById(R.id.et_item_stock)).getText().toString()); }
+                    catch (Exception e) { item.stock = -1; }
                     if (selectedShopImagePath != null) item.iconUrl = selectedShopImagePath;
                     db.shopItemDao().update(item);
                     currentShopDialogView = null;
