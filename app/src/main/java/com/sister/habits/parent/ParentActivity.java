@@ -720,6 +720,15 @@ public class ParentActivity extends AppCompatActivity {
             it.timeText = sdf.format(new Date(lt.submittedAt));
             items.add(it);
         }
+        List<DailyGate> gates = db.dailyGateDao().getPending();
+        for (DailyGate g : gates) {
+            ApprovalItem it = new ApprovalItem();
+            it.type = 4; it.id = g.date;
+            it.title = "📝 作业提交 " + g.date;
+            it.ts = g.submittedAt;
+            it.timeText = sdf.format(new Date(g.submittedAt));
+            items.add(it);
+        }
         items.sort((a, b) -> Long.compare(b.ts, a.ts));
         if (rvApprovalHub != null) {
             currentApprovalItems = items;
@@ -782,6 +791,18 @@ public class ParentActivity extends AppCompatActivity {
                     .show();
         }
     }
+        } else if (item.type == 4) {
+            DailyGate g = db.dailyGateDao().getByDate(item.id);
+            if (g == null) return;
+            final DailyGate fg = g;
+            new AlertDialog.Builder(this)
+                    .setTitle("审批作业提交")
+                    .setMessage("作业日期: " + g.date + "\n提交时间: " + item.timeText)
+                    .setPositiveButton("✅ 确认完成", (d, w) -> { gateApprove(fg, true); loadApprovalHub(); })
+                    .setNegativeButton("❌ 未完成", (d, w) -> { gateApprove(fg, false); loadApprovalHub(); })
+                    .setNeutralButton("稍后", null)
+                    .show();
+        }
     /** 洗衣审批（批量与单项共用） */
     private void laundryApprove(LaundryTask task, boolean approved) {
         if (approved) {
@@ -800,6 +821,16 @@ public class ParentActivity extends AppCompatActivity {
             db.laundryDao().update(task);
         }
         syncManager.onDataChanged();
+    }
+
+    /** 作业提交审批（批量与单项共用） */
+    private void gateApprove(DailyGate gate, boolean approved) {
+        if (approved) {
+            gate.status = DailyGate.STATUS_COMPLETED;
+        } else {
+            gate.status = DailyGate.STATUS_INCOMPLETE;
+        }
+        db.dailyGateDao().update(gate);
     }
     /** 集成审批适配器：点击=勾选，长按=单项审批 */
     private static class ApprovalHubAdapter extends RecyclerView.Adapter<ApprovalHubAdapter.ViewHolder> {
@@ -1069,6 +1100,7 @@ public class ParentActivity extends AppCompatActivity {
         else if (type == 1) { for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(id)) processEarningApproval(e, approved); }
         else if (type == 2) { for (Task t : tasks) if (t.id.equals(id)) processTaskApproval(t, approved); }
         else if (type == 3) { for (LaundryTask lt : laundries) if (String.valueOf(lt.id).equals(id)) laundryApprove(lt, approved); }
+        else if (type == 4) { DailyGate g = db.dailyGateDao().getByDate(id); if (g != null) gateApprove(g, approved); }
     }
 
     /** ⚡ 一键全部批准/拒绝（不依赖勾选） */
