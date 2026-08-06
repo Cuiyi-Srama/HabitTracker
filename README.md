@@ -5,7 +5,7 @@
 > Java 原生开发 · Room 本地数据库 · Material Design 3 · 离线可用
 
 [![构建状态](https://github.com/Cuiyi-Srama/HabitTracker/actions/workflows/build.yml/badge.svg)](https://github.com/Cuiyi-Srama/HabitTracker/actions)
-[![版本](https://img.shields.io/badge/版本-v2.2.0-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
+[![版本](https://img.shields.io/badge/版本-v3.0.22-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
 [![许可](https://img.shields.io/badge/许可-MIT-green)](LICENSE)
 
 ---
@@ -359,6 +359,73 @@ A: 运行 `scripts/update_wordbank.py` 从 Excel 更新，或将 JSON 放入 `re
 ---
 
 ## 更新日志
+
+### v3.0.22 (2026-08-06)
+**Bug 修复**
+- 修复审批中心列表无法上下滑动（移除 rv_approval_hub 的 nestedScrollingEnabled=false，恢复嵌套滚动）
+
+### v3.0.21 (2026-08-06)
+**Bug 修复**
+- 学习模式随机取词：先 shuffle 词池再取词，修复永远从 A 开头取词的问题
+
+### v3.0.20 (2026-08-06)
+**Bug 修复**
+- 「我不会」学习弹窗 setCancelable(false)：禁止点空白处/返回键关闭跳过单词
+
+### v3.0.19 (2026-08-06)
+**功能新增**
+- 商品编辑/添加对话框新增「类型(常驻/限量)+库存数量」字段，支持设置限量商品库存
+
+### v3.0.18 (2026-08-06)
+**Bug 修复**
+- 审批列表空白根治：rvApprovalHub 从未 setLayoutManager，补 LinearLayoutManager
+
+### v3.0.17 (2026-08-06)
+**Bug 修复**
+- 购物车条全局显示：所有 tab（全部/限量/心愿单）底部均显示购物车条
+- 金币不足改为 AlertDialog 醒目弹窗；加购后 Toast 提示提交入口
+
+### v3.0.16 (2026-08-06)
+**Bug 修复**
+- 编辑商品保存后不再重开管理对话框（消除叠栈，无需反复退出）
+
+### v3.0.15 (2026-08-06)
+**体验优化**
+- 审批列表高度 320dp → 160dp（用户反馈占视觉空间）
+
+### v3.0.14 (2026-08-06)
+**布局调整**
+- 删除洗衣审核独立按钮（已并入审批中心）
+- 作业管理并入操作行（5 个按钮一排），删除高频快捷入口行
+
+### v3.0.13 (2026-08-06)
+**界面重构**
+- 审批中心整体卡片化：绿色边框 + 浅绿底 + 圆角，移至页面顶部
+- 列表区域固定高度、框内独立滚动，不影响主界面布局
+
+### v3.0.12 (2026-08-06)
+**Bug 修复**
+- 审批列表塌缩根治：rv 固定高度替代 wrap_content，列表直接显示在主页
+
+### v3.0.11 (2026-08-06)
+**功能新增**
+- 一键全部批准 / 一键全部拒绝
+- 勾选视觉修复（CheckedTextView setChecked）
+
+### v3.0.10 (2026-08-06)
+**布局调整**
+- 删除「作业管理」右侧重复的审批中心按钮
+
+### v3.0.8 (2026-08-05)
+**功能新增**
+- 审批中心集成到主页：任务完成 + 积分申请 + 兑换申请统一列表，勾选/批量操作
+
+### v2.x 系列 (2026-07-29 ~ 08-05)
+- 单词学习模块：分级词库（小学→初中→高中）、学习/复习双模式、艾宾浩斯复习队列、单词发音
+- 商城系统：商品分类 tab、链接导入、心愿单、购物车、兑换审批闭环
+- 抽奖机：概率设置、奖品管理、老虎机动效
+- 家长管理：数据总览、经济参数、加速器、假期折扣、WebDAV/局域网同步、QR 配对
+- 备份系统：AES-256-GCM 加密 ZIP 备份、SAF 自定义位置
 
 ### v1.6.0 (2026-07-29)
 
