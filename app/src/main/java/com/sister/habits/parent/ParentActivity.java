@@ -453,6 +453,7 @@ public class ParentActivity extends AppCompatActivity {
         // ✅ 初始化UI控件
         tvStats = findViewById(R.id.tv_parent_stats);
         rvApprovalHub = findViewById(R.id.rv_approval_hub);
+        rvApprovalHub.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
         btnAddTask = findViewById(R.id.btn_add_task);
         btnAddShopItem = findViewById(R.id.btn_add_shop_item);
         btnSettings = findViewById(R.id.btn_settings);
@@ -483,8 +484,6 @@ public class ParentActivity extends AppCompatActivity {
         if (btnRejectAll != null) {
             btnRejectAll.setOnClickListener(v -> { soundHelper.playClickSound(); approveAll(false); });
         }
-        android.widget.TextView tvHubTitle = findViewById(R.id.tv_hub_title);
-        if (tvHubTitle != null) tvHubTitle.setOnClickListener(v -> { soundHelper.playClickSound(); loadApprovalHub(); Toast.makeText(this, "🔄 已刷新审批列表", Toast.LENGTH_SHORT).show(); });
         // ✅ 集成审批中心标题可点击 → 打开Hub对话框（快速单项审批）
 
         // ✅ 通知渠道
