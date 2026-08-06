@@ -188,6 +188,7 @@ public class WordFragment extends Fragment {
             int remainingNew = Math.max(0, dailyWordLimit - learnedToday);
 
             List<Vocabulary> allActive = db.vocabularyDao().getActiveUnmastered(bankId);
+            Collections.shuffle(allActive);  // 先打乱词池，避免总是从 A 开头取词
             words = new ArrayList<>();
             if (remainingNew > 0) {
                 for (Vocabulary v : allActive) {
