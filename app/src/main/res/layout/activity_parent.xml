@@ -219,7 +219,7 @@
         android:layout_height="wrap_content"
         android:nestedScrollingEnabled="false" />
 
-        <LinearLayout
+                <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
@@ -227,30 +227,60 @@
         android:gravity="center">
         <TextView
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="4dp"
             android:gravity="center"
-            android:background="#4CAF50"
+            android:background="#66BB6A"
             android:text="✅ 批准选中"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:id="@+id/btn_approve_selected"
             android:clickable="true"
             android:focusable="true"/>
         <TextView
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:gravity="center"
-            android:background="#F44336"
+            android:background="#EF5350"
             android:text="❌ 拒绝选中"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:id="@+id/btn_reject_selected"
+            android:clickable="true"
+            android:focusable="true"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:gravity="center"
+            android:background="#43A047"
+            android:text="⚡ 全部批准"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:id="@+id/btn_approve_all"
+            android:clickable="true"
+            android:focusable="true"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:gravity="center"
+            android:background="#D32F2F"
+            android:text="🚫 全部拒绝"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:id="@+id/btn_reject_all"
             android:clickable="true"
             android:focusable="true"/>
     </LinearLayout></LinearLayout>
