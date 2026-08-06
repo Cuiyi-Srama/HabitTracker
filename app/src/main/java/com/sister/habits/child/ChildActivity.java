@@ -133,6 +133,7 @@ public class ChildActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        com.sister.habits.utils.SnapshotHelper.register(this);
         refreshEarningEstimate();
     }
 

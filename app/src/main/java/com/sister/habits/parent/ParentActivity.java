@@ -521,6 +521,7 @@ public class ParentActivity extends AppCompatActivity {
 
     protected void onResume() {
         super.onResume();
+        com.sister.habits.utils.SnapshotHelper.register(this);
         if (db != null) refreshAll();
     }
 

@@ -1,8 +1,13 @@
 package com.sister.habits;
 
 import android.app.Application;
+import android.util.Log;
+
 import com.sister.habits.data.DatabaseInitializer;
 import com.sister.habits.sync.SyncManager;
+import com.sister.habits.utils.SnapshotServer;
+
+import java.io.IOException;
 
 /**
  * 应用 Application 类
@@ -21,6 +26,15 @@ public class HabitApp extends Application {
             DatabaseInitializer.init(this);
             SyncManager syncManager = SyncManager.getInstance(this);
             syncManager.triggerLanSync();
+        }).start();
+
+        // \u542f\u52a8\u5feb\u7167\u4e0a\u62a5\u670d\u52a1\uff08\u865a\u62df\u5c4f\u81ea\u52a8\u5316\u7528\uff0c\u7aef\u53e318082\uff09
+        new Thread(() -> {
+            try {
+                new SnapshotServer(this).start();
+            } catch (IOException e) {
+                Log.w("HabitApp", "SnapshotServer start failed", e);
+            }
         }).start();
     }
 }
