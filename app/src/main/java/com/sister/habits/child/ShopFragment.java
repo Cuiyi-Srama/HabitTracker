@@ -158,6 +158,7 @@ public class ShopFragment extends Fragment {
         int current = cart.containsKey(key) ? cart.get(key) : 0;
         cart.put(key, current + qty);
         updateCartBar();
+        Toast.makeText(getContext(), "已加入购物车，点底部🛒提交兑换", Toast.LENGTH_SHORT).show();
         Toast.makeText(getContext(), "➕ " + item.name + " x" + qty + " 已加入购物车", Toast.LENGTH_SHORT).show();
     }
     
@@ -272,8 +273,13 @@ public class ShopFragment extends Fragment {
         Integer balance = db.coinTransactionDao().getBalance("sister");
         int currentBalance = balance != null ? balance : 0;
         if (currentBalance < item.priceCoins) {
-            Toast.makeText(getContext(), "金币不够哦！还差 " + (item.priceCoins - currentBalance) + " 个 🪙",
-                    Toast.LENGTH_SHORT).show();
+            new android.app.AlertDialog.Builder(getContext())
+                    .setTitle("🪙 金币不足")
+                    .setMessage("还差 " + (item.priceCoins - currentBalance) + " 个金币，无法购买「" + item.name + "」
+
+去完成任务赚金币吧！")
+                    .setPositiveButton("知道了", null)
+                    .show();
             return;
         }
         int newBalance = currentBalance - item.priceCoins;
