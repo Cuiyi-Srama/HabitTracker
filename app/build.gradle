@@ -13,8 +13,8 @@ android {
         applicationId 'com.sister.habits'
         minSdk 24
         targetSdk 34
-        versionCode 79
-        versionName '3.0.28'
+        versionCode 80
+        versionName '3.0.29'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -45,6 +45,11 @@ android {
 
     buildFeatures {
         viewBinding true
+    }
+
+    testOptions {
+        // 允许 JVM 单测中 android.jar 的 stub 方法返回默认值（如 Log.d）
+        unitTests.returnDefaultValues = true
     }
 
     configurations.all {
@@ -94,4 +99,8 @@ dependencies {
 
     // Glide (图片加载)
     implementation 'com.github.bumptech.glide:glide:4.15.1'
+
+    // ===== 单元测试 =====
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:4.11.0'
 }
