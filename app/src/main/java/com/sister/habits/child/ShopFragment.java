@@ -278,9 +278,7 @@ public class ShopFragment extends Fragment {
         if (currentBalance < item.priceCoins) {
             new android.app.AlertDialog.Builder(getContext())
                     .setTitle("🪙 金币不足")
-                    .setMessage("还差 " + (item.priceCoins - currentBalance) + " 个金币，无法购买「" + item.name + "」
-
-去完成任务赚金币吧！")
+                    .setMessage("还差 " + (item.priceCoins - currentBalance) + " 个金币，无法购买「" + item.name + "」\n\n去完成任务赚金币吧！")
                     .setPositiveButton("知道了", null)
                     .show();
             return;
