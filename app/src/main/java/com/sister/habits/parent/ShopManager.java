@@ -28,6 +28,10 @@ import java.util.Set;
  */
 public class ShopManager {
     private final ParentActivity activity;
+    private android.app.AlertDialog manageDialog;
+    private LinearLayout manageContainer;
+    private boolean manageMulti;
+    private android.widget.TextView manageTvTitle;
     private final AppDatabase db;
     private final SoundHelper soundHelper;
     private String selectedShopImagePath;
@@ -263,12 +267,17 @@ public class ShopManager {
             }
             public void afterTextChanged(android.text.Editable s) {}
         });
+        manageContainer = container;
+        manageMulti = multi;
+        manageTvTitle = tvTitle;
         AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle("🏪 商城管理")
                 .setView(scrollView)
                 .setPositiveButton("关闭", null)
                 .create();
         dialog.setOnShowListener(d -> dialog.getWindow().setLayout((int)(activity.getResources().getDisplayMetrics().widthPixels * 0.80f), android.view.WindowManager.LayoutParams.WRAP_CONTENT));
+        manageDialog = dialog;
+        dialog.setOnDismissListener(d -> { if (manageDialog == dialog) manageDialog = null; });
         dialog.show();
     }
     private void buildShopRows(java.util.List<ShopItem> items, LinearLayout container, boolean multi, TextView tvTitle) {
@@ -407,7 +416,11 @@ public class ShopManager {
                     currentShopDialogView = null;
                     selectedShopImagePath = null;
                     Toast.makeText(activity, "✅ 商品已更新", Toast.LENGTH_SHORT).show();
-                    showManageShopDialog();
+                    if (manageDialog != null && manageDialog.isShowing() && manageContainer != null) {
+                        java.util.List<ShopItem> refreshed = db.shopItemDao().getAll();
+                        while (manageContainer.getChildCount() > 2) manageContainer.removeViewAt(manageContainer.getChildCount() - 1);
+                        buildShopRows(refreshed, manageContainer, manageMulti, manageTvTitle);
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
