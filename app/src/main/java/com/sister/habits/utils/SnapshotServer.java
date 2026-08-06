@@ -45,7 +45,7 @@ public class SnapshotServer extends NanoHTTPD {
                 off += r;
             }
             return newFixedLengthResponse(Response.Status.OK, "image/png",
-                    new java.io.ByteArrayInputStream(data));
+                    new java.io.ByteArrayInputStream(data), (long) data.length);
         } catch (IOException e) {
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "io error");
         }
