@@ -2,10 +2,10 @@ package com.sister.habits.utils;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.PixelCopy;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.PixelCopy;
 import android.view.View;
 
 import java.io.File;
