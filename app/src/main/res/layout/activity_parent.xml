@@ -18,6 +18,97 @@
         android:textColor="@color/text_primary"
         android:textStyle="bold"
         android:layout_marginBottom="16dp" />
+    <!-- 审批中心卡片（v3.0.13 移至顶部，框内独立滚动） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/approval_box"
+        android:padding="10dp"
+        android:layout_marginBottom="16dp">
+        <TextView
+            android:id="@+id/tv_hub_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:layout_marginBottom="6dp"
+            android:background="#E8F5E9"
+            android:text="✅ 审批中心（点击勾选 · 长按单项审批 · 支持批量）"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#2E7D32" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_approval_hub"
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            android:nestedScrollingEnabled="false"
+            android:clipToPadding="false" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:gravity="center"
+                android:background="#66BB6A"
+                android:text="✅ 批准选中"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:id="@+id/btn_approve_selected"
+                android:clickable="true"
+                android:focusable="true"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:gravity="center"
+                android:background="#EF5350"
+                android:text="❌ 拒绝选中"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:id="@+id/btn_reject_selected"
+                android:clickable="true"
+                android:focusable="true"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:gravity="center"
+                android:background="#43A047"
+                android:text="⚡ 全部批准"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:id="@+id/btn_approve_all"
+                android:clickable="true"
+                android:focusable="true"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:gravity="center"
+                android:background="#D32F2F"
+                android:text="🚫 全部拒绝"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:id="@+id/btn_reject_all"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <!-- 数据看板 -->
     <TextView
@@ -200,90 +291,6 @@
         </LinearLayout>
 </LinearLayout>
 
-            <!-- ✅ 集成审批中心：三类合并显示，点击勾选，长按单项审批 -->
-    <TextView
-        android:id="@+id/tv_hub_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="4dp"
-        android:background="#E8F5E9"
-        android:text="✅ 审批中心（点击勾选 · 长按单项审批 · 支持批量）"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        android:textColor="#2E7D32" />
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_approval_hub"
-        android:layout_width="match_parent"
-        android:layout_height="320dp"
-        android:nestedScrollingEnabled="false"
-        android:clipToPadding="false" />
-
-                <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal"
-        android:gravity="center">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:gravity="center"
-            android:background="#66BB6A"
-            android:text="✅ 批准选中"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:id="@+id/btn_approve_selected"
-            android:clickable="true"
-            android:focusable="true"/>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:gravity="center"
-            android:background="#EF5350"
-            android:text="❌ 拒绝选中"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:id="@+id/btn_reject_selected"
-            android:clickable="true"
-            android:focusable="true"/>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:gravity="center"
-            android:background="#43A047"
-            android:text="⚡ 全部批准"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:id="@+id/btn_approve_all"
-            android:clickable="true"
-            android:focusable="true"/>
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:gravity="center"
-            android:background="#D32F2F"
-            android:text="🚫 全部拒绝"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:id="@+id/btn_reject_all"
-            android:clickable="true"
-            android:focusable="true"/>
-    </LinearLayout></LinearLayout>
+            </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
