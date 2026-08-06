@@ -695,6 +695,7 @@ public class ParentActivity extends AppCompatActivity {
         }
         List<com.sister.habits.data.models.CoinEarning> earns = db.coinEarningDao().getPending();
         for (com.sister.habits.data.models.CoinEarning e : earns) {
+            if ("task".equals(e.sourceType)) continue;  // 任务类积分由任务审批(type2)统一处理，避免重复
             ApprovalItem it = new ApprovalItem();
             it.type = 1; it.id = e.id;
             it.title = "💰 +" + e.amount + "分 " + (e.description != null ? e.description : "额外积分");
@@ -707,7 +708,7 @@ public class ParentActivity extends AppCompatActivity {
             ApprovalItem it = new ApprovalItem();
             it.type = 2; it.id = t.id;
             it.title = "📋 " + t.title + " 🪙+" + t.rewardCoins;
-            it.ts = t.createdAt;
+            it.ts = t.completedAt > 0 ? t.completedAt : t.createdAt;
             it.timeText = sdf.format(new Date(t.createdAt));
             items.add(it);
         }
@@ -1148,6 +1149,14 @@ public class ParentActivity extends AppCompatActivity {
         } else {
             // 拒绝 → 退回待完成状态
             db.taskDao().reactivate(task.id);
+            java.util.List<com.sister.habits.data.models.CoinEarning> taskEarns = db.coinEarningDao().getBySource("task", task.id);
+            for (com.sister.habits.data.models.CoinEarning te : taskEarns) {
+                if ("pending".equals(te.status)) {
+                    te.status = "rejected";
+                    te.confirmedAt = System.currentTimeMillis();
+                    db.coinEarningDao().update(te);
+                }
+            }
             Toast.makeText(this, "❌ 已拒绝 " + task.title + "，任务退回", Toast.LENGTH_SHORT).show();
         }
         syncManager.onDataChanged();
