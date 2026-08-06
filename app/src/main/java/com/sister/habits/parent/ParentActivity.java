@@ -76,7 +76,7 @@ public class ParentActivity extends AppCompatActivity {
     private TextView tvStats;
     private RecyclerView rvPendingApprovals, rvPendingTasks, rvPendingEarnings, rvApprovalHub;
     private View btnAddTask, btnAddShopItem, btnSettings, btnSync;
-    private View btnLaundryReview, btnGateManage, btnApprovalCenter;
+    private View btnLaundryReview, btnGateManage;
     private View btnApproveSelected, btnRejectSelected;
     private final java.util.Set<String> selectedApprovalIds = new java.util.HashSet<>();
     private final java.util.Set<String> selectedApprovalHub = new java.util.HashSet<>();
@@ -464,7 +464,6 @@ public class ParentActivity extends AppCompatActivity {
         btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); });
         btnLaundryReview = findViewById(R.id.btn_laundry_review);
         btnGateManage = findViewById(R.id.btn_gate_manage);
-        btnApprovalCenter = findViewById(R.id.btn_approval_center);
         btnApproveSelected = findViewById(R.id.btn_approve_selected);
         btnRejectSelected = findViewById(R.id.btn_reject_selected);
         if (btnLaundryReview != null) {
@@ -472,9 +471,6 @@ public class ParentActivity extends AppCompatActivity {
         }
         if (btnGateManage != null) {
             btnGateManage.setOnClickListener(v -> { soundHelper.playClickSound(); showGateManageDialog(); });
-        }
-        if (btnApprovalCenter != null) {
-            btnApprovalCenter.setOnClickListener(v -> { soundHelper.playClickSound(); refreshAll(); showApprovalHubDialog(0); });
         }
         if (btnApproveSelected != null) {
             btnApproveSelected.setOnClickListener(v -> { soundHelper.playClickSound(); approveSelected(true); });
