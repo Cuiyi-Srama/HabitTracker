@@ -39,13 +39,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: 🔨 编译 Debug APK
+      - name: 🔨 编译 Debug APK + 单元测试
         run: |
           chmod +x gradlew
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           # 从GitHub Secrets读取Token，不硬编码在代码中
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug testDebugUnitTest --no-daemon
 
       - name: 📤 上传 APK 产物
         uses: actions/upload-artifact@v4
