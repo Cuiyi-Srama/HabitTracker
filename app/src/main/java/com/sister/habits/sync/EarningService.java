@@ -2,32 +2,55 @@ package com.sister.habits.sync;
 
 import android.content.Context;
 import com.sister.habits.data.AppDatabase;
-import com.sister.habits.data.models.CoinEarning;
+import com.sister.habits.data.dao.CoinEarningDao;
+import com.sister.habits.data.dao.EconomyConfigDao;
+import com.sister.habits.data.models.EconomyConfig;
 import java.util.Calendar;
-import java.util.List;
 
 public class EarningService {
+
+    // ==================== Context 版本（生产环境调用，委托给 DAO 版本） ====================
+
     public static int calculateTodayEstimate(Context ctx) {
-        AppDatabase db = AppDatabase.getInstance(ctx);
-        long[] range = getTodayRange();
-        return db.coinEarningDao().getTodayEstimate("sister", range[0], range[1]);
+        return calculateTodayEstimate(AppDatabase.getInstance(ctx).coinEarningDao());
     }
 
     public static int calculateTodayConfirmed(Context ctx) {
-        AppDatabase db = AppDatabase.getInstance(ctx);
-        long[] range = getTodayRange();
-        return db.coinEarningDao().getTodayConfirmed("sister", range[0], range[1]);
+        return calculateTodayConfirmed(AppDatabase.getInstance(ctx).coinEarningDao());
     }
 
     public static int calculateTodayPending(Context ctx) {
-        AppDatabase db = AppDatabase.getInstance(ctx);
-        long[] range = getTodayRange();
-        return db.coinEarningDao().getTodayPending("sister", range[0], range[1]);
+        return calculateTodayPending(AppDatabase.getInstance(ctx).coinEarningDao());
     }
 
     public static int getDailySoftLimit(Context ctx) {
-        AppDatabase db = AppDatabase.getInstance(ctx);
-        com.sister.habits.data.models.EconomyConfig config = db.economyConfigDao().getConfig();
+        return getDailySoftLimit(AppDatabase.getInstance(ctx).economyConfigDao());
+    }
+
+    public static boolean isWithinLimit(Context ctx, int newAmount) {
+        return isWithinLimit(AppDatabase.getInstance(ctx).coinEarningDao(),
+                AppDatabase.getInstance(ctx).economyConfigDao(), newAmount);
+    }
+
+    // ==================== DAO 注入版本（可单测，不依赖 Context） ====================
+
+    public static int calculateTodayEstimate(CoinEarningDao coinDao) {
+        long[] range = getTodayRange();
+        return coinDao.getTodayEstimate("sister", range[0], range[1]);
+    }
+
+    public static int calculateTodayConfirmed(CoinEarningDao coinDao) {
+        long[] range = getTodayRange();
+        return coinDao.getTodayConfirmed("sister", range[0], range[1]);
+    }
+
+    public static int calculateTodayPending(CoinEarningDao coinDao) {
+        long[] range = getTodayRange();
+        return coinDao.getTodayPending("sister", range[0], range[1]);
+    }
+
+    public static int getDailySoftLimit(EconomyConfigDao configDao) {
+        EconomyConfig config = configDao.getConfig();
         Calendar cal = Calendar.getInstance();
         int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
         boolean isWeekend = (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY);
@@ -37,13 +60,13 @@ public class EarningService {
         return isWeekend ? 100 : 60;
     }
 
-    public static boolean isWithinLimit(Context ctx, int newAmount) {
-        int current = calculateTodayConfirmed(ctx) + calculateTodayPending(ctx);
-        int limit = getDailySoftLimit(ctx);
+    public static boolean isWithinLimit(CoinEarningDao coinDao, EconomyConfigDao configDao, int newAmount) {
+        int current = calculateTodayConfirmed(coinDao) + calculateTodayPending(coinDao);
+        int limit = getDailySoftLimit(configDao);
         return (current + newAmount) <= limit;
     }
 
-    private static long[] getTodayRange() {
+    static long[] getTodayRange() {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
