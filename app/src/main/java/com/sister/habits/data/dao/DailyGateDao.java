@@ -28,6 +28,9 @@ public interface DailyGateDao {
     @Query("SELECT * FROM daily_gates ORDER BY date DESC LIMIT :limit")
     List<DailyGate> getRecent(int limit);
 
+    @Query("SELECT * FROM daily_gates WHERE status = 'PENDING' ORDER BY submittedAt ASC")
+    List<DailyGate> getPending();
+
     @Query("SELECT * FROM daily_gates WHERE synced = 0")
     List<DailyGate> getUnsynced();
 
