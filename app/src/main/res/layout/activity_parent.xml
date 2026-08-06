@@ -198,28 +198,7 @@
                 android:text="作业管理" android:textSize="10sp"
                 android:textColor="@color/text_primary" />
         </LinearLayout>
-        <LinearLayout
-            android:id="@+id/btn_approval_center"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:background="@drawable/card_background"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="✅" android:textSize="18sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="审批中心" android:textSize="10sp"
-                android:textColor="@color/text_primary" />
-        </LinearLayout>
-    </LinearLayout>
+</LinearLayout>
 
             <!-- ✅ 集成审批中心：三类合并显示，点击勾选，长按单项审批 -->
     <TextView
