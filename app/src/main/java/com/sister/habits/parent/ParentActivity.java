@@ -483,6 +483,8 @@ public class ParentActivity extends AppCompatActivity {
         if (btnRejectAll != null) {
             btnRejectAll.setOnClickListener(v -> { soundHelper.playClickSound(); approveAll(false); });
         }
+        android.widget.TextView tvHubTitle = findViewById(R.id.tv_hub_title);
+        if (tvHubTitle != null) tvHubTitle.setOnClickListener(v -> { soundHelper.playClickSound(); loadApprovalHub(); Toast.makeText(this, "🔄 已刷新审批列表", Toast.LENGTH_SHORT).show(); });
         // ✅ 集成审批中心标题可点击 → 打开Hub对话框（快速单项审批）
 
         // ✅ 通知渠道
