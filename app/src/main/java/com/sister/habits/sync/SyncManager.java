@@ -3,6 +3,10 @@ package com.sister.habits.sync;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
+import android.net.LinkAddress;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -14,6 +18,10 @@ import com.sister.habits.data.AppDatabase;
 import com.sister.habits.data.dao.*;
 import com.sister.habits.data.models.*;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.List;
 
 /**
@@ -257,12 +265,65 @@ public class SyncManager {
 
     // ==================== 网络状态检测 ====================
 
-    private boolean isSameWifi() {
+    /**
+     * 获取本机局域网 IPv4（Android 10+ 兼容）
+     * ⚠️ WifiInfo.getIpAddress() 在 Android 10+ 返回 0（隐私限制），不可用
+     * 优先 ConnectivityManager.getLinkProperties（API23+，无需位置权限），fallback NetworkInterface
+     */
+    public String getLocalIpv4() {
         try {
-            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-            if (wifiManager != null) {
-                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                return wifiInfo != null && wifiInfo.getNetworkId() != -1;
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                Network active = cm.getActiveNetwork();
+                if (active != null) {
+                    LinkProperties lp = cm.getLinkProperties(active);
+                    if (lp != null) {
+                        for (LinkAddress la : lp.getLinkAddresses()) {
+                            InetAddress addr = la.getAddress();
+                            if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                                return addr.getHostAddress();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "获取IPv4失败(ConnectivityManager)", e);
+        }
+        // fallback：遍历网络接口
+        try {
+            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+            while (nis.hasMoreElements()) {
+                NetworkInterface ni = nis.nextElement();
+                if (!ni.isUp() || ni.isLoopback()) continue;
+                if (ni.getName() != null && ni.getName().startsWith("wlan")) {
+                    Enumeration<InetAddress> addrs = ni.getInetAddresses();
+                    while (addrs.hasMoreElements()) {
+                        InetAddress a = addrs.nextElement();
+                        if (a instanceof Inet4Address && !a.isLoopbackAddress()) {
+                            return a.getHostAddress();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "获取IPv4失败(NetworkInterface)", e);
+        }
+        return null;
+    }
+
+    /** 判断是否连接了 WiFi（Android 10+ 兼容：不用 getNetworkId） */
+    public boolean isSameWifi() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                Network active = cm.getActiveNetwork();
+                if (active != null) {
+                    NetworkCapabilities caps = cm.getNetworkCapabilities(active);
+                    if (caps != null) {
+                        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
+                    }
+                }
             }
         } catch (Exception e) {
             Log.d(TAG, "Wifi状态检测失败", e);
