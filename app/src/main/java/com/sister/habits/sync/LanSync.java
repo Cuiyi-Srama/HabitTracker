@@ -113,6 +113,20 @@ public class LanSync {
         }).start();
     }
 
+    /** 扫码直连同步：QR码携带对方IP，直接连接交换数据（不依赖扫描发现） */
+    public void syncToDevice(final String targetIp) {
+        if (targetIp == null || targetIp.isEmpty()) return;
+        if (!running) start();
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "📡 扫码直连: " + targetIp);
+                syncWithDevice(targetIp);
+            } catch (Exception e) {
+                Log.e(TAG, "扫码直连失败: " + targetIp + " - " + e.getMessage());
+            }
+        }).start();
+    }
+
     private void syncWithDevice(String targetIp) {
         try {
             URL syncUrl = new URL("http://" + targetIp + ":" + PORT + "/sync");
