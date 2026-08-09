@@ -1630,7 +1630,7 @@ public class ParentActivity extends AppCompatActivity {
         );
     }
 
-    /** 📋 作业管理——关卡打折系统 */
+    /** 📋 作业管理——关卡打折系统（自定义布局，避免 setMessage+setItems 兼容问题） */
     private void showGateManageDialog() {
         soundHelper.playClickSound();
         com.sister.habits.data.models.GateConfig config = db.gateConfigDao().getConfig();
@@ -1652,33 +1652,56 @@ public class ParentActivity extends AppCompatActivity {
         String ml = "×" + String.format("%.0f%%", multiplier * 100);
         if (multiplier >= 1.0) ml = "正常";
 
-        String[] items = {
+        // ===== 自定义布局：状态文字 + 4个操作按钮 =====
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(48, 24, 48, 24);
+
+        android.widget.TextView tvStatus = new android.widget.TextView(this);
+        tvStatus.setText("📅 今日状态: " + todayStatus + "\n📊 今日积分乘数: " + ml);
+        tvStatus.setTextSize(14);
+        tvStatus.setTextColor(0xFF333333);
+        tvStatus.setPadding(0, 0, 0, 16);
+        layout.addView(tvStatus);
+
+        String[] labels = {
             "⚙️ 假期配置（日期范围/周末开关）",
             "✏️ 审核今日作业",
             "🏖 赦免配置（外出/旅行免检）",
             (config != null && config.enabled ? "🔴 关闭打折系统" : "🟢 开启打折系统")
         };
+        Runnable[] actions = new Runnable[]{
+            this::showGateConfigDialog,
+            this::showTodayGateReviewDialog,
+            this::showExcuseConfigDialog,
+            () -> {
+                if (config != null) {
+                    config.enabled = !config.enabled;
+                    config.updatedAt = System.currentTimeMillis();
+                    db.gateConfigDao().update(config);
+                    syncManager.onDataChanged();
+                    Toast.makeText(this, config.enabled ? "🟢 打折系统已开启" : "🔴 打折系统已关闭", Toast.LENGTH_SHORT).show();
+                }
+                showGateManageDialog(); // 留在作业管理，继续操作
+            }
+        };
+        for (int i = 0; i < labels.length; i++) {
+            final int idx = i;
+            android.widget.Button btn = new android.widget.Button(this);
+            btn.setText(labels[i]);
+            btn.setAllCaps(false);
+            btn.setOnClickListener(v -> actions[idx].run());
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 4, 0, 4);
+            btn.setLayoutParams(lp);
+            layout.addView(btn);
+        }
 
         new AlertDialog.Builder(this)
             .setTitle("📋 作业管理")
-            .setMessage("📅 今日状态: " + todayStatus + "\n📊 今日积分乘数: " + ml)
-            .setItems(items, (d, which) -> {
-                switch (which) {
-                    case 0: showGateConfigDialog(); break;
-                    case 1: showTodayGateReviewDialog(); break;
-                    case 2: showExcuseConfigDialog(); break;
-                    case 3:
-                        if (config != null) {
-                            config.enabled = !config.enabled;
-                            config.updatedAt = System.currentTimeMillis();
-                            db.gateConfigDao().update(config);
-                            syncManager.onDataChanged();
-                            Toast.makeText(this, config.enabled ? "🟢 打折系统已开启" : "🔴 打折系统已关闭", Toast.LENGTH_SHORT).show();
-                        }
-                        showGateManageDialog(); // 留在作业管理，继续操作
-                        break;
-                }
-            })
+            .setView(layout)
             .setNegativeButton("← 返回上级", (d2, w2) -> showSettingsDialog())
             .show();
     }
@@ -1976,12 +1999,18 @@ public class ParentActivity extends AppCompatActivity {
         }
 
         String nickname = profile.getNickname();
+        com.sister.habits.data.models.GateConfig gateCfg = db.gateConfigDao().getConfig();
+        if (gateCfg == null) {
+            Toast.makeText(this, "请先在「作业管理 → 假期配置」保存一次配置", Toast.LENGTH_LONG).show();
+            showGateManageDialog();
+            return;
+        }
         String[] items = {
-            "✅ 确认完成（+" + db.gateConfigDao().getConfig().completionReward + "分）",
-            "❌ 标记未完成（明天打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折）",
-            "🤖 AI作弊（明天打" + db.gateConfigDao().getConfig().defaultPenaltyPercent + "折，不获得作业分）",
+            "✅ 确认完成（+" + gateCfg.completionReward + "分）",
+            "❌ 标记未完成（明天打" + gateCfg.defaultPenaltyPercent + "折）",
+            "🤖 AI作弊（明天打" + gateCfg.defaultPenaltyPercent + "折，不获得作业分）",
             "🏥 免检（生病/外出）",
-            "📝 补交（明天减免至" + db.gateConfigDao().getConfig().makeupPercent + "折）"
+            "📝 补交（明天减免至" + gateCfg.makeupPercent + "折）"
         };
 
         new AlertDialog.Builder(this)
