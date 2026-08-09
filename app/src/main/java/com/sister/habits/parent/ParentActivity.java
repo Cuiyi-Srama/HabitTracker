@@ -228,7 +228,7 @@ public class ParentActivity extends AppCompatActivity {
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
                         // 配对后主动触发全同步（Hub→局域网→云端）
-                        syncManager.triggerFullSync();
+                        syncManager.triggerFullSyncAsync();
                     } else {
                         Toast.makeText(this, "❌ 无效的配对码: " + qrContent.substring(0, Math.min(30, qrContent.length())), Toast.LENGTH_LONG).show();
                     }
@@ -463,7 +463,11 @@ public class ParentActivity extends AppCompatActivity {
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
-        btnSync.setOnClickListener(v -> { soundHelper.playClickSound(); syncManager.triggerRemoteSync(); });
+        btnSync.setOnClickListener(v -> {
+            soundHelper.playClickSound();
+            Toast.makeText(this, "🔄 全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show();
+            syncManager.triggerFullSyncAsync();
+        });
         btnGateManage = findViewById(R.id.btn_gate_manage);
         btnApproveSelected = findViewById(R.id.btn_approve_selected);
         btnRejectSelected = findViewById(R.id.btn_reject_selected);
@@ -1506,7 +1510,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 0: refreshStats(); Toast.makeText(this, tvStats.getText(), Toast.LENGTH_LONG).show(); break;
                         case 1: loadPendingApprovals(); Toast.makeText(this, "已刷新审批列表", Toast.LENGTH_SHORT).show(); break;
                         case 2: loadPendingTasks(); Toast.makeText(this, "已刷新任务列表", Toast.LENGTH_SHORT).show(); break;
-                        case 3: syncManager.triggerFullSync(); Toast.makeText(this, "全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show(); break;
+                        case 3: syncManager.triggerFullSyncAsync(); Toast.makeText(this, "全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -2618,7 +2622,9 @@ public class ParentActivity extends AppCompatActivity {
                 String input = etInput.getText().toString().trim();
                 if (BindKeyManager.isValidChildKey(input)) {
                     if (BindKeyManager.bindChild(ParentActivity.this, input)) {
-                        Toast.makeText(this, "✅ 绑定成功！孩子Key: " + input, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "✅ 绑定成功！孩子Key: " + input + "\n正在全同步数据...", Toast.LENGTH_LONG).show();
+                        // 绑定后自动全同步（Hub→局域网→云端），新设备立即拉取家庭数据
+                        syncManager.triggerFullSyncAsync();
                         showBindKeyDialog(); // 保持对话框不关闭，方便连续操作
                         return;
                     } else {
