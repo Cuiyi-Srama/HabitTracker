@@ -203,6 +203,31 @@ public class LanSync {
         return sb.length() == 0 ? "（无数据）" : sb.toString().trim();
     }
 
+    /** 收集商品图标（base64），供跨设备图片同步 */
+    private java.util.Map<String, String> collectShopImages() {
+        java.util.Map<String, String> images = new java.util.HashMap<>();
+        try {
+            for (com.sister.habits.data.models.ShopItem s : db.shopItemDao().getAll()) {
+                if (s.iconUrl == null || s.iconUrl.isEmpty()) continue;
+                java.io.File f = new java.io.File(s.iconUrl);
+                if (!f.exists() || f.length() <= 0 || f.length() > 2 * 1024 * 1024) continue;
+                byte[] data = new byte[(int) f.length()];
+                java.io.FileInputStream fis = new java.io.FileInputStream(f);
+                int off = 0;
+                while (off < data.length) {
+                    int n = fis.read(data, off, data.length - off);
+                    if (n < 0) break;
+                    off += n;
+                }
+                fis.close();
+                images.put(s.iconUrl, android.util.Base64.encodeToString(data, android.util.Base64.NO_WRAP));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "收集商品图片失败: " + e.getMessage());
+        }
+        return images;
+    }
+
     private String buildSyncPayload() {
         SyncPayload payload = new SyncPayload();
         payload.checkIns = db.checkInDao().getUnsynced();
@@ -217,6 +242,7 @@ public class LanSync {
         payload.economyConfig = db.economyConfigDao().getConfig();
         payload.gateConfig = db.gateConfigDao().getConfig();
         payload.dailyGates = db.dailyGateDao().getUnsynced();
+        payload.shopImages = collectShopImages();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -235,6 +261,7 @@ public class LanSync {
         payload.economyConfig = db.economyConfigDao().getConfig();
         payload.gateConfig = db.gateConfigDao().getConfig();
         payload.dailyGates = db.dailyGateDao().getUnsynced();
+        payload.shopImages = collectShopImages();
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
@@ -259,6 +286,8 @@ public class LanSync {
     private void mergeRemoteData(String json) {
         SyncPayload payload = gson.fromJson(json, SyncPayload.class);
         if (payload == null) return;
+        if (payload.shopImages != null && !payload.shopImages.isEmpty())
+            merger.mergeShopImages(context, payload.shopImages);
         if (payload.checkIns != null) merger.mergeCheckIns(payload.checkIns);
         if (payload.coins != null) merger.mergeCoinTransactions(payload.coins);
         if (payload.tasks != null) merger.mergeTasks(payload.tasks);
@@ -347,5 +376,6 @@ public class LanSync {
         com.sister.habits.data.models.EconomyConfig economyConfig;
         com.sister.habits.data.models.GateConfig gateConfig;
         List<DailyGate> dailyGates;
+        java.util.Map<String, String> shopImages; // 商品图标 base64（跨设备图片同步）
     }
 }
