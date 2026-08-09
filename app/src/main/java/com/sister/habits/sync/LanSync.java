@@ -117,10 +117,16 @@ public class LanSync {
             syncConn.setReadTimeout(2000);
 
             String localData = buildSyncPayload();
-            OutputStreamWriter writer = new OutputStreamWriter(syncConn.getOutputStream());
-            writer.write(localData);
-            writer.flush();
-            writer.close();
+            // 必须显式设置 Content-Type + Content-Length：
+            // ① NanoHTTPD 对 x-www-form-urlencoded 会把 JSON 吞进 parms（postData 永远 null）
+            // ② 不设 Content-Length 时 HttpURLConnection 用 chunked，NanoHTTPD 2.3.1 不支持
+            byte[] postBytes = localData.getBytes("UTF-8");
+            syncConn.setRequestProperty("Content-Type", "application/json");
+            syncConn.setFixedLengthStreamingMode(postBytes.length);
+            java.io.OutputStream os = syncConn.getOutputStream();
+            os.write(postBytes);
+            os.flush();
+            os.close();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(syncConn.getInputStream()));
             StringBuilder response = new StringBuilder();
@@ -220,27 +226,49 @@ public class LanSync {
 
     private Response serveSync(IHTTPSession session) {
         try {
-            Map<String, String> bodyMap = new HashMap<>();
-            session.parseBody(bodyMap);
-            String payload = bodyMap.get("postData");
-            if (payload == null) {
-                // 尝试从body读取
-                StringBuilder sb = new StringBuilder();
-                try (InputStream in = session.getInputStream()) {
-                    byte[] buf = new byte[4096];
-                    int n;
-                    while ((n = in.read(buf)) != -1) sb.append(new String(buf, 0, n));
-                }
-                payload = sb.toString();
-            }
-            mergeRemoteData(payload != null ? payload : "");
+            String payload = readBody(session);
+            mergeRemoteData(payload);
             // 新设备（增量数据为空）→ 返回全量历史数据引导；否则增量交换
-            String responsePayload = isEmptyDevice(payload != null ? payload : "")
+            String responsePayload = isEmptyDevice(payload)
                     ? buildFullPayload() : buildSyncPayload();
             return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", responsePayload);
         } catch (Exception e) {
             return NanoHTTPD.newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
+    }
+
+    /**
+     * 读取请求体：优先按 Content-Length 从 InputStream 读（可靠）
+     * fallback parseBody（兼容无 Content-Length 的旧客户端）
+     * ⚠️ 不能直接依赖 parseBody 的 postData：Content-Type 为
+     * x-www-form-urlencoded 时 JSON 会被 decodeParms 吞进 parms
+     */
+    private String readBody(IHTTPSession session) throws IOException {
+        String cl = session.getHeaders().get("content-length");
+        if (cl != null) {
+            int contentLength;
+            try {
+                contentLength = Integer.parseInt(cl.trim());
+            } catch (Exception e) {
+                contentLength = 0;
+            }
+            if (contentLength > 0) {
+                byte[] buf = new byte[contentLength];
+                int read = 0;
+                while (read < contentLength) {
+                    int n = session.getInputStream().read(buf, read, contentLength - read);
+                    if (n < 0) break;
+                    read += n;
+                }
+                return new String(buf, 0, read, "UTF-8");
+            }
+        }
+        Map<String, String> bodyMap = new HashMap<>();
+        try {
+            session.parseBody(bodyMap);
+        } catch (Exception ignored) {}
+        String p = bodyMap.get("postData");
+        return p != null ? p : "";
     }
 
     private static class SyncPayload {
