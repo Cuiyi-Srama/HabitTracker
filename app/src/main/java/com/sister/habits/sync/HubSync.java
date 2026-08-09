@@ -130,6 +130,7 @@ public class HubSync {
                 // 合并数据到Hub本地数据库
                 if (payload.shopImages != null && !payload.shopImages.isEmpty())
                     merger.mergeShopImages(context, payload.shopImages);
+                if (payload.wordReviews != null) merger.mergeWordReviews(payload.wordReviews);
                 if (payload.checkIns != null) merger.mergeCheckIns(payload.checkIns);
                 if (payload.coins != null) merger.mergeCoinTransactions(payload.coins);
                 if (payload.tasks != null) merger.mergeTasks(payload.tasks);
@@ -387,6 +388,7 @@ public class HubSync {
         payload.tasks = db.taskDao().getUnsynced();
         payload.redemptions = db.redemptionDao().getUnsynced();
         payload.vocabularies = db.vocabularyDao().getAll();
+        payload.wordReviews = db.wordReviewDao().getAll();
         payload.shopItems = db.shopItemDao().getAll();
         payload.wishlistItems = db.wishlistDao().getAll();
         payload.wordBanks = db.wordBankDao().getAll();
@@ -407,6 +409,7 @@ public class HubSync {
         payload.tasks = db.taskDao().getAll();
         payload.redemptions = db.redemptionDao().getAll();
         payload.vocabularies = db.vocabularyDao().getAll();
+        payload.wordReviews = db.wordReviewDao().getAll();
         payload.shopItems = db.shopItemDao().getAll();
         payload.wishlistItems = db.wishlistDao().getAll();
         payload.wordBanks = db.wordBankDao().getAll();
@@ -619,6 +622,7 @@ public class HubSync {
         com.sister.habits.data.models.GateConfig gateConfig;
         List<DailyGate> dailyGates;
         java.util.Map<String, String> shopImages; // 商品图标 base64（跨设备图片同步）
+        List<WordReview> wordReviews; // 复习进度（艾宾浩斯）
     }
 
     private static class PullResponse {
