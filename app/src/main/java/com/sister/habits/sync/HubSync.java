@@ -218,10 +218,14 @@ public class HubSync {
             conn.setReadTimeout(5000);
 
             String localData = buildSyncPayload();
-            OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
-            writer.write(localData);
-            writer.flush();
-            writer.close();
+            // 同 LanSync：显式 Content-Type + Content-Length，规避 NanoHTTPD 解析坑
+            byte[] postBytes = localData.getBytes("UTF-8");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setFixedLengthStreamingMode(postBytes.length);
+            java.io.OutputStream os = conn.getOutputStream();
+            os.write(postBytes);
+            os.flush();
+            os.close();
 
             // 读取Hub返回的数据并合并
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
