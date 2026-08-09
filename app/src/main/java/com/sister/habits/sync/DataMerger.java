@@ -165,6 +165,34 @@ public class DataMerger {
         /* mergeWordReviews skipped - no getAll in WordReviewDao */
 
 
+    /**
+     * 商品图标跨设备同步：base64解码到本机 getFilesDir()/shop_images/
+     * 两台设备包名相同 -> filesDir 绝对路径天然一致 -> iconUrl 无需改写
+     */
+    public void mergeShopImages(android.content.Context context, java.util.Map<String, String> images) {
+        if (images == null || images.isEmpty()) return;
+        java.io.File dir = new java.io.File(context.getFilesDir(), "shop_images");
+        if (!dir.exists()) dir.mkdirs();
+        int saved = 0;
+        for (java.util.Map.Entry<String, String> e : images.entrySet()) {
+            try {
+                String remotePath = e.getKey();
+                String fileName = remotePath.substring(remotePath.lastIndexOf('/') + 1);
+                if (fileName.isEmpty()) continue;
+                java.io.File out = new java.io.File(dir, fileName);
+                if (out.exists()) continue; // 已有则跳过
+                byte[] data = android.util.Base64.decode(e.getValue(), android.util.Base64.NO_WRAP);
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(out);
+                fos.write(data);
+                fos.close();
+                saved++;
+            } catch (Exception ex) {
+                Log.w(TAG, "图片保存失败: " + ex.getMessage());
+            }
+        }
+        Log.d(TAG, "商品图片同步完成: 新增 " + saved + "/" + images.size());
+    }
+
     public void mergeShopItems(List<com.sister.habits.data.models.ShopItem> remoteList) {
         com.sister.habits.data.dao.ShopItemDao dao = appDb.shopItemDao();
         int added = 0;
