@@ -115,20 +115,31 @@ public class LanSync {
 
     /** 扫码直连同步：QR码携带对方IP，直接连接交换数据（不依赖扫描发现） */
     public void syncToDevice(final String targetIp) {
+        syncToDevice(targetIp, null);
+    }
+
+    /** 扫码直连同步（带进度回调：连接状态/收发条数/结果） */
+    public void syncToDevice(final String targetIp, final SyncCallback callback) {
         if (targetIp == null || targetIp.isEmpty()) return;
         if (!running) start();
         new Thread(() -> {
             try {
                 Log.d(TAG, "📡 扫码直连: " + targetIp);
-                syncWithDevice(targetIp);
+                syncWithDevice(targetIp, callback);
             } catch (Exception e) {
                 Log.e(TAG, "扫码直连失败: " + targetIp + " - " + e.getMessage());
+                if (callback != null) callback.onSyncComplete(false, "❌ 连接异常: " + e.getMessage());
             }
         }).start();
     }
 
     private void syncWithDevice(String targetIp) {
+        syncWithDevice(targetIp, null);
+    }
+
+    private void syncWithDevice(String targetIp, SyncCallback callback) {
         try {
+            if (callback != null) callback.onStatusUpdate("📡 正在连接 " + targetIp + "...");
             URL syncUrl = new URL("http://" + targetIp + ":" + PORT + "/sync");
             HttpURLConnection syncConn = (HttpURLConnection) syncUrl.openConnection();
             syncConn.setRequestMethod("POST");
@@ -148,17 +159,48 @@ public class LanSync {
             os.flush();
             os.close();
 
+            // 发送统计
+            try {
+                SyncPayload sent = gson.fromJson(localData, SyncPayload.class);
+                if (callback != null && sent != null)
+                    callback.onStatusUpdate("📤 发送: " + payloadSummary(sent));
+            } catch (Exception ignored) {}
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(syncConn.getInputStream()));
             StringBuilder response = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) response.append(line);
             reader.close();
 
+            // 接收统计
+            try {
+                SyncPayload received = gson.fromJson(response.toString(), SyncPayload.class);
+                if (callback != null && received != null)
+                    callback.onStatusUpdate("📥 收到: " + payloadSummary(received));
+            } catch (Exception ignored) {}
+
             mergeRemoteData(response.toString());
             syncConn.disconnect();
+            if (callback != null) callback.onSyncComplete(true, "✅ 同步完成");
         } catch (Exception e) {
             Log.d(TAG, "同步失败: " + targetIp + " - " + e.getMessage());
+            if (callback != null) callback.onSyncComplete(false, "❌ 连接失败: " + e.getMessage());
         }
+    }
+
+    /** 汇总载荷中各表条数（用于进度显示） */
+    private String payloadSummary(SyncPayload p) {
+        StringBuilder sb = new StringBuilder();
+        if (p.checkIns != null && !p.checkIns.isEmpty()) sb.append("打卡").append(p.checkIns.size()).append("条 ");
+        if (p.coins != null && !p.coins.isEmpty()) sb.append("流水").append(p.coins.size()).append("条 ");
+        if (p.tasks != null && !p.tasks.isEmpty()) sb.append("任务").append(p.tasks.size()).append("条 ");
+        if (p.redemptions != null && !p.redemptions.isEmpty()) sb.append("兑换").append(p.redemptions.size()).append("条 ");
+        if (p.vocabularies != null && !p.vocabularies.isEmpty()) sb.append("单词").append(p.vocabularies.size()).append("个 ");
+        if (p.shopItems != null && !p.shopItems.isEmpty()) sb.append("商品").append(p.shopItems.size()).append("个 ");
+        if (p.wishlistItems != null && !p.wishlistItems.isEmpty()) sb.append("心愿单").append(p.wishlistItems.size()).append("条 ");
+        if (p.wordBanks != null && !p.wordBanks.isEmpty()) sb.append("词库").append(p.wordBanks.size()).append("个 ");
+        if (p.dailyGates != null && !p.dailyGates.isEmpty()) sb.append("作业记录").append(p.dailyGates.size()).append("条 ");
+        return sb.length() == 0 ? "（无数据）" : sb.toString().trim();
     }
 
     private String buildSyncPayload() {
