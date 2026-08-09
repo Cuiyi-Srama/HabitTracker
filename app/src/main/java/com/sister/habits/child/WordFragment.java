@@ -231,7 +231,7 @@ private AppDatabase db;
                     if (v != null && v.active && !v.mastered) words.add(v);
                 }
             }
-            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + planIds.size() + " 可学)  学习不给金币哦");
+            tvPrompt.setText("📚 今日新词 (" + words.size() + "/" + planIds.size() + " 可学)  答对一题 +2分 🪙（家长审批到账）");
         }
 
         if (words.isEmpty()) {
@@ -251,7 +251,7 @@ private AppDatabase db;
                 tvPhonetic.setText(isReviewMode ? "复习完了，真棒 🎉" : "今日新词已学完 🎉");
                 tvPrompt.setText(isReviewMode
                         ? "所有单词都检测通过了！去逛逛商城吧 🏪"
-                        : "今天的新词学完了，切换到「复习检测」赚金币吧 🪙");
+                        : "今天的新词学完了，切到「复习检测」通关再 +2分/词 🪙");
             }
             for (Button btn : optionButtons) btn.setVisibility(View.GONE);
             updateStats();
