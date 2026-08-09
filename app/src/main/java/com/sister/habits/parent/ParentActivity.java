@@ -228,9 +228,33 @@ public class ParentActivity extends AppCompatActivity {
                                 .edit()
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
-                        // ① 直连同步：QR码携带对方IP，直接连接交换（不依赖扫描发现）
+                        // ① 直连同步：QR码携带对方IP，直接连接交换（不依赖扫描发现），带进度显示
                         if (deviceIp != null) {
-                            syncManager.getLanSync().syncToDevice(deviceIp);
+                            final android.app.ProgressDialog syncPd = new android.app.ProgressDialog(this);
+                            syncPd.setTitle("🔄 正在同步");
+                            syncPd.setMessage("📡 正在连接 " + deviceIp + "...");
+                            syncPd.setCancelable(false);
+                            syncPd.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+                            syncPd.show();
+                            syncManager.getLanSync().syncToDevice(deviceIp, new com.sister.habits.sync.SyncCallback() {
+                                @Override
+                                public void onStatusUpdate(String status) {
+                                    runOnUiThread(() -> {
+                                        if (syncPd.isShowing()) syncPd.setMessage(status);
+                                    });
+                                }
+                                @Override
+                                public void onHubFound(String ip, String deviceId) {}
+                                @Override
+                                public void onSyncComplete(boolean success, String message) {
+                                    runOnUiThread(() -> {
+                                        if (syncPd.isShowing()) syncPd.dismiss();
+                                        Toast.makeText(ParentActivity.this, message, Toast.LENGTH_LONG).show();
+                                    });
+                                }
+                                @Override
+                                public void onScanProgress(int scanned, int total) {}
+                            });
                         }
                         // ② 全同步兜底（Hub+局域网扫描+云端），完成后给反馈
                         syncManager.triggerFullSyncAsync(() -> runOnUiThread(() ->
