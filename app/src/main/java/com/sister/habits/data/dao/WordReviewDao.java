@@ -44,4 +44,6 @@ public interface WordReviewDao {
 
     @Query("DELETE FROM word_reviews WHERE bankId = :bankId")
     void deleteByBankId(String bankId);
+    @Query("SELECT * FROM word_reviews")
+    java.util.List<com.sister.habits.data.models.WordReview> getAll();
 }
