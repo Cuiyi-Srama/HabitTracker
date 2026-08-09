@@ -59,6 +59,7 @@ public class LanSync {
                     }
                 }
             };
+            server.setMaxPostSize(50 * 1024 * 1024); // 商品图片base64可能使payload达数MB，放宽上限
             server.start();
             running = true;
             Log.d(TAG, "局域网同步服务已启动，端口: " + PORT);
@@ -144,8 +145,8 @@ public class LanSync {
             HttpURLConnection syncConn = (HttpURLConnection) syncUrl.openConnection();
             syncConn.setRequestMethod("POST");
             syncConn.setDoOutput(true);
-            syncConn.setConnectTimeout(2000);
-            syncConn.setReadTimeout(2000);
+            syncConn.setConnectTimeout(10000);
+            syncConn.setReadTimeout(10000);
 
             String localData = buildSyncPayload();
             // 必须显式设置 Content-Type + Content-Length：
