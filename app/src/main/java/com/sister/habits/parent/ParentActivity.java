@@ -1727,6 +1727,42 @@ public class ParentActivity extends AppCompatActivity {
         tvTip.setPadding(0, 0, 0, 12);
         layout.addView(tvTip);
 
+        // ⚡ 快速赦免今天：一键把今日作业标记为免检（明天积分不打折）
+        android.widget.Button btnExcuseToday = new android.widget.Button(this);
+        btnExcuseToday.setText("⚡ 快速赦免今天（今日作业免检）");
+        btnExcuseToday.setAllCaps(false);
+        btnExcuseToday.setOnClickListener(v -> {
+            String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(new java.util.Date());
+            com.sister.habits.data.models.DailyGate g = db.dailyGateDao().getByDate(today);
+            if (g == null) {
+                g = new com.sister.habits.data.models.DailyGate();
+                g.date = today;
+                g.status = com.sister.habits.data.models.DailyGate.STATUS_PENDING;
+                db.dailyGateDao().insert(g);
+            }
+            if (com.sister.habits.data.models.DailyGate.STATUS_SKIPPED.equals(g.status)) {
+                Toast.makeText(this, "今日作业已是免检状态", Toast.LENGTH_SHORT).show();
+            } else if (com.sister.habits.data.models.DailyGate.STATUS_COMPLETED.equals(g.status)) {
+                Toast.makeText(this, "今日作业已完成，无需赦免", Toast.LENGTH_SHORT).show();
+            } else {
+                g.status = com.sister.habits.data.models.DailyGate.STATUS_SKIPPED;
+                g.reviewedAt = System.currentTimeMillis();
+                g.isLateSubmission = false;
+                g.deviceId = syncManager.getDeviceId();
+                g.synced = false;
+                g.syncTimestamp = System.currentTimeMillis();
+                db.dailyGateDao().insert(g);
+                syncManager.onDataChanged();
+                Toast.makeText(this, "⚡ 今日作业已赦免，明天积分正常", Toast.LENGTH_SHORT).show();
+            }
+        });
+        android.widget.LinearLayout.LayoutParams excuseBtnLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        excuseBtnLp.setMargins(0, 0, 0, 8);
+        btnExcuseToday.setLayoutParams(excuseBtnLp);
+        layout.addView(btnExcuseToday);
+
         // 解析已有赦免范围
         java.util.List<String[]> excuseList = new java.util.ArrayList<>();
         String exJson = config.excuseRanges;
