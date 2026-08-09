@@ -514,7 +514,14 @@ public class ParentActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "⚠️ 安全防护已全部关闭，建议开启至少一种验证", Toast.LENGTH_LONG).show();
             refreshAll();
-        }    }
+        }
+        // 📦 每天自动备份一次（静默，滚动保留最近10份，不阻塞UI）
+        new Thread(() -> {
+            try {
+                new com.sister.habits.utils.BackupExportHelper(this).autoBackupIfNeeded();
+            } catch (Exception ignored) {}
+        }).start();
+    }
 
         /** 打开图片选择器（供 ShopManager 使用） */
     public void launchShopImagePicker() { pickShopImageLauncher.launch("image/*"); }
@@ -1668,6 +1675,7 @@ public class ParentActivity extends AppCompatActivity {
                             syncManager.onDataChanged();
                             Toast.makeText(this, config.enabled ? "🟢 打折系统已开启" : "🔴 打折系统已关闭", Toast.LENGTH_SHORT).show();
                         }
+                        showGateManageDialog(); // 留在作业管理，继续操作
                         break;
                 }
             })
@@ -1771,6 +1779,7 @@ public class ParentActivity extends AppCompatActivity {
                 db.gateConfigDao().update(config);
                 syncManager.onDataChanged();
                 Toast.makeText(this, "✅ 赦免配置已保存", Toast.LENGTH_SHORT).show();
+                showGateManageDialog(); // 留在作业管理，继续操作
             })
             .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
             .show();
@@ -1939,6 +1948,7 @@ public class ParentActivity extends AppCompatActivity {
                 db.gateConfigDao().update(config);
                 syncManager.onDataChanged();
                 Toast.makeText(this, "✅ 配置已保存", Toast.LENGTH_SHORT).show();
+                showGateManageDialog(); // 留在作业管理，继续操作
             })
             .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
             .show();
@@ -1979,7 +1989,11 @@ public class ParentActivity extends AppCompatActivity {
             .setMessage("当前状态: " + currentStatus)
             .setItems(items, (d2, which) -> {
                 switch (which) {
-                    case 0: // 确认完成
+                    case 0: // 确认完成（防重复发奖：已是完成状态则拦截）
+                        if (com.sister.habits.data.models.DailyGate.STATUS_COMPLETED.equals(gate.status)) {
+                            Toast.makeText(this, "今日作业已确认完成，请勿重复操作（不会重复发分）", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
                         gate.status = com.sister.habits.data.models.DailyGate.STATUS_COMPLETED;
                         gate.reviewedAt = System.currentTimeMillis();
                         gate.isLateSubmission = false;
@@ -2027,6 +2041,7 @@ public class ParentActivity extends AppCompatActivity {
                 gate.syncTimestamp = System.currentTimeMillis();
                 db.dailyGateDao().insert(gate);
                 syncManager.onDataChanged();
+                showGateManageDialog(); // 留在作业管理，继续操作
             })
             .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
             .show();
@@ -3464,11 +3479,16 @@ private void showProfileSettings() {
                 .setMessage("⚠️ 恢复将覆盖当前所有数据！确定继续？")
                 .setView(etPwd)
                 .setPositiveButton("恢复", (d2, w2) -> {
-                    String pwd = etPwd.getText().toString();
+                    String pwd = etPwd.getText().toString().trim();
+                    // 自动备份文件（auto_开头）：密码留空时自动使用内置密码
+                    if (pwd.isEmpty() && selected.getName().startsWith("auto_")) {
+                        pwd = com.sister.habits.utils.BackupExportHelper.AUTO_PWD;
+                    }
+                    final String finalPwd = pwd;
                     new Thread(() -> {
                         try {
                             com.sister.habits.utils.BackupExportHelper helper = new com.sister.habits.utils.BackupExportHelper(this);
-                            helper.importBackup(selected, pwd);
+                            helper.importBackup(selected, finalPwd);
                             runOnUiThread(() -> {
                                 Toast.makeText(this, "✅ 恢复成功！请重启App", Toast.LENGTH_LONG).show();
                                 refreshAll();
