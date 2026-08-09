@@ -311,6 +311,7 @@ public class HubSync {
             if (hubData != null) {
                 if (hubData.shopImages != null && !hubData.shopImages.isEmpty())
                     handleShopImages(hubData.shopImages, hubIp);
+                if (hubData.wordReviews != null) merger.mergeWordReviews(hubData.wordReviews);
                 if (hubData.checkIns != null) merger.mergeCheckIns(hubData.checkIns);
                 if (hubData.coins != null) merger.mergeCoinTransactions(hubData.coins);
                 if (hubData.tasks != null) merger.mergeTasks(hubData.tasks);
