@@ -45,7 +45,7 @@ public class LanSync {
     public void start() {
         if (running) return;
         try {
-            server = new NanoHTTPD(PORT, 50 * 1024 * 1024) {
+            server = new NanoHTTPD(PORT) {
                 @Override
                 public Response serve(IHTTPSession session) {
                     String uri = session.getUri();
