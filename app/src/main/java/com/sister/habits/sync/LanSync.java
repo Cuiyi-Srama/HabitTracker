@@ -83,15 +83,12 @@ public class LanSync {
         if (!running) start();
         new Thread(() -> {
             try {
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                if (wifiManager == null) return;
-                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                if (wifiInfo == null) return;
-
-                int ipInt = wifiInfo.getIpAddress();
-                String myIp = String.format("%d.%d.%d.%d",
-                        (ipInt & 0xff), (ipInt >> 8 & 0xff),
-                        (ipInt >> 16 & 0xff), (ipInt >> 24 & 0xff));
+                // Android 10+ 必须用 ConnectivityManager 获取 IP（WifiInfo.getIpAddress 返回0）
+                String myIp = SyncManager.getInstance(context).getLocalIpv4();
+                if (myIp == null) {
+                    Log.e(TAG, "无法获取本机IPv4，跳过局域网扫描");
+                    return;
+                }
 
                 String subnet = myIp.substring(0, myIp.lastIndexOf('.') + 1);
                 for (int i = 1; i < 255; i++) {
