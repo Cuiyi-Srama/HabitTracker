@@ -96,6 +96,8 @@ public class HubSync {
                             return handlePeek();
                         case "/hub/discover":
                             return handleDiscover();
+                        case "/hub/shop_image":
+                            return serveShopImage(session);
                     }
                     return NanoHTTPD.newFixedLengthResponse(
                             Response.Status.NOT_FOUND, "text/plain", "Not Found");
@@ -128,7 +130,7 @@ public class HubSync {
             if (payload != null) {
                 // 合并数据到Hub本地数据库
                 if (payload.shopImages != null && !payload.shopImages.isEmpty())
-                    merger.mergeShopImages(context, payload.shopImages);
+                    handleShopImages(payload.shopImages, session.getRemoteIpAddress());
                 if (payload.wordReviews != null) merger.mergeWordReviews(payload.wordReviews);
                 if (payload.checkIns != null) merger.mergeCheckIns(payload.checkIns);
                 if (payload.coins != null) merger.mergeCoinTransactions(payload.coins);
@@ -180,6 +182,72 @@ public class HubSync {
         } catch (Exception e) {
             return NanoHTTPD.newFixedLengthResponse(
                     Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
+        }
+    }
+
+    /** 商品图标处理：值非空=旧版 base64（兼容）；值空=从来源设备流式按需拉取 */
+    private void handleShopImages(java.util.Map<String, String> images, String sourceIp) {
+        if (images == null || images.isEmpty() || sourceIp == null) return;
+        java.io.File dir = new java.io.File(context.getFilesDir(), "shop_images");
+        if (!dir.exists()) dir.mkdirs();
+        int got = 0;
+        for (java.util.Map.Entry<String, String> e : images.entrySet()) {
+            try {
+                String remotePath = e.getKey();
+                String fileName = remotePath.substring(remotePath.lastIndexOf('/') + 1);
+                if (fileName.isEmpty()) continue;
+                java.io.File out = new java.io.File(dir, fileName);
+                if (out.exists()) continue; // 已有则跳过
+                String b64 = e.getValue();
+                if (b64 != null && !b64.isEmpty()) {
+                    byte[] data = android.util.Base64.decode(b64, android.util.Base64.NO_WRAP);
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(out);
+                    fos.write(data);
+                    fos.close();
+                } else {
+                    downloadShopImage(sourceIp, fileName, out);
+                }
+                got++;
+            } catch (Exception ex) {
+                Log.w(TAG, "图片获取失败: " + ex.getMessage());
+            }
+        }
+        if (got > 0) Log.d(TAG, "商品图片同步完成: 新增 " + got + "/" + images.size());
+    }
+
+    /** 从对端流式下载图片（固定缓冲，内存安全） */
+    private void downloadShopImage(String sourceIp, String fileName, java.io.File out) {
+        try {
+            URL url = new URL("http://" + sourceIp + ":" + HUB_PORT + "/hub/shop_image?f=" + fileName);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            if (conn.getResponseCode() == 200) {
+                java.io.InputStream is = conn.getInputStream();
+                java.io.FileOutputStream fos = new java.io.FileOutputStream(out);
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = is.read(buf)) > 0) fos.write(buf, 0, n);
+                fos.close();
+                is.close();
+            }
+            conn.disconnect();
+        } catch (Exception e) {
+            Log.w(TAG, "图片下载失败: " + fileName + " - " + e.getMessage());
+        }
+    }
+
+    /** GET /hub/shop_image?f=文件名 — 流式返回商品图片 */
+    private Response serveShopImage(IHTTPSession session) {
+        try {
+            String f = session.getParms().get("f");
+            if (f == null || f.isEmpty()) return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "missing f");
+            String fileName = f.substring(f.lastIndexOf('/') + 1); // 防路径穿越
+            java.io.File img = new java.io.File(context.getFilesDir(), "shop_images/" + fileName);
+            if (!img.exists()) return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found");
+            return NanoHTTPD.newChunkedResponse(Response.Status.OK, "image/jpeg", new java.io.FileInputStream(img));
+        } catch (Exception e) {
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
     }
 
@@ -241,6 +309,8 @@ public class HubSync {
             // 解析并合并Hub的数据
             SyncPayload hubData = gson.fromJson(response.toString(), SyncPayload.class);
             if (hubData != null) {
+                if (hubData.shopImages != null && !hubData.shopImages.isEmpty())
+                    handleShopImages(hubData.shopImages, hubIp);
                 if (hubData.checkIns != null) merger.mergeCheckIns(hubData.checkIns);
                 if (hubData.coins != null) merger.mergeCoinTransactions(hubData.coins);
                 if (hubData.tasks != null) merger.mergeTasks(hubData.tasks);
@@ -355,24 +425,15 @@ public class HubSync {
 
     // ==================== 数据负载构建 ====================
 
-    /** 收集商品图标（base64），供跨设备图片同步 */
+        /** 收集商品图标路径（值留空=接收端按需流式拉取，不再塞 base64，避免 OOM） */
     private java.util.Map<String, String> collectShopImages() {
         java.util.Map<String, String> images = new java.util.HashMap<>();
         try {
             for (com.sister.habits.data.models.ShopItem s : db.shopItemDao().getAll()) {
                 if (s.iconUrl == null || s.iconUrl.isEmpty()) continue;
                 java.io.File f = new java.io.File(s.iconUrl);
-                if (!f.exists() || f.length() <= 0 || f.length() > 2 * 1024 * 1024) continue;
-                byte[] data = new byte[(int) f.length()];
-                java.io.FileInputStream fis = new java.io.FileInputStream(f);
-                int off = 0;
-                while (off < data.length) {
-                    int n = fis.read(data, off, data.length - off);
-                    if (n < 0) break;
-                    off += n;
-                }
-                fis.close();
-                images.put(s.iconUrl, android.util.Base64.encodeToString(data, android.util.Base64.NO_WRAP));
+                if (!f.exists() || f.length() <= 0) continue;
+                images.put(s.iconUrl, "");
             }
         } catch (Exception e) {
             Log.w(TAG, "收集商品图片失败: " + e.getMessage());
