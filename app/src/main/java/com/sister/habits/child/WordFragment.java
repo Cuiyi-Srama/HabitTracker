@@ -272,15 +272,20 @@ public class WordFragment extends Fragment {
                     updateStats();
                     return;
                 } else {
-                    // ❌ 有答错 → 整组从头重排重新来
+                    // ❌ 有答错 → 错词循环：只重来答错的词，全部答对即通关（不再整组重来）
                     int wrongCount = wrongInReviewSet.size();
-                    tvPrompt.setText("💪 答错了 " + wrongCount + " 个～整组重来，全部答对才算通关！加油！");
-                    // 整组重新随机排列，从头开始
+                    List<Vocabulary> wrongWords = new ArrayList<>();
                     if (reviewAllWords != null) {
-                        Collections.shuffle(reviewAllWords);
-                        quizQueue = new ArrayList<>(reviewAllWords);
+                        for (Vocabulary v : reviewAllWords) {
+                            if (wrongInReviewSet.contains(v.id)) {
+                                wrongWords.add(v);
+                            }
+                        }
                     }
+                    Collections.shuffle(wrongWords);
+                    quizQueue = new ArrayList<>(wrongWords);
                     wrongInReviewSet.clear();
+                    tvPrompt.setText("💪 答错 " + wrongCount + " 个～把这 " + wrongCount + " 个复习对就通关！加油！");
                     new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 800);
                     return;
                 }
