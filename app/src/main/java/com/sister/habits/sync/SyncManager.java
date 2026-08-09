@@ -153,11 +153,33 @@ public class SyncManager {
 
     /** 异步版全同步：Hub发现是阻塞调用（最多8秒），必须在子线程执行，避免卡UI */
     public void triggerFullSyncAsync() {
+        triggerFullSyncAsync(null);
+    }
+
+    /** 异步版全同步 + 完成回调：onComplete 在局域网扫描结束后触发（P2P完成即回调） */
+    public void triggerFullSyncAsync(final Runnable onComplete) {
         new Thread(() -> {
             try {
-                triggerFullSync();
+                boolean lanDone = false;
+                if (isSameWifi()) {
+                    if (hubSync.syncToHub()) {
+                        Log.d(TAG, "🏠 手动Hub同步成功");
+                    }
+                    // onComplete 绑定到 P2P 扫描结束（Hub 成功也继续 P2P 交换，保持原行为）
+                    lanSync.syncAll(onComplete);
+                    lanDone = true;
+                }
+                // 远程同步
+                remoteSync.syncAll();
+                if (!lanDone && onComplete != null) {
+                    try { onComplete.run(); } catch (Exception ignored) {}
+                }
+                Log.d(TAG, "🔄 全同步完成");
             } catch (Exception e) {
                 Log.e(TAG, "全同步异常", e);
+                if (onComplete != null) {
+                    try { onComplete.run(); } catch (Exception ignored) {}
+                }
             }
         }).start();
     }
