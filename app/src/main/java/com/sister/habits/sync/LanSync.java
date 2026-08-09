@@ -45,7 +45,7 @@ public class LanSync {
     public void start() {
         if (running) return;
         try {
-            server = new NanoHTTPD(PORT) {
+            server = new NanoHTTPD(PORT, 50 * 1024 * 1024) {
                 @Override
                 public Response serve(IHTTPSession session) {
                     String uri = session.getUri();
@@ -59,7 +59,6 @@ public class LanSync {
                     }
                 }
             };
-            server.setMaxPostSize(50 * 1024 * 1024); // 商品图片base64可能使payload达数MB，放宽上限
             server.start();
             running = true;
             Log.d(TAG, "局域网同步服务已启动，端口: " + PORT);
