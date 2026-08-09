@@ -227,8 +227,9 @@ public class ParentActivity extends AppCompatActivity {
                                 .edit()
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
-                        // 配对后主动触发全同步（Hub→局域网→云端）
-                        syncManager.triggerFullSyncAsync();
+                        // 配对后主动触发全同步（Hub→局域网→云端），完成后给反馈
+                        syncManager.triggerFullSyncAsync(() -> runOnUiThread(() ->
+                                Toast.makeText(this, "🔄 后台同步已结束，请检查数据是否更新（需同一WiFi）", Toast.LENGTH_LONG).show()));
                     } else {
                         Toast.makeText(this, "❌ 无效的配对码: " + qrContent.substring(0, Math.min(30, qrContent.length())), Toast.LENGTH_LONG).show();
                     }
