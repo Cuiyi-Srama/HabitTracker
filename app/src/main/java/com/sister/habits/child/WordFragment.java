@@ -37,7 +37,11 @@ import java.util.List;
  */
 public class WordFragment extends Fragment {
 
-    private AppDatabase db;
+        // 答题推进的 Handler：Fragment 销毁时须移除，防止回调访问已销毁 View 导致闪退
+    private final android.os.Handler quizHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable nextWordRunnable = this::showNextWord;
+
+private AppDatabase db;
     private SyncManager syncManager;
     private SoundHelper soundHelper;
 
@@ -118,6 +122,13 @@ public class WordFragment extends Fragment {
 
         startQuiz(false);
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        // 移除待执行的答题推进回调（切 Tab 后不再访问已销毁 View）
+        quizHandler.removeCallbacks(nextWordRunnable);
+        super.onDestroyView();
     }
 
     @Override
@@ -256,6 +267,8 @@ public class WordFragment extends Fragment {
     }
 
     private void showNextWord() {
+        // Fragment 可能已销毁（切 Tab/退出）：直接返回，避免 NPE 闪退
+        if (!isAdded() || getView() == null) return;
         if (quizQueue.isEmpty()) {
             if (isReviewMode) {
                 // 复习模式：一轮结束，检查是否全部答对
@@ -286,7 +299,7 @@ public class WordFragment extends Fragment {
                     quizQueue = new ArrayList<>(wrongWords);
                     wrongInReviewSet.clear();
                     tvPrompt.setText("💪 答错 " + wrongCount + " 个～把这 " + wrongCount + " 个复习对就通关！加油！");
-                    new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 800);
+                    quizHandler.postDelayed(nextWordRunnable, 800);
                     return;
                 }
             }
@@ -425,7 +438,7 @@ public class WordFragment extends Fragment {
         updateStreakDisplay();
 
         // 学习模式：答对答错都跳过该词（仅一次机会）
-        new Handler(Looper.getMainLooper()).postDelayed(this::showNextWord, 1200);
+        quizHandler.postDelayed(nextWordRunnable, 1200);
     }
 
     /**
