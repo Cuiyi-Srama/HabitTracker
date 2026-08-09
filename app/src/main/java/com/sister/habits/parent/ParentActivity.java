@@ -476,6 +476,8 @@ public class ParentActivity extends AppCompatActivity {
         // ✅ 初始化数据库和服务
         db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
+        // 双保险：Activity 打开即确保 18080 监听（即使 HabitApp 线程被初始化阻塞）
+        try { syncManager.getLanSync().start(); } catch (Exception ignored) {}
         soundHelper = SoundHelper.getInstance(this);
         shopManager = new ShopManager(this, db, soundHelper);
         profile = ProfileManager.getInstance(this);
