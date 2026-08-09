@@ -1114,12 +1114,35 @@ public class ParentActivity extends AppCompatActivity {
             Toast.makeText(this, "没有待审批的项目", Toast.LENGTH_SHORT).show();
             return;
         }
+        // 先统计积分净变化（收入 - 兑换支出），再逐个处理
+        int earnSum = 0;
+        int spendSum = 0;
+        if (approved) {
+            for (ApprovalItem item : currentApprovalItems) {
+                if (item.type == 0) {
+                    for (Redemption r : reds) if (r.id.equals(item.id)) { spendSum += r.coinsCost; break; }
+                } else if (item.type == 1) {
+                    for (com.sister.habits.data.models.CoinEarning e : earns) if (e.id.equals(item.id)) { earnSum += e.amount; break; }
+                } else if (item.type == 2) {
+                    for (Task t : tasks) if (t.id.equals(item.id)) { earnSum += t.rewardCoins; break; }
+                } else if (item.type == 3) {
+                    for (LaundryTask lt : laundries) if (String.valueOf(lt.id).equals(item.id)) { earnSum += lt.totalPoints; break; }
+                }
+                // type4 作业提交：不直接产生积分变动，跳过
+            }
+        }
         for (ApprovalItem item : new java.util.ArrayList<>(currentApprovalItems)) {
             processByKey(item.type + ":" + item.id, approved, reds, tasks, earns, laundries);
         }
         selectedApprovalHub.clear();
         loadApprovalHub();
-        Toast.makeText(this, (approved ? "✅ 已全部批准 " : "❌ 已全部拒绝 ") + total + " 项", Toast.LENGTH_SHORT).show();
+        if (approved) {
+            int net = earnSum - spendSum;
+            String netStr = net >= 0 ? "+" + net : String.valueOf(net);
+            Toast.makeText(this, "✅ 已全部批准 " + total + " 项，今日积分净变化 " + netStr + "分", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "❌ 已全部拒绝 " + total + " 项", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void processTaskApproval(Task task, boolean approved) {
@@ -1399,6 +1422,7 @@ public class ParentActivity extends AppCompatActivity {
                 "🧺 洗衣任务",
                 "🎰 抽奖管理",
                 "🏆 学校奖励",
+                "💰 积分账单",
             "⚙️ 系统设置"
         };
         com.sister.habits.utils.MenuHelper.show(this, "📱 家长管理中心", mainLabels,
@@ -1408,8 +1432,53 @@ public class ParentActivity extends AppCompatActivity {
                 this::showLaundryManageDialog,
                 this::showLotteryManageDialog,
                 this::showSchoolRewardDialog,
+                this::showCoinBillDialog,
                 this::showSystemMenu
         );
+    }
+
+    /** 💰 积分账单（历史流水明细） */
+    private void showCoinBillDialog() {
+        soundHelper.playClickSound();
+        java.util.List<com.sister.habits.data.models.CoinTransaction> bills =
+                db.coinTransactionDao().getRecent("sister", 200);
+        if (bills == null || bills.isEmpty()) {
+            Toast.makeText(this, "暂无积分流水记录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm", Locale.CHINA);
+        int income = 0, spend = 0;
+        for (com.sister.habits.data.models.CoinTransaction ct : bills) {
+            if (ct.amount >= 0) income += ct.amount; else spend += -ct.amount;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("💰 总收入 ").append(income).append(" 分  ·  支出 ").append(spend).append(" 分  ·  当前余额 ")
+          .append(db.coinTransactionDao().getBalance("sister")).append(" 分\n");
+        sb.append("━━━━━━━━━━━━━━━━━━━━\n");
+        int shown = 0;
+        for (com.sister.habits.data.models.CoinTransaction ct : bills) {
+            if (shown >= 100) { sb.append("……（更早的记录省略）\n"); break; }
+            String sign = ct.amount >= 0 ? "+" : "";
+            String desc = ct.description != null && !ct.description.isEmpty() ? ct.description : ct.type;
+            sb.append(sdf.format(new java.util.Date(ct.createdAt))).append("  ")
+              .append(sign).append(ct.amount).append("  ")
+              .append(desc).append("  ")
+              .append("(余").append(ct.balanceAfter).append(")\n");
+            shown++;
+        }
+        android.widget.TextView tv = new android.widget.TextView(this);
+        tv.setTextSize(13);
+        tv.setTextColor(0xFF333333);
+        tv.setPadding(32, 24, 32, 24);
+        tv.setText(sb.toString());
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(tv);
+        new AlertDialog.Builder(this)
+            .setTitle("💰 积分账单（近100条）")
+            .setView(scroll)
+            .setPositiveButton("关闭", null)
+            .setNegativeButton("← 返回", (d, w) -> showSettingsDialog())
+            .show();
     }
 
     /** 二级菜单：📊 总览与审批 */
@@ -1577,20 +1646,21 @@ public class ParentActivity extends AppCompatActivity {
         if (multiplier >= 1.0) ml = "正常";
 
         String[] items = {
-            "📅 今日状态: " + todayStatus,
-            "📊 今日积分乘数: " + ml,
             "⚙️ 假期配置（日期范围/周末开关）",
             "✏️ 审核今日作业",
+            "🏖 赦免配置（外出/旅行免检）",
             (config != null && config.enabled ? "🔴 关闭打折系统" : "🟢 开启打折系统")
         };
 
         new AlertDialog.Builder(this)
             .setTitle("📋 作业管理")
+            .setMessage("📅 今日状态: " + todayStatus + "\n📊 今日积分乘数: " + ml)
             .setItems(items, (d, which) -> {
                 switch (which) {
-                    case 2: showGateConfigDialog(); break;
-                    case 3: showTodayGateReviewDialog(); break;
-                    case 4:
+                    case 0: showGateConfigDialog(); break;
+                    case 1: showTodayGateReviewDialog(); break;
+                    case 2: showExcuseConfigDialog(); break;
+                    case 3:
                         if (config != null) {
                             config.enabled = !config.enabled;
                             config.updatedAt = System.currentTimeMillis();
@@ -1603,6 +1673,122 @@ public class ParentActivity extends AppCompatActivity {
             })
             .setNegativeButton("← 返回上级", (d2, w2) -> showSettingsDialog())
             .show();
+    }
+
+    /** 🏖 赦免配置对话框（外出/旅行等特殊情况免检，不打折） */
+    private void showExcuseConfigDialog() {
+        soundHelper.playClickSound();
+        com.sister.habits.data.models.GateConfig cfg = db.gateConfigDao().getConfig();
+        if (cfg == null) {
+            cfg = new com.sister.habits.data.models.GateConfig();
+            db.gateConfigDao().insert(cfg);
+        }
+        final com.sister.habits.data.models.GateConfig config = cfg;
+
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(40, 20, 40, 20);
+
+        android.widget.TextView tvTip = new android.widget.TextView(this);
+        tvTip.setText("在赦免日期内，即使前一天未提交作业，今天也不打折（外出/旅行/生病等）");
+        tvTip.setTextSize(13);
+        tvTip.setTextColor(0xFF666666);
+        tvTip.setPadding(0, 0, 0, 12);
+        layout.addView(tvTip);
+
+        // 解析已有赦免范围
+        java.util.List<String[]> excuseList = new java.util.ArrayList<>();
+        String exJson = config.excuseRanges;
+        if (exJson != null && !exJson.isEmpty() && !"[]".equals(exJson)) {
+            try {
+                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<com.sister.habits.utils.GateHelper.HolidayRange>>(){}.getType();
+                java.util.List<com.sister.habits.utils.GateHelper.HolidayRange> exs = new com.google.gson.Gson().fromJson(exJson, listType);
+                if (exs != null) {
+                    for (com.sister.habits.utils.GateHelper.HolidayRange hr : exs) {
+                        excuseList.add(new String[]{hr.start, hr.end});
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        final java.util.List<String[]> finalExcuseList = excuseList;
+
+        android.widget.TextView tvRanges = new android.widget.TextView(this);
+        tvRanges.setTextSize(13);
+        tvRanges.setPadding(8, 4, 8, 4);
+        tvRanges.setTextColor(0xFF333333);
+        updateExcuseRangesText(tvRanges, finalExcuseList);
+        layout.addView(tvRanges);
+
+        // 添加按钮
+        android.widget.Button btnAdd = new android.widget.Button(this);
+        btnAdd.setText("➕ 添加赦免范围");
+        btnAdd.setOnClickListener(v -> {
+            java.util.Calendar calStart = java.util.Calendar.getInstance();
+            new android.app.DatePickerDialog(this, (view, year, month, day) -> {
+                String startDate = year + "-" + String.format("%02d", month+1) + "-" + String.format("%02d", day);
+                new android.app.DatePickerDialog(this, (view2, year2, month2, day2) -> {
+                    String endDate = year2 + "-" + String.format("%02d", month2+1) + "-" + String.format("%02d", day2);
+                    finalExcuseList.add(new String[]{startDate, endDate});
+                    updateExcuseRangesText(tvRanges, finalExcuseList);
+                }, calStart.get(java.util.Calendar.YEAR), calStart.get(java.util.Calendar.MONTH), calStart.get(java.util.Calendar.DAY_OF_MONTH)).show();
+            }, calStart.get(java.util.Calendar.YEAR), calStart.get(java.util.Calendar.MONTH), calStart.get(java.util.Calendar.DAY_OF_MONTH)).show();
+        });
+        layout.addView(btnAdd);
+
+        // 清除按钮
+        android.widget.Button btnClear = new android.widget.Button(this);
+        btnClear.setText("🗑 清除所有赦免");
+        btnClear.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                .setTitle("确认")
+                .setMessage("确定清除所有赦免范围？")
+                .setPositiveButton("确定", (dd, ww) -> {
+                    finalExcuseList.clear();
+                    updateExcuseRangesText(tvRanges, finalExcuseList);
+                })
+                .setNegativeButton("取消", null).show();
+        });
+        layout.addView(btnClear);
+
+        new AlertDialog.Builder(this)
+            .setTitle("🏖 赦免配置")
+            .setView(layout)
+            .setPositiveButton("💾 保存", (d2, w2) -> {
+                if (finalExcuseList.isEmpty()) {
+                    config.excuseRanges = "[]";
+                } else {
+                    StringBuilder sb = new StringBuilder("[");
+                    for (int i = 0; i < finalExcuseList.size(); i++) {
+                        if (i > 0) sb.append(",");
+                        String[] range = finalExcuseList.get(i);
+                        sb.append("{\"start\":\"").append(range[0]).append("\",\"end\":\"").append(range[1]).append("\"}");
+                    }
+                    sb.append("]");
+                    config.excuseRanges = sb.toString();
+                }
+                config.updatedAt = System.currentTimeMillis();
+                config.deviceId = syncManager.getDeviceId();
+                db.gateConfigDao().update(config);
+                syncManager.onDataChanged();
+                Toast.makeText(this, "✅ 赦免配置已保存", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
+            .show();
+    }
+
+    /** 更新赦免范围显示文本 */
+    private void updateExcuseRangesText(android.widget.TextView tv, java.util.List<String[]> list) {
+        if (list.isEmpty()) {
+            tv.setText("（暂无赦免日期）");
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            String[] r = list.get(i);
+            if (i > 0) sb.append("\n");
+            sb.append("🏖 ").append(r[0]).append(" ~ ").append(r[1]);
+        }
+        tv.setText(sb.toString());
     }
 
     /** ⚙️ 假期配置对话框 */
