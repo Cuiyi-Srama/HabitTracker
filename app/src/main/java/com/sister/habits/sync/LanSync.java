@@ -153,6 +153,41 @@ public class LanSync {
         return gson.toJson(payload);
     }
 
+    /** 全量载荷：新设备首次加入时拉取全部历史数据（DataMerger幂等去重，安全） */
+    private String buildFullPayload() {
+        SyncPayload payload = new SyncPayload();
+        payload.checkIns = db.checkInDao().getByUser("sister");
+        payload.coins = db.coinTransactionDao().getByUser("sister");
+        payload.tasks = db.taskDao().getAll();
+        payload.redemptions = db.redemptionDao().getAll();
+        payload.vocabularies = db.vocabularyDao().getAll();
+        payload.shopItems = db.shopItemDao().getAll();
+        payload.wishlistItems = db.wishlistDao().getAll();
+        payload.wordBanks = db.wordBankDao().getAll();
+        payload.economyConfig = db.economyConfigDao().getConfig();
+        payload.gateConfig = db.gateConfigDao().getConfig();
+        payload.dailyGates = db.dailyGateDao().getUnsynced();
+        payload.deviceId = SyncManager.getInstance(context).getDeviceId();
+        return gson.toJson(payload);
+    }
+
+    /** 判断对方是否新设备（增量字段全空 → 需要全量引导） */
+    private boolean isEmptyDevice(String json) {
+        try {
+            SyncPayload p = gson.fromJson(json, SyncPayload.class);
+            if (p == null) return true;
+            boolean hasIncremental =
+                    (p.checkIns != null && !p.checkIns.isEmpty()) ||
+                    (p.coins != null && !p.coins.isEmpty()) ||
+                    (p.tasks != null && !p.tasks.isEmpty()) ||
+                    (p.redemptions != null && !p.redemptions.isEmpty()) ||
+                    (p.dailyGates != null && !p.dailyGates.isEmpty());
+            return !hasIncremental;
+        } catch (Exception e) {
+            return true; // 解析失败视为空设备，全量引导更安全
+        }
+    }
+
     private void mergeRemoteData(String json) {
         SyncPayload payload = gson.fromJson(json, SyncPayload.class);
         if (payload == null) return;
@@ -199,7 +234,10 @@ public class LanSync {
                 payload = sb.toString();
             }
             mergeRemoteData(payload != null ? payload : "");
-            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", buildSyncPayload());
+            // 新设备（增量数据为空）→ 返回全量历史数据引导；否则增量交换
+            String responsePayload = isEmptyDevice(payload != null ? payload : "")
+                    ? buildFullPayload() : buildSyncPayload();
+            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json", responsePayload);
         } catch (Exception e) {
             return NanoHTTPD.newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
