@@ -62,6 +62,8 @@ public class ChildActivity extends AppCompatActivity {
 
                 db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
+        // 双保险：Activity 打开即确保 18080 监听（即使 HabitApp 线程被初始化阻塞）
+        try { syncManager.getLanSync().start(); } catch (Exception ignored) {}
         soundHelper = SoundHelper.getInstance(this);
 
         tvCoinBalance = findViewById(R.id.tv_coin_balance);
