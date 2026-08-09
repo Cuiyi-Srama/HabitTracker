@@ -370,21 +370,21 @@ public class HubSync {
         return gson.toJson(payload);
     }
 
-    /** 构建Hub上所有待同步数据（给请求方返回） */
+    /** 构建Hub上所有待同步数据（给请求方返回）——全量下发：Hub作为家庭中枢，保证新设备/老设备都能拿到完整数据（DataMerger幂等去重） */
     private String buildAccumulatedPayload() {
         SyncPayload payload = new SyncPayload();
-        payload.checkIns = db.checkInDao().getUnsynced();
-        payload.coins = db.coinTransactionDao().getUnsynced();
-        payload.tasks = db.taskDao().getUnsynced();
-        payload.redemptions = db.redemptionDao().getUnsynced();
+        payload.checkIns = db.checkInDao().getByUser("sister");
+        payload.coins = db.coinTransactionDao().getByUser("sister");
+        payload.tasks = db.taskDao().getAll();
+        payload.redemptions = db.redemptionDao().getAll();
         payload.vocabularies = db.vocabularyDao().getAll();
         payload.shopItems = db.shopItemDao().getAll();
         payload.wishlistItems = db.wishlistDao().getAll();
         payload.wordBanks = db.wordBankDao().getAll();
-        payload.coinEarnings = db.coinEarningDao().getUnsynced();
+        payload.coinEarnings = db.coinEarningDao().getByUser("sister");
         payload.economyConfig = db.economyConfigDao().getConfig();
         payload.gateConfig = db.gateConfigDao().getConfig();
-        payload.dailyGates = db.dailyGateDao().getUnsynced();
+        payload.dailyGates = db.dailyGateDao().getRecent(90);
         payload.deviceId = SyncManager.getInstance(context).getDeviceId();
         return gson.toJson(payload);
     }
