@@ -2049,10 +2049,22 @@ public class ParentActivity extends AppCompatActivity {
             "📝 补交（明天减免至" + gateCfg.makeupPercent + "折）"
         };
 
-        new AlertDialog.Builder(this)
-            .setTitle("✏️ 审核 " + nickname + " 的作业（" + today + "）")
-            .setMessage("当前状态: " + currentStatus)
-            .setItems(items, (d2, which) -> {
+        // 自定义布局：TextView状态 + 实体Button，规避 vivo setMessage+setItems 列表不渲染
+        android.widget.LinearLayout reviewLayout = new android.widget.LinearLayout(this);
+        reviewLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        reviewLayout.setPadding(40, 20, 40, 20);
+        android.widget.TextView tvStatus = new android.widget.TextView(this);
+        tvStatus.setText("当前状态: " + currentStatus);
+        tvStatus.setTextSize(14);
+        tvStatus.setTextColor(0xFF333333);
+        tvStatus.setPadding(0, 0, 0, 12);
+        reviewLayout.addView(tvStatus);
+        for (int i = 0; i < items.length; i++) {
+            final int which = i;
+            android.widget.Button btn = new android.widget.Button(this);
+            btn.setText(items[i]);
+            btn.setAllCaps(false);
+            btn.setOnClickListener(v -> {
                 switch (which) {
                     case 0: // 确认完成（防重复发奖：已是完成状态则拦截）
                         if (com.sister.habits.data.models.DailyGate.STATUS_COMPLETED.equals(gate.status)) {
@@ -2107,7 +2119,18 @@ public class ParentActivity extends AppCompatActivity {
                 db.dailyGateDao().insert(gate);
                 syncManager.onDataChanged();
                 showGateManageDialog(); // 留在作业管理，继续操作
-            })
+            });
+            android.widget.LinearLayout.LayoutParams reviewLp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            reviewLp.setMargins(0, 0, 0, 8);
+            btn.setLayoutParams(reviewLp);
+            reviewLayout.addView(btn);
+        }
+
+        new AlertDialog.Builder(this)
+            .setTitle("✏️ 审核 " + nickname + " 的作业（" + today + "）")
+            .setView(reviewLayout)
             .setNegativeButton("← 返回", (d2, w2) -> showGateManageDialog())
             .show();
     }
@@ -3506,16 +3529,38 @@ private void showProfileSettings() {
             }
             names[backups.length] = "📂 选择其他位置（系统文件选择器）";
             final java.io.File[] finalBackups = backups;
+            // 自定义布局：TextView目录 + 实体Button列表，规避 vivo setMessage+setItems 列表不渲染
+            android.widget.LinearLayout bkLayout = new android.widget.LinearLayout(this);
+            bkLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+            bkLayout.setPadding(40, 20, 40, 20);
+            android.widget.TextView tvDir = new android.widget.TextView(this);
+            tvDir.setText("📁 默认位置: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir());
+            tvDir.setTextSize(13);
+            tvDir.setTextColor(0xFF666666);
+            tvDir.setPadding(0, 0, 12, 0);
+            bkLayout.addView(tvDir);
+            for (int i = 0; i < names.length; i++) {
+                final int which = i;
+                android.widget.Button btn = new android.widget.Button(this);
+                btn.setText(names[i]);
+                btn.setAllCaps(false);
+                btn.setOnClickListener(v -> {
+                    if (which == finalBackups.length) {
+                        launchSystemFilePicker();
+                        return;
+                    }
+                    restoreFromBackupFile(finalBackups[which]);
+                });
+                android.widget.LinearLayout.LayoutParams bkLp = new android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                bkLp.setMargins(0, 0, 0, 8);
+                btn.setLayoutParams(bkLp);
+                bkLayout.addView(btn);
+            }
             new AlertDialog.Builder(this)
                     .setTitle("📥 选择备份文件恢复")
-                    .setMessage("📁 默认位置: " + com.sister.habits.utils.BackupExportHelper.getDefaultBackupDir())
-                    .setItems(names, (d, which) -> {
-                        if (which == finalBackups.length) {
-                            launchSystemFilePicker();
-                            return;
-                        }
-                        restoreFromBackupFile(finalBackups[which]);
-                    })
+                    .setView(bkLayout)
                     .setNegativeButton("📂 选择其他位置", (d, w) -> launchSystemFilePicker())
                     .show();
         } else {
