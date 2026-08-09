@@ -39,7 +39,8 @@ public class GateHelper {
         AppDatabase db = AppDatabase.getInstance(context);
         GateConfig config = db.gateConfigDao().getConfig();
         if (config == null || !config.enabled) return 1.0;
-
+        // 赦免检查：今天在赦免范围内（外出/旅行等特殊情况）→ 不打折
+        if (isExcused(config)) return 1.0;
         // 检查今天是否处于打折模式（假期或周末）
         if (!isDiscountMode(config)) return 1.0;
 
@@ -106,6 +107,25 @@ public class GateHelper {
         return false;
     }
 
+    /** 今天是否在赦免范围内（外出/旅行/生病等特殊情况免检） */
+    private static boolean isExcused(GateConfig config) {
+        if (config == null || config.excuseRanges == null || config.excuseRanges.isEmpty()
+                || "[]".equals(config.excuseRanges)) return false;
+        try {
+            Type listType = new TypeToken<List<HolidayRange>>(){}.getType();
+            List<HolidayRange> ranges = gson.fromJson(config.excuseRanges, listType);
+            if (ranges == null) return false;
+            String today = getToday();
+            for (HolidayRange range : ranges) {
+                if (today.compareTo(range.start) >= 0 && today.compareTo(range.end) <= 0) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "解析赦免范围失败", e);
+        }
+        return false;
+    }
     /** 检查日期是否在JSON配置的假期范围内 */
     private static boolean isInHolidayRange(String holidayRangesJson, String dateStr) {
         if (holidayRangesJson == null || holidayRangesJson.isEmpty()
