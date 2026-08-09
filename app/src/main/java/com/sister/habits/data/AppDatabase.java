@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -305,6 +305,13 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE lottery_prizes_new RENAME TO lottery_prizes");
         }
     };
+    static final Migration MIGRATION_13_14 = new Migration(13, 14) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // gate_config 新增赦免日期范围（外出/旅行免检）
+            database.execSQL("ALTER TABLE gate_config ADD COLUMN excuseRanges TEXT");
+        }
+    };
 
     /**
      * 获取单例
@@ -317,7 +324,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             "habit_tracker.db")
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .build();
                 }
             }
