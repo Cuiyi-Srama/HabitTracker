@@ -33,6 +33,9 @@ public class GateConfig {
     /** 是否启用整个打折系统 */
     public boolean enabled;
 
+    /** 赦免日期范围 JSON（外出/旅行等特殊情况免检）: [{"start":"2026-08-10","end":"2026-08-12"}, ...] */
+    public String excuseRanges;
+
     /** 最后修改时间戳 */
     public long updatedAt;
 
@@ -50,6 +53,7 @@ public class GateConfig {
         this.makeupPercent = 80;
         this.deadlineTime = "12:00";
         this.enabled = true;
+        this.excuseRanges = "[]";
         this.updatedAt = System.currentTimeMillis();
         this.deviceId = "";
         this.synced = false;
