@@ -221,13 +221,18 @@ public class ParentActivity extends AppCompatActivity {
                     String deviceKey = com.sister.habits.utils.QRCodeHelper.parseDeviceKey(qrContent);
                     String deviceName = com.sister.habits.utils.QRCodeHelper.parseDeviceName(qrContent);
                     if (deviceKey != null) {
+                        String deviceIp = com.sister.habits.utils.QRCodeHelper.parseDeviceIp(qrContent);
                         Toast.makeText(this, "📡 已配对: " + deviceName + "\n正在同步数据...", Toast.LENGTH_LONG).show();
                         // 把配对设备信息存到SharedPreferences
                         getSharedPreferences("paired_devices", MODE_PRIVATE)
                                 .edit()
                                 .putString("paired_" + deviceKey, deviceName)
                                 .apply();
-                        // 配对后主动触发全同步（Hub→局域网→云端），完成后给反馈
+                        // ① 直连同步：QR码携带对方IP，直接连接交换（不依赖扫描发现）
+                        if (deviceIp != null) {
+                            syncManager.getLanSync().syncToDevice(deviceIp);
+                        }
+                        // ② 全同步兜底（Hub+局域网扫描+云端），完成后给反馈
                         syncManager.triggerFullSyncAsync(() -> runOnUiThread(() ->
                                 Toast.makeText(this, "🔄 后台同步已结束，请检查数据是否更新（需同一WiFi）", Toast.LENGTH_LONG).show()));
                     } else {
