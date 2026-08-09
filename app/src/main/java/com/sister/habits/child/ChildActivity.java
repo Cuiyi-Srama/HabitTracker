@@ -53,6 +53,7 @@ public class ChildActivity extends AppCompatActivity {
     private SoundHelper soundHelper;
     private TextView tvCoinBalance;
     private TextView tvEarningEstimate;
+    private android.widget.LinearLayout llWishTarget;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +66,8 @@ public class ChildActivity extends AppCompatActivity {
 
         tvCoinBalance = findViewById(R.id.tv_coin_balance);
         tvEarningEstimate = findViewById(R.id.tv_earning_estimate);
+        llWishTarget = findViewById(R.id.ll_wish_target);
+        llWishTarget.setOnClickListener(v -> showWishTargetDialog());
         Button btnCheckIn = findViewById(R.id.btn_check_in);
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
@@ -130,6 +133,7 @@ public class ChildActivity extends AppCompatActivity {
         Integer balance = db.coinTransactionDao().getBalance("sister");
         tvCoinBalance.setText("🪙 " + (balance != null ? balance : 0));
         refreshEarningEstimate();
+        refreshWishTarget();
     }
 
     @Override
@@ -151,6 +155,116 @@ public class ChildActivity extends AppCompatActivity {
         } else {
             tvEarningEstimate.setText(base);
         }
+    }
+
+    // ==================== 🎯 愿望进度条 ====================
+
+    private void refreshWishTarget() {
+        if (llWishTarget == null) return;
+        com.sister.habits.data.models.WishlistItem target = db.wishlistDao().getTarget();
+        llWishTarget.removeAllViews();
+        if (target == null) {
+            // 未设置目标：显示引导
+            android.widget.TextView tv = new android.widget.TextView(this);
+            tv.setText("🎯 设置攒分目标，看进度条冲鸭！");
+            tv.setTextSize(13);
+            tv.setTextColor(0xFF2E7D32);
+            tv.setPadding(8, 6, 8, 6);
+            llWishTarget.addView(tv);
+        } else {
+            String name = "愿望目标";
+            com.sister.habits.data.models.ShopItem si = target.shopItemId != null
+                    ? db.shopItemDao().getById(target.shopItemId) : null;
+            if (si != null && si.name != null) name = si.name;
+            int targetPoints = target.targetPoints > 0 ? target.targetPoints : (si != null ? si.coinsCost : 0);
+            Integer balance = db.coinTransactionDao().getBalance("sister");
+            int cur = balance != null ? balance : 0;
+            int progress = targetPoints > 0 ? Math.min(100, cur * 100 / targetPoints) : 0;
+
+            android.widget.TextView tvName = new android.widget.TextView(this);
+            tvName.setText("🎯 " + name + " · 目标 " + targetPoints + "分");
+            tvName.setTextSize(13);
+            tvName.setTextColor(0xFF1B5E20);
+            tvName.setTypeface(null, android.graphics.Typeface.BOLD);
+            llWishTarget.addView(tvName);
+
+            android.widget.ProgressBar pb = new android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+            pb.setMax(100);
+            pb.setProgress(progress);
+            android.widget.LinearLayout.LayoutParams pbLp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    (int) (18 * getResources().getDisplayMetrics().density));
+            pbLp.setMargins(0, 4, 0, 4);
+            pb.setLayoutParams(pbLp);
+            llWishTarget.addView(pb);
+
+            int remaining = Math.max(0, targetPoints - cur);
+            android.widget.TextView tvInfo = new android.widget.TextView(this);
+            tvInfo.setText("已攒 " + cur + "分 · 还差 " + remaining + "分" + (remaining > 0 ? " · " + estimateWeeksText(remaining) : " · 🎉达成目标！"));
+            tvInfo.setTextSize(12);
+            tvInfo.setTextColor(0xFF4E7B52);
+            llWishTarget.addView(tvInfo);
+        }
+        llWishTarget.setVisibility(android.view.View.VISIBLE);
+    }
+
+    /** 按近7天日均得分估算剩余目标还需多久 */
+    private String estimateWeeksText(int remaining) {
+        long weekAgo = System.currentTimeMillis() - 7L * 24 * 3600 * 1000;
+        java.util.List<com.sister.habits.data.models.CoinTransaction> all = db.coinTransactionDao().getByUser("sister");
+        long sum = 0;
+        int n = 0;
+        for (com.sister.habits.data.models.CoinTransaction c : all) {
+            if (c.createdAt >= weekAgo && c.amount > 0) {
+                sum += c.amount;
+                n++;
+            }
+        }
+        if (n == 0 || sum <= 0) return "继续攒分吧";
+        double daily = sum / 7.0;
+        int days = (int) Math.ceil(remaining / daily);
+        if (days <= 7) return "预计约 " + days + " 天";
+        return "预计约 " + (int) Math.ceil(days / 7.0) + " 周";
+    }
+
+    /** 目标设置对话框：从心愿单中选择攒分目标 */
+    private void showWishTargetDialog() {
+        java.util.List<com.sister.habits.data.models.WishlistItem> wishes = db.wishlistDao().getAll();
+        if (wishes.isEmpty()) {
+            Toast.makeText(this, "先去商城收藏心愿商品，再来设目标吧", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.List<com.sister.habits.data.models.WishlistItem> items = new java.util.ArrayList<>();
+        labels.add("🚫 取消当前目标");
+        for (com.sister.habits.data.models.WishlistItem w : wishes) {
+            com.sister.habits.data.models.ShopItem si = w.shopItemId != null
+                    ? db.shopItemDao().getById(w.shopItemId) : null;
+            String name = si != null && si.name != null ? si.name : "愿望";
+            int pts = w.targetPoints > 0 ? w.targetPoints : (si != null ? si.coinsCost : 0);
+            labels.add("🎯 " + name + " (" + pts + "分)");
+            items.add(w);
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("🎯 攒分目标")
+                .setItems(labels.toArray(new String[0]), (d, which) -> {
+                    if (which == 0) {
+                        db.wishlistDao().clearTarget();
+                        Toast.makeText(this, "已取消攒分目标", Toast.LENGTH_SHORT).show();
+                    } else {
+                        com.sister.habits.data.models.WishlistItem w = items.get(which - 1);
+                        db.wishlistDao().clearTarget();
+                        db.wishlistDao().setTarget(w.id);
+                        com.sister.habits.data.models.ShopItem si = w.shopItemId != null
+                                ? db.shopItemDao().getById(w.shopItemId) : null;
+                        int pts = si != null ? si.coinsCost : w.targetPoints;
+                        if (pts > 0) db.wishlistDao().updateTargetPoints(w.id, pts);
+                        Toast.makeText(this, "🎯 已设为攒分目标", Toast.LENGTH_SHORT).show();
+                    }
+                    refreshWishTarget();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void performCheckIn() {
