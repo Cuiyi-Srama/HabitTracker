@@ -317,13 +317,13 @@ public class HubSync {
                     if (foundHub.get() != null) return;
                     try {
                         Socket socket = new Socket();
-                        socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 250);
+                        socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 800);
                         socket.close();
 
                         URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
                         HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
-                        conn.setConnectTimeout(800);
-                        conn.setReadTimeout(800);
+                        conn.setConnectTimeout(2000);
+                        conn.setReadTimeout(2000);
                         if (conn.getResponseCode() == 200) {
                             foundHub.set(targetIp);
                             Log.d(TAG, "🔍 发现Hub: " + targetIp);
@@ -485,15 +485,15 @@ public class HubSync {
                         new Thread(() -> {
                             try {
                                 Socket socket = new Socket();
-                                socket.connect(new InetSocketAddress(targetIp, HUB_PORT), 
-                                        Math.min(timeoutMsPerHost, 200));
+                                socket.connect(new InetSocketAddress(targetIp, HUB_PORT),
+                                        Math.min(timeoutMsPerHost, 800));
                                 socket.close();
-                                
-                                // 验证是否是Hub
+
+                                // 验证是否是Hub（超时放宽到2秒，真实WiFi下200ms太苛刻）
                                 URL peekUrl = new URL("http://" + targetIp + ":" + HUB_PORT + "/hub/discover");
                                 HttpURLConnection conn = (HttpURLConnection) peekUrl.openConnection();
-                                conn.setConnectTimeout(200);
-                                conn.setReadTimeout(200);
+                                conn.setConnectTimeout(2000);
+                                conn.setReadTimeout(2000);
                                 if (conn.getResponseCode() == 200) {
                                     String respBody;
                                     try (java.util.Scanner s = new java.util.Scanner(conn.getInputStream()).useDelimiter("\\A")) {
@@ -531,16 +531,16 @@ public class HubSync {
                     catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 }
                 
-                // 扫描完成
+                // 扫描完成：先收尾进度，再显示结果（顺序不能反，否则UI停在"扫描中...254/254"）
                 scanning = false;
                 final int found = foundHubs.size();
                 if (callback != null) {
+                    callback.onScanProgress(totalHosts, totalHosts);
                     if (found > 0) {
                         callback.onStatusUpdate("✅ 扫描完成，发现 " + found + " 台Hub设备");
                     } else {
-                        callback.onStatusUpdate("❌ 未发现其他Hub设备\n请确保另一台设备已开启「Hub中枢」并连接同一WiFi");
+                        callback.onStatusUpdate("❌ 未发现其他Hub设备\n请检查：① 两台设备连接同一WiFi ② 对方已开启「Hub中枢」③ 路由器是否开启AP隔离（访客网络）");
                     }
-                    callback.onScanProgress(totalHosts, totalHosts);
                 }
             } catch (Exception e) {
                 scanning = false;
