@@ -33,6 +33,12 @@ public class BackupExportHelper {
     private static final String BACKUP_EXT = ".habitbak";
     private static final int GCM_TAG_LENGTH = 128;
     private static final int GCM_IV_LENGTH = 12;
+    /** 自动备份固定密码（文件名以 auto_ 开头的备份使用） */
+    public static final String AUTO_PWD = "habit_auto_backup";
+    private static final String PREFS_AUTO = "auto_backup_prefs";
+    private static final String KEY_LAST_DATE = "last_auto_backup_date";
+    /** 自动备份滚动上限：超过则删除最早的 */
+    private static final int MAX_AUTO_BACKUPS = 10;
     private final Context context;
     private ProfileManager profile;
 
@@ -101,6 +107,39 @@ public class BackupExportHelper {
         restoreFullZip(zipData);
         Log.i(TAG, "备份已恢复(SAF): " + encrypted.length + " bytes");
         return true;
+    }
+
+    /**
+     * 自动备份（静默）：每天最多一次，滚动保留最近 MAX_AUTO_BACKUPS 份
+     * 达到上限自动删除最早的备份；文件名以 auto_ 开头，使用固定密码 AUTO_PWD
+     */
+    public void autoBackupIfNeeded() {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_AUTO, Context.MODE_PRIVATE);
+            String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.CHINA).format(new java.util.Date());
+            if (today.equals(prefs.getString(KEY_LAST_DATE, ""))) return; // 今天已备份过
+            File dir = new File(BACKUP_DIR);
+            if (!dir.exists()) dir.mkdirs();
+            File[] autos = dir.listFiles((d, name) -> name.startsWith("auto_") && name.endsWith(BACKUP_EXT));
+            if (autos != null && autos.length >= MAX_AUTO_BACKUPS) {
+                // 按修改时间排序，删除最旧的（保持最多10份）
+                java.util.Arrays.sort(autos, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+                int toDelete = autos.length - MAX_AUTO_BACKUPS + 1;
+                for (int i = 0; i < toDelete; i++) {
+                    if (autos[i].delete()) Log.i(TAG, "自动备份滚动删除: " + autos[i].getName());
+                }
+            }
+            String name = "auto_" + today + "_" +
+                    new java.text.SimpleDateFormat("HHmmss", java.util.Locale.CHINA).format(new java.util.Date()) + BACKUP_EXT;
+            byte[] data = createEncryptedBackup(AUTO_PWD);
+            FileOutputStream fos = new FileOutputStream(new File(dir, name));
+            fos.write(data);
+            fos.close();
+            prefs.edit().putString(KEY_LAST_DATE, today).apply();
+            Log.i(TAG, "自动备份完成: " + name + " (" + data.length + " bytes)");
+        } catch (Exception e) {
+            Log.e(TAG, "自动备份失败", e);
+        }
     }
 
     /** 构建完整ZIP：数据库JSON + 图片文件 + Preferences */
@@ -225,6 +264,16 @@ public class BackupExportHelper {
             } finally {
                 if (sqldb.isOpen()) sqldb.close();
             }
+            // 头像路径重定向（头像文件也在备份中 → 指向新位置）
+            try {
+                String avatarPath = profile.getAvatarPath();
+                if (avatarPath != null && !avatarPath.isEmpty()) {
+                    String avName = new File(avatarPath).getName();
+                    if (imageFiles.containsKey(avName)) {
+                        profile.setAvatarPath(new File(imagesDir, avName).getAbsolutePath());
+                    }
+                }
+            } catch (Exception ignored) {}
         }
 
         // 3. 恢复Preferences
@@ -233,29 +282,71 @@ public class BackupExportHelper {
         }
     }
 
-    /** 导出 SharedPreferences */
+    /** 导出所有 SharedPreferences（枚举 shared_prefs 目录，全量覆盖） */
     private String exportPreferences() {
         try {
-            JSONObject prefs = new JSONObject();
-            prefs.put("nickname", profile.getNickname());
-            prefs.put("appTitle", profile.getAppTitle());
-            prefs.put("avatarPath", profile.getAvatarPath());
-            prefs.put("birthday", profile.getBirthday());
-            return prefs.toString();
+            JSONObject all = new JSONObject();
+            File prefsDir = new File(context.getApplicationInfo().dataDir, "shared_prefs");
+            File[] files = prefsDir.listFiles((d, name) -> name.endsWith(".xml"));
+            if (files != null) {
+                for (File f : files) {
+                    String prefsName = f.getName().replace(".xml", "");
+                    if ("auto_backup_prefs".equals(prefsName)) continue; // 跳过自动备份自身状态
+                    SharedPreferences sp = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
+                    JSONObject obj = new JSONObject();
+                    for (java.util.Map.Entry<String, ?> e : sp.getAll().entrySet()) {
+                        Object v = e.getValue();
+                        if (v instanceof String) obj.put(e.getKey(), v);
+                        else if (v instanceof Integer) obj.put(e.getKey(), (Integer) v);
+                        else if (v instanceof Long) obj.put(e.getKey(), (Long) v);
+                        else if (v instanceof Boolean) obj.put(e.getKey(), (Boolean) v);
+                        else if (v instanceof Float) obj.put(e.getKey(), (Float) v);
+                        else if (v instanceof java.util.Set) {
+                            JSONArray arr = new JSONArray();
+                            for (Object s : (java.util.Set<?>) v) arr.put(String.valueOf(s));
+                            obj.put(e.getKey(), arr);
+                        }
+                    }
+                    all.put(prefsName, obj);
+                }
+            }
+            return all.toString();
         } catch (Exception e) {
             Log.e(TAG, "导出Preferences失败", e);
             return "{}";
         }
     }
 
-    /** 恢复 SharedPreferences */
+    /** 恢复所有 SharedPreferences（全量覆盖） */
     private void importPreferences(String json) {
         try {
-            JSONObject prefs = new JSONObject(json);
-            if (prefs.has("nickname")) profile.setNickname(prefs.getString("nickname"));
-            if (prefs.has("appTitle")) profile.setAppTitle(prefs.getString("appTitle"));
-            if (prefs.has("avatarPath")) profile.setAvatarPath(prefs.optString("avatarPath", ""));
-            if (prefs.has("birthday")) profile.setBirthday(prefs.optString("birthday", ""));
+            JSONObject all = new JSONObject(json);
+            java.util.Iterator<String> keys = all.keys();
+            while (keys.hasNext()) {
+                String prefsName = keys.next();
+                JSONObject obj = all.optJSONObject(prefsName);
+                if (obj == null) continue;
+                if ("auto_backup_prefs".equals(prefsName)) continue; // 恢复时不覆盖自动备份状态
+                SharedPreferences sp = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE);
+                SharedPreferences.Editor ed = sp.edit();
+                java.util.Iterator<String> k2 = obj.keys();
+                while (k2.hasNext()) {
+                    String key = k2.next();
+                    Object v = obj.opt(key);
+                    if (v instanceof String) ed.putString(key, (String) v);
+                    else if (v instanceof Integer) ed.putInt(key, (Integer) v);
+                    else if (v instanceof Long) ed.putLong(key, (Long) v);
+                    else if (v instanceof Boolean) ed.putBoolean(key, (Boolean) v);
+                    else if (v instanceof Double) ed.putFloat(key, ((Number) v).floatValue());
+                    else if (v instanceof org.json.JSONArray) {
+                        java.util.Set<String> set = new java.util.HashSet<>();
+                        org.json.JSONArray arr = (org.json.JSONArray) v;
+                        for (int i = 0; i < arr.length(); i++) set.add(arr.optString(i));
+                        ed.putStringSet(key, set);
+                    }
+                }
+                ed.apply();
+            }
         } catch (Exception e) {
             Log.e(TAG, "恢复Preferences失败", e);
         }
@@ -271,12 +362,12 @@ public class BackupExportHelper {
             String dbPath = context.getDatabasePath("habit_tracker.db").getAbsolutePath();
             sqldb = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY);
 
-            // 全12张表
+            // 全部17张表（含作业关卡配置与每日记录）
             String[] tables = {
                 "check_ins", "coin_transactions", "tasks", "shop_items", "redemptions",
                 "vocabulary", "economy_config", "word_reviews", "word_banks", "wishlist_items",
                 "coin_earnings", "laundry_tasks", "lottery_prizes", "lottery_records",
-                "school_rewards"
+                "school_rewards", "gate_config", "daily_gates"
             };
 
             boolean first = true;
