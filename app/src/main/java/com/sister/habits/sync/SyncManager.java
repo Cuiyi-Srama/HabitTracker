@@ -118,7 +118,23 @@ public class SyncManager {
      * 数据变动后调用——自动选择最优同步方式
      * 优先级：Hub > 局域网P2P > 远程云端 > QR码兜底
      */
+    private volatile long lastAutoSyncAt = 0; // 自动同步节流（3秒）
+
     public void onDataChanged() {
+        // ⚠️ 可能被主线程调用（答题/审批等点击回调），同步含网络IO，必须异步执行，否则 ANR 卡死
+        final long now = System.currentTimeMillis();
+        if (now - lastAutoSyncAt < 3000) return; // 3秒节流：答题连点时避免并发同步
+        lastAutoSyncAt = now;
+        new Thread(() -> {
+            try {
+                doAutoSync();
+            } catch (Exception e) {
+                Log.w(TAG, "自动同步异常: " + e.getMessage());
+            }
+        }, "auto-sync").start();
+    }
+
+    private void doAutoSync() {
         // ① 优先尝试 Hub 同步（如果有Hub设备在线）
         if (isSameWifi() && hubSync.syncToHub()) {
             Log.d(TAG, "🏠 Hub同步成功");
