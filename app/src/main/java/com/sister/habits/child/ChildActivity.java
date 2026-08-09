@@ -176,7 +176,7 @@ public class ChildActivity extends AppCompatActivity {
             com.sister.habits.data.models.ShopItem si = target.shopItemId != null
                     ? db.shopItemDao().getById(target.shopItemId) : null;
             if (si != null && si.name != null) name = si.name;
-            int targetPoints = target.targetPoints > 0 ? target.targetPoints : (si != null ? si.coinsCost : 0);
+            int targetPoints = target.targetPoints > 0 ? target.targetPoints : (si != null ? si.priceCoins : 0);
             Integer balance = db.coinTransactionDao().getBalance("sister");
             int cur = balance != null ? balance : 0;
             int progress = targetPoints > 0 ? Math.min(100, cur * 100 / targetPoints) : 0;
@@ -241,7 +241,7 @@ public class ChildActivity extends AppCompatActivity {
             com.sister.habits.data.models.ShopItem si = w.shopItemId != null
                     ? db.shopItemDao().getById(w.shopItemId) : null;
             String name = si != null && si.name != null ? si.name : "愿望";
-            int pts = w.targetPoints > 0 ? w.targetPoints : (si != null ? si.coinsCost : 0);
+            int pts = w.targetPoints > 0 ? w.targetPoints : (si != null ? si.priceCoins : 0);
             labels.add("🎯 " + name + " (" + pts + "分)");
             items.add(w);
         }
@@ -257,7 +257,7 @@ public class ChildActivity extends AppCompatActivity {
                         db.wishlistDao().setTarget(w.id);
                         com.sister.habits.data.models.ShopItem si = w.shopItemId != null
                                 ? db.shopItemDao().getById(w.shopItemId) : null;
-                        int pts = si != null ? si.coinsCost : w.targetPoints;
+                        int pts = si != null ? si.priceCoins : w.targetPoints;
                         if (pts > 0) db.wishlistDao().updateTargetPoints(w.id, pts);
                         Toast.makeText(this, "🎯 已设为攒分目标", Toast.LENGTH_SHORT).show();
                     }
