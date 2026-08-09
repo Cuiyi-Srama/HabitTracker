@@ -294,16 +294,12 @@ public class HubSync {
         }
 
         try {
-            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-            if (wifiManager == null) return null;
-            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-            if (wifiInfo == null) return null;
-
-            int ipInt = wifiInfo.getIpAddress();
-            if (ipInt == 0) return null;
-            String myIp = String.format("%d.%d.%d.%d",
-                    (ipInt & 0xff), (ipInt >> 8 & 0xff),
-                    (ipInt >> 16 & 0xff), (ipInt >> 24 & 0xff));
+            // Android 10+ 必须用 ConnectivityManager 获取 IP（WifiInfo.getIpAddress 返回0）
+            String myIp = SyncManager.getInstance(context).getLocalIpv4();
+            if (myIp == null) {
+                Log.d(TAG, "无法获取本机IPv4，Hub发现失败");
+                return null;
+            }
             String subnet = myIp.substring(0, myIp.lastIndexOf('.') + 1);
 
             // 并行扫描子网（32线程大幅加速）
@@ -454,15 +450,14 @@ public class HubSync {
         
         new Thread(() -> {
             try {
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                if (wifiManager == null) { scanning = false; return; }
-                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                if (wifiInfo == null) { scanning = false; return; }
-                
-                int ipInt = wifiInfo.getIpAddress();
-                String myIp = String.format("%d.%d.%d.%d",
-                        (ipInt & 0xff), (ipInt >> 8 & 0xff),
-                        (ipInt >> 16 & 0xff), (ipInt >> 24 & 0xff));
+                // Android 10+ 必须用 ConnectivityManager 获取 IP（WifiInfo.getIpAddress 返回0）
+                String myIp = SyncManager.getInstance(context).getLocalIpv4();
+                if (myIp == null) {
+                    scanning = false;
+                    if (callback != null)
+                        callback.onStatusUpdate("❌ 无法获取本机IP地址，请检查网络连接");
+                    return;
+                }
                 String subnet = myIp.substring(0, myIp.lastIndexOf('.') + 1);
                 
                 // 分批并行扫描（每批10个）
