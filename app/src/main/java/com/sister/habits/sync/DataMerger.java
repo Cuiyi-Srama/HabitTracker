@@ -162,7 +162,36 @@ public class DataMerger {
         Log.d(TAG, "合并单词完成: 新增 " + added + "/" + remoteList.size());
     }
 
-        /* mergeWordReviews skipped - no getAll in WordReviewDao */
+    /**
+     * 合并复习进度——以 wordId 唯一索引 REPLACE 合并
+     * 同一单词：以复习进度较深的记录为准（stage 大者胜）
+     */
+    public void mergeWordReviews(java.util.List<com.sister.habits.data.models.WordReview> remoteList) {
+        if (remoteList == null || remoteList.isEmpty()) return;
+        com.sister.habits.data.dao.WordReviewDao dao = appDb.wordReviewDao();
+        int added = 0;
+        for (com.sister.habits.data.models.WordReview r : remoteList) {
+            try {
+                com.sister.habits.data.models.WordReview local = dao.getByWordId(r.wordId, r.bankId);
+                if (local == null) {
+                    dao.insert(r); // REPLACE：wordId 唯一，安全
+                    added++;
+                } else if (r.stage > local.stage) {
+                    // 远端进度更深 → 更新本地（保留更深的复习阶段）
+                    local.stage = r.stage;
+                    local.nextReviewAt = r.nextReviewAt;
+                    local.lastReviewedAt = r.lastReviewedAt;
+                    local.correctCount = r.correctCount;
+                    local.wrongCount = r.wrongCount;
+                    dao.update(local);
+                    added++;
+                }
+            } catch (Exception e) {
+                Log.d(TAG, "跳过复习记录: " + e.getMessage());
+            }
+        }
+        Log.d(TAG, "合并复习进度完成: 更新 " + added + "/" + remoteList.size());
+    }
 
 
     /**
