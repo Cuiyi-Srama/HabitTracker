@@ -357,7 +357,14 @@ public class ShopManager {
                     item.active = !item.active;
                     db.shopItemDao().update(item);
                     Toast.makeText(activity, (item.active ? "✅ 已上架: " : "⬇ 已下架: ") + item.name, Toast.LENGTH_SHORT).show();
-                    showManageShopDialog();
+                    // 原地刷新列表，不重开对话框（否则返回时要关两次）
+                    if (manageDialog != null && manageDialog.isShowing() && manageContainer != null) {
+                        java.util.List<ShopItem> refreshed = db.shopItemDao().getAll();
+                        while (manageContainer.getChildCount() > 2) manageContainer.removeViewAt(manageContainer.getChildCount() - 1);
+                        buildShopRows(refreshed, manageContainer, manageMulti, manageTvTitle);
+                    } else {
+                        showManageShopDialog();
+                    }
                 });
                 row.addView(btnToggle);
             }
@@ -578,7 +585,14 @@ public class ShopManager {
                     shopSelectedIds.clear();
                     shopMultiSelect = false;
                     Toast.makeText(activity, "🗑 已删除 " + ok + " 件商品", Toast.LENGTH_SHORT).show();
-                    showManageShopDialog();
+                    // 原地刷新列表，不重开对话框（否则返回时要关两次）
+                    if (manageDialog != null && manageDialog.isShowing() && manageContainer != null) {
+                        java.util.List<ShopItem> refreshed = db.shopItemDao().getAll();
+                        while (manageContainer.getChildCount() > 2) manageContainer.removeViewAt(manageContainer.getChildCount() - 1);
+                        buildShopRows(refreshed, manageContainer, false, manageTvTitle);
+                    } else {
+                        showManageShopDialog();
+                    }
                 })
                 .setNegativeButton("取消", null)
                 .show();
