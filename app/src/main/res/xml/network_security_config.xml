@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- 默认允许明文HTTP：局域网同步/扫码直连（NanoHTTPD）依赖 HTTP，必须全局放行 -->
+    <!-- ⚠️ 不要用 <domain> 写网段（如 192.168.0.0/16）——domain 只支持主机名/IP字面量，网段匹配不到任何流量 -->
+    <base-config cleartextTrafficPermitted="true" />
     <domain-config cleartextTrafficPermitted="true">
-        <!-- 局域网同步允许 HTTP -->
-        <domain includeSubdomains="true">192.168.0.0/16</domain>
-        <domain includeSubdomains="true">10.0.0.0/8</domain>
-        <domain includeSubdomains="true">172.16.0.0/12</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
     </domain-config>
