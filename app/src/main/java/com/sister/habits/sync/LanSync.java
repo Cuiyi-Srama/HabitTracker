@@ -75,6 +75,11 @@ public class LanSync {
     }
 
     public void syncAll() {
+        syncAll(null);
+    }
+
+    /** 扫描并同步所有可达设备；扫描结束后回调 onDone（无论是否找到设备） */
+    public void syncAll(final Runnable onDone) {
         if (!running) start();
         new Thread(() -> {
             try {
@@ -94,7 +99,7 @@ public class LanSync {
                     if (targetIp.equals(myIp)) continue;
                     try {
                         Socket socket = new Socket();
-                        socket.connect(new InetSocketAddress(targetIp, PORT), 200);
+                        socket.connect(new InetSocketAddress(targetIp, PORT), 800);
                         socket.close();
                         syncWithDevice(targetIp);
                     } catch (Exception e) {
@@ -103,6 +108,10 @@ public class LanSync {
             }
         } catch (Exception e) {
             Log.e(TAG, "局域网同步扫描失败", e);
+        } finally {
+            if (onDone != null) {
+                try { onDone.run(); } catch (Exception ignored) {}
+            }
         }
         }).start();
     }
