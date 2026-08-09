@@ -24,4 +24,17 @@ public interface WishlistDao {
 
     @Query("DELETE FROM wishlist_items WHERE shopItemId = :shopItemId")
     void deleteByShopItemId(String shopItemId);
+
+    // ==================== 攒分目标（愿望进度条） ====================
+    @Query("SELECT * FROM wishlist_items WHERE isTarget = 1 LIMIT 1")
+    WishlistItem getTarget();
+
+    @Query("UPDATE wishlist_items SET isTarget = 0")
+    void clearTarget();
+
+    @Query("UPDATE wishlist_items SET isTarget = 1 WHERE id = :id")
+    void setTarget(String id);
+
+    @Query("UPDATE wishlist_items SET targetPoints = :points WHERE id = :id")
+    void updateTargetPoints(String id, int points);
 }
