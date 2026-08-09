@@ -151,6 +151,17 @@ public class SyncManager {
         Log.d(TAG, "🔄 全同步完成");
     }
 
+    /** 异步版全同步：Hub发现是阻塞调用（最多8秒），必须在子线程执行，避免卡UI */
+    public void triggerFullSyncAsync() {
+        new Thread(() -> {
+            try {
+                triggerFullSync();
+            } catch (Exception e) {
+                Log.e(TAG, "全同步异常", e);
+            }
+        }).start();
+    }
+
     public void triggerLanSync() {
         if (isSameWifi()) {
             if (!hubSync.syncToHub()) {
