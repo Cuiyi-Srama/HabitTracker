@@ -19,13 +19,18 @@ public class QRCodeHelper {
 
     private static final int QR_SIZE = 512;
 
-    /** 生成设备配对QR码内容 */
+    /** 生成设备配对QR码内容（含本机IP，扫码后可直连同步，不依赖扫描发现） */
     public static String buildDeviceQrContent(Context context) {
         String deviceKey = DeviceIdentity.getDeviceKey(context);
         String deviceName = android.os.Build.MODEL;
         ProfileManager pm = ProfileManager.getInstance(context);
         String nickname = pm.getNickname();
-        return "HABITPAIR:" + deviceKey + ":" + nickname + "@" + deviceName;
+        String ip = "";
+        try {
+            String localIp = com.sister.habits.sync.SyncManager.getInstance(context).getLocalIpv4();
+            if (localIp != null) ip = localIp;
+        } catch (Exception ignored) {}
+        return "HABITPAIR:" + deviceKey + ":" + nickname + "@" + deviceName + "#" + ip;
     }
 
     /** 生成QR码Bitmap */
@@ -66,5 +71,14 @@ public class QRCodeHelper {
             if (parts.length >= 3) return parts[2];
         }
         return qrContent.length() > 20 ? qrContent.substring(0, 20) + "..." : qrContent;
+    }
+
+    /** 解析QR码内容，提取本机IP（#后段；旧格式无IP返回null） */
+    public static String parseDeviceIp(String qrContent) {
+        if (qrContent == null) return null;
+        int idx = qrContent.indexOf('#');
+        if (idx < 0 || idx == qrContent.length() - 1) return null;
+        String ip = qrContent.substring(idx + 1).trim();
+        return ip.isEmpty() ? null : ip;
     }
 }
