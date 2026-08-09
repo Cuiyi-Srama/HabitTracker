@@ -102,6 +102,7 @@ public class HubSync {
                 }
             };
             server.start();
+            server.setMaxPostSize(50 * 1024 * 1024); // 商品图片base64可能使payload达数MB，放宽上限
             running = true;
             Log.i(TAG, "🏠 Hub模式已启动，端口: " + HUB_PORT);
         } catch (IOException e) {
@@ -216,8 +217,8 @@ public class HubSync {
             HttpURLConnection conn = (HttpURLConnection) syncUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
 
             String localData = buildSyncPayload();
             // 同 LanSync：显式 Content-Type + Content-Length，规避 NanoHTTPD 解析坑
@@ -425,8 +426,13 @@ public class HubSync {
                 session.getHeaders().getOrDefault("content-length", "0"));
         if (contentLength > 0) {
             byte[] buf = new byte[contentLength];
-            session.getInputStream().read(buf, 0, contentLength);
-            return new String(buf, "UTF-8");
+            int read = 0;
+            while (read < contentLength) {
+                int n = session.getInputStream().read(buf, read, contentLength - read);
+                if (n < 0) break;
+                read += n;
+            }
+            return new String(buf, 0, read, "UTF-8");
         }
         // 尝试从body map读取
         Map<String, String> bodyMap = new HashMap<>();
