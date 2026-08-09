@@ -25,6 +25,19 @@ public class HabitApp extends Application {
         new Thread(() -> {
             DatabaseInitializer.init(this);
             SyncManager syncManager = SyncManager.getInstance(this);
+            // 启动局域网同步服务端（18080）：App 进程存活期间持续监听（v3.0.42 修复，v3.0.49 补推）
+            try {
+                syncManager.getLanSync().start();
+                Log.i("HabitApp", "LanSync server started on 18080");
+            } catch (Exception e) {
+                Log.w("HabitApp", "LanSync start failed: " + e.getMessage());
+            }
+            // 后台服务（START_STICKY：被杀后系统自动重建）
+            try {
+                startService(new android.content.Intent(this, com.sister.habits.sync.LanSyncService.class));
+            } catch (Exception e) {
+                Log.w("HabitApp", "LanSyncService start failed: " + e.getMessage());
+            }
             syncManager.triggerLanSync();
         }).start();
 
