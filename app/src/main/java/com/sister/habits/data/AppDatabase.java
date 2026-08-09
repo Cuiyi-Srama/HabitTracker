@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -312,6 +312,14 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE gate_config ADD COLUMN excuseRanges TEXT");
         }
     };
+    static final Migration MIGRATION_14_15 = new Migration(14, 15) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // wishlist_items 新增攒分目标（愿望进度条）
+            database.execSQL("ALTER TABLE wishlist_items ADD COLUMN isTarget INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE wishlist_items ADD COLUMN targetPoints INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 
     /**
      * 获取单例
@@ -324,7 +332,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             "habit_tracker.db")
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                     .build();
                 }
             }
