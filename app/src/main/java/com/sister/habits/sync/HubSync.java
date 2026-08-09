@@ -79,7 +79,7 @@ public class HubSync {
         if (server != null && running) return;
 
         try {
-            server = new NanoHTTPD(HUB_PORT) {
+            server = new NanoHTTPD(HUB_PORT, 50 * 1024 * 1024) {
                 @Override
                 public Response serve(IHTTPSession session) {
                     String uri = session.getUri();
@@ -102,7 +102,6 @@ public class HubSync {
                 }
             };
             server.start();
-            server.setMaxPostSize(50 * 1024 * 1024); // 商品图片base64可能使payload达数MB，放宽上限
             running = true;
             Log.i(TAG, "🏠 Hub模式已启动，端口: " + HUB_PORT);
         } catch (IOException e) {
