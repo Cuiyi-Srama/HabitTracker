@@ -149,9 +149,10 @@ public class ChildActivity extends AppCompatActivity {
         int confirmed = com.sister.habits.sync.EarningService.calculateTodayConfirmed(this);
         int pending = com.sister.habits.sync.EarningService.calculateTodayPending(this);
         int totalExpected = confirmed + pending;
-        int limit = com.sister.habits.sync.EarningService.getDailySoftLimit(this);
+        int recommend = com.sister.habits.sync.EarningService.getDailySoftLimit(this);
+        int hardLimit = com.sister.habits.sync.EarningService.getDailyHardLimit(this);
         String boostSummary = com.sister.habits.sync.AcceleratorService.getTodayBoostSummary(this);
-        String base = "📈 预计今日: " + totalExpected + "分 (已确认:" + confirmed + " + 待审:" + pending + ") | 上限:" + limit;
+        String base = "📈 预计今日: " + totalExpected + "分 (已确认:" + confirmed + " + 待审:" + pending + ") | 推荐:" + recommend + " 上限:" + hardLimit;
         if (!boostSummary.isEmpty()) {
             tvEarningEstimate.setText(base + "\n" + boostSummary);
         } else {
