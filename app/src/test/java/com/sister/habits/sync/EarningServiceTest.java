@@ -83,14 +83,12 @@ public class EarningServiceTest {
     public void isWithinLimit_未超限返回true_超限返回false() {
         CoinEarningDao coinDao = mock(CoinEarningDao.class);
         EconomyConfigDao cfgDao = mock(EconomyConfigDao.class);
-        // 已确认 30 + 待审批 20 = 50；限额设 100（工作日/周末一致，消除星期依赖）
+        // 已确认 30 + 待审批 20 = 50；每日收入硬上限设 100（maxDailyCoins）
         when(coinDao.getTodayConfirmed(anyString(), anyLong(), anyLong())).thenReturn(30);
         when(coinDao.getTodayPending(anyString(), anyLong(), anyLong())).thenReturn(20);
         EconomyConfig cfg = new EconomyConfig();
-        cfg.softLimitWeekday = 100;
-        cfg.softLimitWeekend = 100;
+        cfg.maxDailyCoins = 100;
         when(cfgDao.getConfig()).thenReturn(cfg);
-
         // 50 + 50 = 100 <= 100 → 允许
         assertTrue(EarningService.isWithinLimit(coinDao, cfgDao, 50));
         // 50 + 51 = 101 > 100 → 拒绝
