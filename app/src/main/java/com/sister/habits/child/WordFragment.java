@@ -390,7 +390,7 @@ private AppDatabase db;
                 // 学习模式：每个词一次机会，答对得2积分（提交家长审批）
                 int coinReward = 2;
                 if (!EarningService.isWithinLimit(getContext(), coinReward)) {
-                    tvPrompt.setText("⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)");
+                    tvPrompt.setText("⚠️ 今日积分已达上限 (" + EarningService.getDailyHardLimit(getContext()) + "分)");
                     soundHelper.playClickSound();
                 } else {
                     CoinEarning earning = new CoinEarning();
