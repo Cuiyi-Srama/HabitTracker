@@ -130,7 +130,7 @@ public class TaskFragment extends Fragment {
 
         // 检查积分上限
         if (!EarningService.isWithinLimit(getContext(), actualReward)) {
-            Toast.makeText(getContext(), "⚠️ 今日积分已达上限 (" + EarningService.getDailySoftLimit(getContext()) + "分)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "⚠️ 今日积分已达上限 (" + EarningService.getDailyHardLimit(getContext()) + "分)", Toast.LENGTH_SHORT).show();
             return;
         }
         // 标记为"待家长确认"
