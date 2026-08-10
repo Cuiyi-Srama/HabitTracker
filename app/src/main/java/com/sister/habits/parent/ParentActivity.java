@@ -2585,7 +2585,7 @@ public class ParentActivity extends AppCompatActivity {
                 "💰 完整经济参数",
                 "📅 假期与折扣（假期范围/周末开关）",
                 "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
-                "📋 任务模板库（23+预设任务）",
+                "📋 任务模板库（22+预设任务）",
                 "💰 积分审批（待审积分确认）",
                 "🔑 绑定管理（家长/孩子Key）",
                 "🔐 数据导出备份",
@@ -2901,12 +2901,12 @@ private void showProfileSettings() {
             "H15-大扫除30min (30分)", "S01-背单词10个 (8分)", "S02-课外阅读20min (5分)",
             "S03-练琴练字20min (8分)", "S04-额外练习一页 (5分)", "S05-背古诗古文 (5分)",
             "S06-写日记小作文 (10分)", "S09-错题5道整理 (5分)", "C01-主动帮小事 (5分)",
-            "C03-连续三天不挑食 (5分)", "C06-教妹妹学习15min (8分)", "H17-帮做一顿饭 (15分)",
+            "C03-连续三天不挑食 (5分)", "H17-帮做一顿饭 (15分)",
             "C04-赞美家人 (3分)", "C05-招待客人 (5分)"
         };
         final boolean[] checked = new boolean[templates.length];
         new AlertDialog.Builder(this)
-                .setTitle("任务模板库(23个)-多选后一键添加")
+                .setTitle("任务模板库(22个)-多选后一键添加")
                 .setMultiChoiceItems(templates, checked, (d, which, isChecked) -> {})
                 .setPositiveButton("✅ 批量添加选中项", (d, which) -> {
                     int added = 0;
