@@ -83,14 +83,21 @@ public class TaskFragment extends Fragment {
      * - monthly: 新的一月开始后重置
      */
     private void autoResetRecurringTasks(List<Task> tasks) {
-        java.util.Calendar cal = java.util.Calendar.getInstance();
         for (Task task : tasks) {
             if (!"confirmed".equals(task.status)) continue;
-
             boolean shouldReset = false;
-            if ("permanent".equals(task.recurrenceType)) {
+            if ("daily".equals(task.recurrenceType)) {
+                // 每日任务：今天0点前确认的 → 新的一天重新激活
+                java.util.Calendar today = java.util.Calendar.getInstance();
+                today.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                today.set(java.util.Calendar.MINUTE, 0);
+                today.set(java.util.Calendar.SECOND, 0);
+                today.set(java.util.Calendar.MILLISECOND, 0);
+                if (task.confirmedAt < today.getTimeInMillis()) shouldReset = true;
+            } else if ("permanent".equals(task.recurrenceType)) {
                 shouldReset = true;
             } else if ("weekly".equals(task.recurrenceType)) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
                 cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
                 cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
                 cal.set(java.util.Calendar.MINUTE, 0);
@@ -98,6 +105,7 @@ public class TaskFragment extends Fragment {
                 cal.set(java.util.Calendar.MILLISECOND, 0);
                 if (task.confirmedAt < cal.getTimeInMillis()) shouldReset = true;
             } else if ("monthly".equals(task.recurrenceType)) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
                 cal.set(java.util.Calendar.DAY_OF_MONTH, 1);
                 cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
                 cal.set(java.util.Calendar.MINUTE, 0);
@@ -105,7 +113,6 @@ public class TaskFragment extends Fragment {
                 cal.set(java.util.Calendar.MILLISECOND, 0);
                 if (task.confirmedAt < cal.getTimeInMillis()) shouldReset = true;
             }
-
             if (shouldReset) {
                 task.status = "active";
                 task.completedAt = 0;
