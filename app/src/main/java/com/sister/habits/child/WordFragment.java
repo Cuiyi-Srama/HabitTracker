@@ -268,7 +268,8 @@ private AppDatabase db;
 
     private void showNextWord() {
         // Fragment 可能已销毁（切 Tab/退出）：直接返回，避免 NPE 闪退
-        if (!isAdded() || getView() == null) return;
+        // 不能用 getView()==null：onCreateView 内调用时 mView 尚未赋值（永远 null），会误杀首次进入
+        if (!isAdded() || tvWord == null) return;
         if (quizQueue.isEmpty()) {
             if (isReviewMode) {
                 // 复习模式：一轮结束，检查是否全部答对
