@@ -27,6 +27,10 @@ public class EarningService {
         return getDailySoftLimit(AppDatabase.getInstance(ctx).economyConfigDao());
     }
 
+    public static int getDailyHardLimit(Context ctx) {
+        return getDailyHardLimit(AppDatabase.getInstance(ctx).economyConfigDao());
+    }
+
     public static boolean isWithinLimit(Context ctx, int newAmount) {
         return isWithinLimit(AppDatabase.getInstance(ctx).coinEarningDao(),
                 AppDatabase.getInstance(ctx).economyConfigDao(), newAmount);
