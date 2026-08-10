@@ -49,6 +49,7 @@ public class EarningService {
         return coinDao.getTodayPending("sister", range[0], range[1]);
     }
 
+    /** 推荐每日目标值（仅供参考，不强制拦截）：平日60/周末100 */
     public static int getDailySoftLimit(EconomyConfigDao configDao) {
         EconomyConfig config = configDao.getConfig();
         Calendar cal = Calendar.getInstance();
@@ -62,8 +63,14 @@ public class EarningService {
 
     public static boolean isWithinLimit(CoinEarningDao coinDao, EconomyConfigDao configDao, int newAmount) {
         int current = calculateTodayConfirmed(coinDao) + calculateTodayPending(coinDao);
-        int limit = getDailySoftLimit(configDao);
+        int limit = getDailyHardLimit(configDao);
         return (current + newAmount) <= limit;
+    }
+
+    /** 每日收入硬上限（真正拦截的上限，默认 500，家长端可调） */
+    public static int getDailyHardLimit(EconomyConfigDao configDao) {
+        EconomyConfig config = configDao.getConfig();
+        return config != null ? config.maxDailyCoins : 500;
     }
 
     static long[] getTodayRange() {
