@@ -1497,8 +1497,8 @@ public class ParentActivity extends AppCompatActivity {
         scroll.addView(container);
 
         new AlertDialog.Builder(this)
-                .setTitle("💖 个人开发者打赏支持我们一下吧")
-                .setMessage("你的支持是对我的极大支持～")
+                .setTitle("💖 打赏支持一下开发者吧")
+                .setMessage("个人开发者做这个App不容易，你的支持是我最大的鼓励～")
                 .setView(scroll)
                 .setPositiveButton("关闭", null)
                 .show();
