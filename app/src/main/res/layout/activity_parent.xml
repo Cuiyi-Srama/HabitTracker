@@ -256,8 +256,7 @@
                 android:text="作业管理" android:textSize="10sp"
                 android:textColor="@color/text_primary" />
         </LinearLayout>
-    </LinearLayout>
-            </LinearLayout>
+        </LinearLayout>
             <!-- ❤️ 打赏支持（低调入口，仅家长端可见） -->
             <TextView
                 android:id="@+id/tv_donate"
