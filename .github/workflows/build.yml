@@ -1,17 +1,14 @@
 name: Build APK
-
 on:
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:  # 手动触发
-
 # 权限设置
 permissions:
   contents: write
   actions: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,7 +16,6 @@ jobs:
     steps:
       - name: 📥 Checkout 代码
         uses: actions/checkout@v5
-
       - name: ☕ 设置 JDK 17
         uses: actions/setup-java@v5
         with:
@@ -28,7 +24,6 @@ jobs:
 
       - name: 🔧 设置 Android SDK
         uses: android-actions/setup-android@v4
-
       - name: 📦 缓存 Gradle
         uses: actions/cache@v5
         with:
@@ -38,23 +33,35 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      - name: 🔨 编译 Debug APK + 单元测试
+      - name: 🔑 恢复 Release 签名 keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/habit-release.keystore
+            echo "✅ keystore 已恢复"
+          else
+            echo "⚠️ 无 keystore，Release 将不签名"
+          fi
+      - name: 🔨 编译 Debug + Release APK + 单元测试
         run: |
           chmod +x gradlew
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           # 从GitHub Secrets读取Token，不硬编码在代码中
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          ./gradlew assembleDebug testDebugUnitTest --no-daemon
-
-      - name: 📤 上传 APK 产物
+          # 签名参数（由 Secrets 注入，本地无则不签名）
+          export HABIT_STORE_FILE=${{ secrets.HABIT_STORE_FILE }}
+          export HABIT_STORE_PASSWORD=${{ secrets.HABIT_STORE_PASSWORD }}
+          export HABIT_KEY_ALIAS=${{ secrets.HABIT_KEY_ALIAS }}
+          export HABIT_KEY_PASSWORD=${{ secrets.HABIT_KEY_PASSWORD }}
+          ./gradlew assembleDebug assembleRelease testDebugUnitTest --no-daemon
+      - name: 📤 上传 Debug APK 产物
         uses: actions/upload-artifact@v4
         with:
           name: HabitTracker-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-
-      - name: 📤 上传 Release APK（未签名，仅用于测试）
-        run: |
-          echo "Release APK需要签名配置才能使用"
-          echo "Debug APK已在上传产物中"
+      - name: 📤 上传 Release APK 产物（正式签名）
+        uses: actions/upload-artifact@v4
+        with:
+          name: HabitTracker-Release-APK
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
