@@ -13,8 +13,8 @@ android {
         applicationId 'com.sister.habits'
         minSdk 24
         targetSdk 34
-        versionCode 106
-        versionName '3.0.55'
+        versionCode 107
+        versionName '3.0.56'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -26,8 +26,17 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // CI 中通过 GitHub Secrets 注入环境变量（HABIT_*）；本地无环境变量时不启用
+            def storePath = System.getenv('HABIT_STORE_FILE')
+            if (storePath != null && !storePath.isEmpty()) {
+                storeFile file(storePath)
+                storePassword System.getenv('HABIT_STORE_PASSWORD')
+                keyAlias System.getenv('HABIT_KEY_ALIAS')
+                keyPassword System.getenv('HABIT_KEY_PASSWORD')
+            }
+        }
     }
-
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -35,7 +44,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            def storePath = System.getenv('HABIT_STORE_FILE')
+            if (storePath != null && !storePath.isEmpty()) {
+                signingConfig signingConfigs.release
+            }
         }
+    }
     }
 
     compileOptions {
