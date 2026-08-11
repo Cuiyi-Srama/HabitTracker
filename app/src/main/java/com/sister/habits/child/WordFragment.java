@@ -169,10 +169,19 @@ private AppDatabase db;
         List<Vocabulary> words;
         String bankId = getCurrentBankId();
         if (review) {
-            // ===== 复习模式：获取所有待复习词，组批 =====
+            // ===== 复习模式：获取所有待复习词，组批（受每日复习上限 dailyReviewLimit 限制） =====
             List<WordReview> dueReviews = db.wordReviewDao().getDueReviews(System.currentTimeMillis(), bankId);
+            java.util.Calendar cal0 = java.util.Calendar.getInstance();
+            cal0.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            cal0.set(java.util.Calendar.MINUTE, 0);
+            cal0.set(java.util.Calendar.SECOND, 0);
+            cal0.set(java.util.Calendar.MILLISECOND, 0);
+            long todayStart = cal0.getTimeInMillis();
+            int reviewedToday = db.wordReviewDao().getTodayCount(todayStart, bankId);
+            int remaining = Math.max(0, dailyReviewLimit - reviewedToday);
             words = new ArrayList<>();
             for (WordReview wr : dueReviews) {
+                if (words.size() >= remaining) break;
                 Vocabulary v = db.vocabularyDao().getById(wr.wordId);
                 if (v != null && v.active && !v.mastered && bankId.equals(v.bankId)) {
                     words.add(v);
@@ -184,6 +193,8 @@ private AppDatabase db;
             wrongInReviewSet.clear();
             if (currentReviewTotal > 0) {
                 tvPrompt.setText("🔄 复习检测 (" + currentReviewTotal + "个)  全对得 🪙" + (currentReviewTotal * 2));
+            } else if (reviewedToday >= dailyReviewLimit) {
+                tvPrompt.setText("✅ 今日复习额度已用完 (" + dailyReviewLimit + "个)，明天再来吧");
             } else {
                 tvPrompt.setText("🔄 当前没有待复习词，去学新词吧");
             }
