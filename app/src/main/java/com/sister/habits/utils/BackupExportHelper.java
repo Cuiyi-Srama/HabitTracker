@@ -164,8 +164,8 @@ public class BackupExportHelper {
             String dbPath = context.getDatabasePath("habit_tracker.db").getAbsolutePath();
             sqldb = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY);
             
-            // shop_items中的imagePath
-            Cursor c1 = sqldb.rawQuery("SELECT DISTINCT imagePath FROM shop_items WHERE imagePath IS NOT NULL AND imagePath != ''", null);
+            // shop_items中的iconUrl
+            Cursor c1 = sqldb.rawQuery("SELECT DISTINCT iconUrl FROM shop_items WHERE iconUrl IS NOT NULL AND iconUrl != ''", null);
             while (c1.moveToNext()) {
                 String path = c1.getString(0);
                 if (path != null && !path.isEmpty()) imagePaths.add(path);
@@ -253,14 +253,14 @@ public class BackupExportHelper {
                 fos.write(img.getValue());
                 fos.close();
             }
-            // 更新shop_items中的imagePath指向新位置
+            // 更新shop_items中的iconUrl指向新位置
             String dbPath = context.getDatabasePath("habit_tracker.db").getAbsolutePath();
             SQLiteDatabase sqldb = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE);
             try {
                 for (String fileName : imageFiles.keySet()) {
                     String newPath = new File(imagesDir, fileName).getAbsolutePath();
-                    sqldb.execSQL("UPDATE shop_items SET imagePath = '" + newPath.replace("'", "''") + 
-                                  "' WHERE imagePath LIKE '%" + fileName.replace("'", "''") + "'");
+                    sqldb.execSQL("UPDATE shop_items SET iconUrl = '" + newPath.replace("'", "''") + 
+                                  "' WHERE iconUrl LIKE '%" + fileName.replace("'", "''") + "'");
                 }
             } finally {
                 if (sqldb.isOpen()) sqldb.close();
