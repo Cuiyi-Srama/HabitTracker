@@ -257,9 +257,21 @@
                 android:textColor="@color/text_primary" />
         </LinearLayout>
     </LinearLayout>
-
-    
-
             </LinearLayout>
-
+            <!-- ❤️ 打赏支持（低调入口，仅家长端可见） -->
+            <TextView
+                android:id="@+id/tv_donate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="6dp"
+                android:padding="6dp"
+                android:gravity="center"
+                android:text="❤️ 支持我们（可选）"
+                android:textSize="10sp"
+                android:textColor="#999999"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground" />
+        </LinearLayout>
 </androidx.core.widget.NestedScrollView>
