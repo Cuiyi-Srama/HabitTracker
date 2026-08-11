@@ -500,6 +500,11 @@ public class ParentActivity extends AppCompatActivity {
             Toast.makeText(this, "🔄 全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show();
             syncManager.triggerFullSyncAsync();
         });
+        // ❤️ 打赏支持（低调入口，家长端底部小字）
+        TextView tvDonate = findViewById(R.id.tv_donate);
+        if (tvDonate != null) {
+            tvDonate.setOnClickListener(v -> showDonateDialog());
+        }
         btnGateManage = findViewById(R.id.btn_gate_manage);
         btnApproveSelected = findViewById(R.id.btn_approve_selected);
         btnRejectSelected = findViewById(R.id.btn_reject_selected);
@@ -1452,6 +1457,52 @@ public class ParentActivity extends AppCompatActivity {
     private void showAiImportDialog() { shopManager.showAiImportDialog(); }
 
 
+    /** ❤️ 打赏支持（低调入口：家长端界面底部小字，点击展示收款码） */
+    private void showDonateDialog() {
+        soundHelper.playClickSound();
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setGravity(android.view.Gravity.CENTER);
+        container.setPadding(32, 16, 32, 16);
+
+        // 微信收款码
+        TextView wxLabel = new TextView(this);
+        wxLabel.setText("微信支付");
+        wxLabel.setTextSize(13);
+        wxLabel.setTextColor(0xFF07C160);
+        wxLabel.setGravity(android.view.Gravity.CENTER);
+        wxLabel.setPadding(0, 4, 0, 8);
+        ImageView wxImg = new ImageView(this);
+        wxImg.setImageResource(R.drawable.donate_wechat);
+        wxImg.setAdjustViewBounds(true);
+        wxImg.setMaxWidth(720);
+        container.addView(wxLabel);
+        container.addView(wxImg);
+
+        // 支付宝收款码
+        TextView aliLabel = new TextView(this);
+        aliLabel.setText("支付宝");
+        aliLabel.setTextSize(13);
+        aliLabel.setTextColor(0xFF1677FF);
+        aliLabel.setGravity(android.view.Gravity.CENTER);
+        aliLabel.setPadding(0, 20, 0, 8);
+        ImageView aliImg = new ImageView(this);
+        aliImg.setImageResource(R.drawable.donate_alipay);
+        aliImg.setAdjustViewBounds(true);
+        aliImg.setMaxWidth(720);
+        container.addView(aliLabel);
+        container.addView(aliImg);
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(container);
+
+        new AlertDialog.Builder(this)
+                .setTitle("💖 个人开发者打赏支持我们一下吧")
+                .setMessage("你的支持是对我的极大支持～")
+                .setView(scroll)
+                .setPositiveButton("关闭", null)
+                .show();
+    }
     public void showSettingsDialog() {
         soundHelper.playClickSound();
         int pendingTotal = db.redemptionDao().getByStatus("pending").size()
