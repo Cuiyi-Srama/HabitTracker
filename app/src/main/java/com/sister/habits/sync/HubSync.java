@@ -262,7 +262,7 @@ public class HubSync {
         android.database.Cursor c = null;
         try {
             androidx.sqlite.db.SupportSQLiteDatabase sqldb = db.getOpenHelper().getWritableDatabase();
-            c = sqldb.rawQuery("SELECT iconUrl FROM shop_items WHERE iconUrl LIKE ?", new String[]{"%" + fileName});
+            c = sqldb.query("SELECT iconUrl FROM shop_items WHERE iconUrl LIKE ?", new Object[]{"%" + fileName});
             while (c.moveToNext()) {
                 String p = c.getString(0);
                 if (p != null && !p.isEmpty()) {
