@@ -382,7 +382,8 @@ public class LanSync {
         // 兜底：按数据库 iconUrl 记录的完整路径查找（兼容历史数据指向任意目录）
         android.database.Cursor c = null;
         try {
-            c = db.rawQuery("SELECT iconUrl FROM shop_items WHERE iconUrl LIKE ?", new String[]{"%" + fileName});
+            android.database.sqlite.SQLiteDatabase sqldb = db.getOpenHelper().getWritableDatabase();
+            c = sqldb.rawQuery("SELECT iconUrl FROM shop_items WHERE iconUrl LIKE ?", new String[]{"%" + fileName});
             while (c.moveToNext()) {
                 String p = c.getString(0);
                 if (p != null && !p.isEmpty()) {
