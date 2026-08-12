@@ -126,7 +126,7 @@ public class DataMerger {
             localIds.add(t.id);
         }
 
-        int added = 0;
+        int added = 0, synced = 0;
         for (Task remote : remoteList) {
             if (!localIds.contains(remote.id)) {
                 remote.synced = true;
@@ -134,9 +134,22 @@ public class DataMerger {
                 localIds.add(remote.id);
                 added++;
                 Log.d(TAG, "📥 新增任务: " + remote.title + " 来自 " + remote.deviceId);
+            } else {
+                // 状态仲裁（v3.0.63）：远端已审批（confirmed）且确认时间更新 → 同步审批结果
+                // 远端 pending/active → 不动作（保留本地状态，防止已审批被旧数据回滚）
+                if ("confirmed".equals(remote.status)) {
+                    for (Task local : localList) {
+                        if (local.id.equals(remote.id) && remote.confirmedAt > local.confirmedAt) {
+                            taskDao.confirmTask(remote.id, remote.confirmedAt);
+                            synced++;
+                            Log.d(TAG, "🔄 任务状态同步: " + remote.title + " → confirmed (来自 " + remote.deviceId + ")");
+                            break;
+                        }
+                    }
+                }
             }
         }
-        Log.d(TAG, "合并任务完成: 新增 " + added + "/" + remoteList.size());
+        Log.d(TAG, "合并任务完成: 新增 " + added + " 状态同步 " + synced + "/" + remoteList.size());
     }
 
     /**
@@ -150,7 +163,7 @@ public class DataMerger {
             localIds.add(r.id);
         }
 
-        int added = 0;
+        int added = 0, synced = 0;
         for (Redemption remote : remoteList) {
             if (!localIds.contains(remote.id)) {
                 remote.synced = true;
@@ -158,9 +171,27 @@ public class DataMerger {
                 localIds.add(remote.id);
                 added++;
                 Log.d(TAG, "📥 新增兑换: " + remote.itemName + " 来自 " + remote.deviceId);
+            } else {
+                // 状态仲裁（v3.0.63）：远端已审批（confirmed/rejected）且处理时间更新 → 同步审批结果
+                // 远端仍 pending → 不动作（保留本地状态，防止已审批状态被旧数据回滚）
+                if (!"pending".equals(remote.status)) {
+                    Redemption local = findLocal(localList, remote.id);
+                    if (local != null && (local.processedAt == 0 || remote.processedAt > local.processedAt)) {
+                        redemptionDao.process(remote.id, remote.status, remote.processedAt, remote.note);
+                        synced++;
+                        Log.d(TAG, "🔄 兑换状态同步: " + remote.itemName + " → " + remote.status + " (来自 " + remote.deviceId + ")");
+                    }
+                }
             }
         }
-        Log.d(TAG, "合并兑换完成: 新增 " + added + "/" + remoteList.size());
+        Log.d(TAG, "合并兑换完成: 新增 " + added + " 状态同步 " + synced + "/" + remoteList.size());
+    }
+
+    private Redemption findLocal(List<Redemption> localList, String id) {
+        for (Redemption r : localList) {
+            if (r.id.equals(id)) return r;
+        }
+        return null;
     }
 
     // ==================== 全量数据合并（新增类型） ====================
@@ -324,14 +355,60 @@ public class DataMerger {
     }
     public void mergeCoinEarnings(List<com.sister.habits.data.models.CoinEarning> remoteList) {
         com.sister.habits.data.dao.CoinEarningDao dao = appDb.coinEarningDao();
-        int added = 0;
+        int added = 0, synced = 0, skipped = 0;
         for (com.sister.habits.data.models.CoinEarning ce : remoteList) {
             try {
-                dao.insert(ce);
-                added++;
+                // sourceId 为空的记录（奖金类）无法按业务键查重，退化为按主键幂等插入（旧行为）
+                if (ce.sourceId == null || ce.sourceId.isEmpty()) {
+                    dao.insert(ce);
+                    added++;
+                    continue;
+                }
+                com.sister.habits.data.models.CoinEarning existing = dao.getBySourceIdAndType(
+                        ce.userId != null ? ce.userId : "sister", ce.sourceId, ce.sourceType);
+                if (existing == null) {
+                    dao.insert(ce);
+                    added++;
+                    continue;
+                }
+                // 状态仲裁（v3.0.63）：已终态（confirmed/rejected）不回滚
+                boolean localFinal = "confirmed".equals(existing.status) || "rejected".equals(existing.status);
+                boolean remoteFinal = "confirmed".equals(ce.status) || "rejected".equals(ce.status);
+                if (localFinal && !remoteFinal) {
+                    skipped++;  // 本地已审批，远端旧 pending → 忽略
+                    continue;
+                }
+                if (remoteFinal && !localFinal) {
+                    // 远端已审批 → 同步审批结果
+                    ce.synced = true;
+                    dao.insert(ce);
+                    synced++;
+                    Log.d(TAG, "🔄 积分审批状态同步: " + ce.sourceType + " → " + ce.status + " (来自 " + ce.deviceId + ")");
+                    continue;
+                }
+                if (localFinal && remoteFinal) {
+                    // 双方终态 → 处理时间新者胜
+                    long localT = "confirmed".equals(existing.status) ? existing.confirmedAt : existing.rejectedAt;
+                    long remoteT = "confirmed".equals(ce.status) ? ce.confirmedAt : ce.rejectedAt;
+                    if (remoteT > localT) {
+                        ce.synced = true;
+                        dao.insert(ce);
+                        synced++;
+                    } else {
+                        skipped++;
+                    }
+                    continue;
+                }
+                // 双方 pending → 保留本地（时间戳新者胜）
+                if (ce.requestedAt > existing.requestedAt) {
+                    ce.synced = true;
+                    dao.insert(ce);
+                } else {
+                    skipped++;
+                }
             } catch (Exception e) { Log.d(TAG, "跳过重复积分审批"); }
         }
-        Log.d(TAG, "合并积分审批完成: 新增 " + added);
+        Log.d(TAG, "合并积分审批完成: 新增 " + added + " 状态同步 " + synced + " 跳过 " + skipped);
     }
 
     /** 合并作业关卡配置 */
