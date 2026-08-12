@@ -24,12 +24,13 @@ public class ShopItem {
     public int stock;              // 库存，-1=无限，仅限量商品使用
     public boolean active;         // 是否上架
     public long createdAt;
-
+    public long updatedAt;         // 最后修改时间（LWW 合并依据，v3.0.62）
     public ShopItem() {
         this.id = UUID.randomUUID().toString();
         this.itemType = "limited";
         this.stock = -1;
         this.active = true;
         this.createdAt = System.currentTimeMillis();
+        this.updatedAt = System.currentTimeMillis();
     }
 }
