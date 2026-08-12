@@ -244,4 +244,125 @@ public class DataMergerTest {
         r.deviceId = "devB";
         return r;
     }
+
+    // ==================== v3.0.62：设置类 LWW 合并测试 ====================
+
+    @Test
+    public void mergeShopItems_远端更新时间更新时覆盖本地() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.ShopItemDao dao = mock(com.sister.habits.data.dao.ShopItemDao.class);
+        when(appDb.shopItemDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.ShopItem local = new com.sister.habits.data.models.ShopItem();
+        local.updatedAt = 1000;
+        local.priceCoins = 50;
+        when(dao.getById(local.id)).thenReturn(local);
+        when(dao.getAll()).thenReturn(java.util.Collections.singletonList(local));
+
+        com.sister.habits.data.models.ShopItem remote = new com.sister.habits.data.models.ShopItem();
+        remote.id = local.id;
+        remote.updatedAt = 2000;
+        remote.priceCoins = 80;
+
+        merger.mergeShopItems(java.util.Collections.singletonList(remote));
+
+        // LWW：远端更新 → REPLACE 覆盖
+        verify(dao).insert(remote);
+    }
+
+    @Test
+    public void mergeShopItems_本地更新时间更新时保留本地() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.ShopItemDao dao = mock(com.sister.habits.data.dao.ShopItemDao.class);
+        when(appDb.shopItemDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.ShopItem local = new com.sister.habits.data.models.ShopItem();
+        local.updatedAt = 3000;
+        when(dao.getById(local.id)).thenReturn(local);
+        when(dao.getAll()).thenReturn(java.util.Collections.singletonList(local));
+
+        com.sister.habits.data.models.ShopItem remote = new com.sister.habits.data.models.ShopItem();
+        remote.id = local.id;
+        remote.updatedAt = 2000;
+
+        merger.mergeShopItems(java.util.Collections.singletonList(remote));
+
+        // LWW：本地更新 → 不覆盖
+        verify(dao, never()).insert(remote);
+    }
+
+    @Test
+    public void mergeShopItems_远端已删除商品本地下架() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.ShopItemDao dao = mock(com.sister.habits.data.dao.ShopItemDao.class);
+        when(appDb.shopItemDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.ShopItem local = new com.sister.habits.data.models.ShopItem();
+        local.active = true;
+        when(dao.getAll()).thenReturn(java.util.Collections.singletonList(local));
+
+        // 远端列表不含该商品
+        merger.mergeShopItems(java.util.Collections.<com.sister.habits.data.models.ShopItem>emptyList());
+
+        verify(dao).setActive(local.id, false);
+    }
+
+    @Test
+    public void mergeEconomyConfig_远端更新时覆盖本地() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.EconomyConfigDao dao = mock(com.sister.habits.data.dao.EconomyConfigDao.class);
+        when(appDb.economyConfigDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.EconomyConfig local = new com.sister.habits.data.models.EconomyConfig();
+        local.updatedAt = 1000;
+        when(dao.getConfig()).thenReturn(local);
+
+        com.sister.habits.data.models.EconomyConfig remote = new com.sister.habits.data.models.EconomyConfig();
+        remote.updatedAt = 2000;
+        remote.maxDailyWords = 15;
+
+        merger.mergeEconomyConfig(remote);
+
+        verify(dao).setConfig(remote);
+    }
+
+    @Test
+    public void mergeEconomyConfig_本地更新时保留本地() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.EconomyConfigDao dao = mock(com.sister.habits.data.dao.EconomyConfigDao.class);
+        when(appDb.economyConfigDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.EconomyConfig local = new com.sister.habits.data.models.EconomyConfig();
+        local.updatedAt = 3000;
+        when(dao.getConfig()).thenReturn(local);
+
+        com.sister.habits.data.models.EconomyConfig remote = new com.sister.habits.data.models.EconomyConfig();
+        remote.updatedAt = 2000;
+
+        merger.mergeEconomyConfig(remote);
+
+        verify(dao, never()).setConfig(remote);
+    }
+
+    @Test
+    public void mergeEconomyConfig_本地无配置时采用远端() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.EconomyConfigDao dao = mock(com.sister.habits.data.dao.EconomyConfigDao.class);
+        when(appDb.economyConfigDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        when(dao.getConfig()).thenReturn(null);
+
+        com.sister.habits.data.models.EconomyConfig remote = new com.sister.habits.data.models.EconomyConfig();
+        remote.updatedAt = 5000;
+
+        merger.mergeEconomyConfig(remote);
+
+        verify(dao).setConfig(remote);
+    }
 }
