@@ -34,58 +34,91 @@ public class DataMergerTest {
     }
 
     // ==================== CheckIn ====================
-
     @Test
-    public void mergeCheckIns_同日期跳过_新日期插入() {
+    public void mergeCheckIns_同日冲突本地更早跳过_新日期插入() {
         CheckInDao dao = mock(CheckInDao.class);
         CheckIn local = new CheckIn("sister", "2026-08-01", 1, 5, "devA");
+        local.timestamp = 1000L;
         when(dao.getByUser("sister")).thenReturn(Collections.singletonList(local));
-
-        // 与本地同一天（不同设备）→ 应跳过
+        // 与本地同一天（不同设备、不同id、打卡更晚）→ 同日冲突保留本地更早 → 跳过
         CheckIn dup = new CheckIn("sister", "2026-08-01", 2, 5, "devB");
+        dup.timestamp = 2000L;
         // 新日期 → 应插入
         CheckIn fresh = new CheckIn("sister", "2026-08-02", 1, 5, "devB");
-
         DataMerger merger = newMerger(dao, null, null, null);
         merger.mergeCheckIns(Arrays.asList(dup, fresh));
-
         verify(dao, times(1)).insert(fresh);
         verify(dao, never()).insert(dup);
         assertTrue("新记录应标记已同步", fresh.synced);
     }
 
     @Test
-    public void mergeCheckIns_远程列表为空_不插入() {
+    public void mergeCheckIns_同id幂等_跳过() {
         CheckInDao dao = mock(CheckInDao.class);
-        when(dao.getByUser("sister")).thenReturn(Collections.<CheckIn>emptyList());
-
+        CheckIn local = new CheckIn("sister", "2026-08-01", 1, 5, "devA");
+        when(dao.getByUser("sister")).thenReturn(Collections.singletonList(local));
+        // 同 id（同一记录被重复推送）→ 幂等跳过
+        CheckIn dup = new CheckIn("sister", "2026-08-01", 1, 5, "devA");
+        dup.id = local.id;
         DataMerger merger = newMerger(dao, null, null, null);
-        merger.mergeCheckIns(Collections.<CheckIn>emptyList());
-
+        merger.mergeCheckIns(Collections.singletonList(dup));
         verify(dao, never()).insert(any(CheckIn.class));
     }
 
+    @Test
+    public void mergeCheckIns_同日冲突远端更早_覆盖本地() {
+        CheckInDao dao = mock(CheckInDao.class);
+        // 本地打卡较晚
+        CheckIn local = new CheckIn("sister", "2026-08-01", 2, 5, "devA");
+        local.timestamp = 2000L;
+        when(dao.getByUser("sister")).thenReturn(Collections.singletonList(local));
+        // 远端同一天但打卡更早（先打卡者胜）→ 应 REPLACE 覆盖本地
+        CheckIn remote = new CheckIn("sister", "2026-08-01", 1, 5, "devB");
+        remote.timestamp = 1000L;
+        DataMerger merger = newMerger(dao, null, null, null);
+        merger.mergeCheckIns(Collections.singletonList(remote));
+        verify(dao, times(1)).insert(remote);
+        assertTrue("远端更早的打卡应标记已同步", remote.synced);
+    }
+
+    @Test
+    public void mergeCheckIns_远程列表为空_不插入() {
+        CheckInDao dao = mock(CheckInDao.class);
+        when(dao.getByUser("sister")).thenReturn(Collections.<CheckIn>emptyList());
+        DataMerger merger = newMerger(dao, null, null, null);
+        merger.mergeCheckIns(Collections.<CheckIn>emptyList());
+        verify(dao, never()).insert(any(CheckIn.class));
+    }
     // ==================== CoinTransaction ====================
 
     @Test
-    public void mergeCoinTransactions_同键去重_新流水插入() {
+    public void mergeCoinTransactions_同id去重_新流水插入() {
         CoinTransactionDao dao = mock(CoinTransactionDao.class);
         CoinTransaction local = newCoinTx("task", 5, 1000L, "devA");
         when(dao.getByUser("sister")).thenReturn(Collections.singletonList(local));
-
-        // 五元组完全相同（userId|type|amount|createdAt|deviceId）→ 应跳过
+        // 同 id（同一流水被重复推送）→ 应跳过
         CoinTransaction dup = newCoinTx("task", 5, 1000L, "devA");
-        // 任一字段不同 → 应插入
+        dup.id = local.id;
+        // 新 id（即使五元组完全一样，也是不同记录）→ 应插入
         CoinTransaction fresh = newCoinTx("task", 10, 2000L, "devB");
-
         DataMerger merger = newMerger(null, dao, null, null);
         merger.mergeCoinTransactions(Arrays.asList(dup, fresh));
-
         verify(dao, times(1)).insert(fresh);
         verify(dao, never()).insert(dup);
         assertTrue("新流水应标记已同步", fresh.synced);
     }
 
+    @Test
+    public void mergeCoinTransactions_同秒同额不同设备_都保留() {
+        CoinTransactionDao dao = mock(CoinTransactionDao.class);
+        when(dao.getByUser("sister")).thenReturn(Collections.<CoinTransaction>emptyList());
+        // 旧逻辑会误判重复：同秒同额同类型不同设备 → 现在按 id 各自保留
+        CoinTransaction a = newCoinTx("task", 5, 1000L, "devA");
+        CoinTransaction b = newCoinTx("task", 5, 1000L, "devB");
+        DataMerger merger = newMerger(null, dao, null, null);
+        merger.mergeCoinTransactions(Arrays.asList(a, b));
+        verify(dao, times(2)).insert(any(CoinTransaction.class));
+    }
     private CoinTransaction newCoinTx(String type, int amount, long createdAt, String deviceId) {
         CoinTransaction t = new CoinTransaction();
         t.userId = "sister";
