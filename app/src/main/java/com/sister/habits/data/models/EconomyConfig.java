@@ -51,8 +51,9 @@ public class EconomyConfig {
     public int boostHoliday = 50;                // 节日礼包
     public int softLimitWeekday = 60;            // 平日积分软上限
     public int softLimitWeekend = 100;           // 周末积分软上限
-
+    public long updatedAt;                       // 最后修改时间（LWW 合并依据，v3.0.62）
     public EconomyConfig() {
         this.id = 1;
+        this.updatedAt = System.currentTimeMillis();
     }
 }
