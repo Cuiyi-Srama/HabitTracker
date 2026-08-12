@@ -364,12 +364,37 @@ public class LanSync {
             String f = session.getParms().get("f");
             if (f == null || f.isEmpty()) return NanoHTTPD.newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "missing f");
             String fileName = f.substring(f.lastIndexOf('/') + 1); // 防路径穿越
-            java.io.File img = new java.io.File(context.getFilesDir(), "shop_images/" + fileName);
-            if (!img.exists()) return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found");
+            java.io.File img = findShopImageFile(fileName);
+            if (img == null) return NanoHTTPD.newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "not found");
             return NanoHTTPD.newChunkedResponse(Response.Status.OK, "image/jpeg", new java.io.FileInputStream(img));
         } catch (Exception e) {
             return NanoHTTPD.newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", e.getMessage());
         }
+    }
+
+    /** 多目录查找商品图片：shop_images/（同步默认）→ backup_images/（恢复备份）→ 数据库iconUrl实际路径（兜底） */
+    private java.io.File findShopImageFile(String fileName) {
+        String[] dirs = {"shop_images", "backup_images"};
+        for (String d : dirs) {
+            java.io.File f = new java.io.File(context.getFilesDir(), d + "/" + fileName);
+            if (f.exists()) return f;
+        }
+        // 兜底：按数据库 iconUrl 记录的完整路径查找（兼容历史数据指向任意目录）
+        android.database.Cursor c = null;
+        try {
+            c = db.rawQuery("SELECT iconUrl FROM shop_items WHERE iconUrl LIKE ?", new String[]{"%" + fileName});
+            while (c.moveToNext()) {
+                String p = c.getString(0);
+                if (p != null && !p.isEmpty()) {
+                    java.io.File f = new java.io.File(p);
+                    if (f.exists()) return f;
+                }
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (c != null) c.close();
+        }
+        return null;
     }
 
     private Response servePeek() {
