@@ -11,14 +11,16 @@ import com.sister.habits.data.models.CoinTransaction;
 import com.sister.habits.data.models.Redemption;
 import com.sister.habits.data.models.Task;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
 /**
- * 数据合并器——叠加模式（Append Mode）
- * 策略：不覆盖任何数据，以 {日期}+{事件类型}+{金币变动} 作为天然唯一键去重
- * 各设备的记录各自保留，联网后按时间线合并展示
+ * 数据合并器——幂等合并（Idempotent Merge）
+ * 策略：以记录自带 UUID 主键(id) 作为全局唯一键去重，数学上保证同一条记录永不重复入库。
+ * 打卡同日冲突（不同设备同一天打卡）→ 保留 timestamp 更早的一条（先打卡者胜）。
+ * 流水按 id 去重，各自保留。
  * 不上传删除操作，只上传新增
  */
 public class DataMerger {
@@ -41,61 +43,78 @@ public class DataMerger {
     }
 
     /**
-     * 合并打卡记录——叠加模式
-     * 以 {userId}+{date} 作为唯一键去重，各自保留不覆盖
-     * 如果远程有同一天不同设备的打卡，两条都保留
+    /**
+     * 合并打卡记录——幂等模式
+     * 以 UUID 主键(id) 去重：同一条记录永不重复入库。
+     * 同日冲突（不同设备同一天打卡，id 不同）→ 保留 timestamp 更早的一条（先打卡者胜），
+     * 远端更早则 REPLACE 覆盖本地，本地更早则跳过远端。
      */
     public void mergeCheckIns(List<CheckIn> remoteList) {
-        // 将本地已有记录构建为集合
         List<CheckIn> localList = checkInDao.getByUser("sister");
-        Set<String> localKeys = new HashSet<>();
+        Set<String> localIds = new HashSet<>();
+        Map<String, CheckIn> localByDate = new HashMap<>();
         for (CheckIn c : localList) {
-            localKeys.add(c.userId + "|" + c.date);
+            localIds.add(c.id);
+            localByDate.put(c.userId + "|" + c.date, c);
         }
-
         int added = 0;
         for (CheckIn remote : remoteList) {
+            // 幂等：同 id 已存在 → 跳过
+            if (localIds.contains(remote.id)) {
+                Log.d(TAG, "⏭️ 跳过重复打卡(id): " + remote.date + " " + remote.id);
+                continue;
+            }
             String key = remote.userId + "|" + remote.date;
-            if (!localKeys.contains(key)) {
+            CheckIn existing = localByDate.get(key);
+            if (existing != null) {
+                // 同日冲突：保留先打卡者（timestamp 更早）
+                if (remote.timestamp < existing.timestamp) {
+                    remote.synced = true;
+                    checkInDao.insert(remote); // REPLACE：unique[userId,date] 覆盖本地更晚记录
+                    localIds.add(remote.id);
+                    localByDate.put(key, remote);
+                    added++;
+                    Log.d(TAG, "📥 同日冲突远端更早，覆盖本地: " + remote.date + " 来自 " + remote.deviceId);
+                } else {
+                    Log.d(TAG, "⏭️ 同日冲突保留本地更早: " + remote.date + " 来自 " + remote.deviceId);
+                }
+            } else {
                 remote.synced = true;
                 checkInDao.insert(remote);
-                localKeys.add(key);
+                localIds.add(remote.id);
+                localByDate.put(key, remote);
                 added++;
                 Log.d(TAG, "📥 新增打卡: " + remote.date + " 来自 " + remote.deviceId);
-            } else {
-                Log.d(TAG, "⏭️ 跳过重复打卡: " + remote.date);
             }
         }
         Log.d(TAG, "合并打卡完成: 新增 " + added + "/" + remoteList.size());
     }
-
     /**
-     * 合并金币流水——叠加模式
-     * 以 {userId}+{type}+{amount}+{createdAt}+{deviceId} 作为唯一键去重
-     * 所有流水各自保留，不覆盖
+     * 合并金币流水——幂等模式
+     * 以 UUID 主键(id) 去重：同一条记录永不重复入库（id 由产生端生成，全局唯一）。
+     * 所有流水各自保留，不覆盖。
      */
     public void mergeCoinTransactions(List<CoinTransaction> remoteList) {
         List<CoinTransaction> localList = coinDao.getByUser("sister");
-        Set<String> localKeys = new HashSet<>();
+        Set<String> localIds = new HashSet<>();
         for (CoinTransaction c : localList) {
-            localKeys.add(c.userId + "|" + c.type + "|" + c.amount + "|" + c.createdAt + "|" + c.deviceId);
+            localIds.add(c.id);
         }
-
         int added = 0;
         for (CoinTransaction remote : remoteList) {
-            // 用关键字段构建唯一键：{日期}+{事件类型}+{金币变动}
-            String key = remote.userId + "|" + remote.type + "|" + remote.amount + "|" + remote.createdAt + "|" + remote.deviceId;
-            if (!localKeys.contains(key)) {
+            // 幂等：同 id 已存在 → 跳过
+            if (!localIds.contains(remote.id)) {
                 remote.synced = true;
                 coinDao.insert(remote);
-                localKeys.add(key);
+                localIds.add(remote.id);
                 added++;
                 Log.d(TAG, "📥 新增流水: " + remote.type + " " + remote.amount + " 来自 " + remote.deviceId);
+            } else {
+                Log.d(TAG, "⏭️ 跳过重复流水(id): " + remote.type + " " + remote.amount + " " + remote.id);
             }
         }
         Log.d(TAG, "合并流水完成: 新增 " + added + "/" + remoteList.size());
     }
-
     /**
      * 合并任务——叠加模式
      * 以 UUID 去重，各自保留
