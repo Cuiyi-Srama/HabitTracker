@@ -204,6 +204,7 @@ public class ShopManager {
                     try { item.stock = Integer.parseInt(((android.widget.EditText) view.findViewById(R.id.et_item_stock)).getText().toString()); }
                     catch (Exception e) { item.stock = -1; }
                     item.iconUrl = selectedShopImagePath != null ? selectedShopImagePath : "";
+                    item.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.shopItemDao().insert(item);
                     selectedShopImagePath = null;
                     currentShopDialogView = null;
@@ -355,6 +356,7 @@ public class ShopManager {
                 Button btnToggle = makeCompactButton(item.active ? "⬇" : "⬆");
                 btnToggle.setOnClickListener(v -> {
                     item.active = !item.active;
+                    item.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.shopItemDao().update(item);
                     Toast.makeText(activity, (item.active ? "✅ 已上架: " : "⬇ 已下架: ") + item.name, Toast.LENGTH_SHORT).show();
                     // 原地刷新列表，不重开对话框（否则返回时要关两次）
@@ -431,6 +433,7 @@ public class ShopManager {
                     try { item.stock = Integer.parseInt(((android.widget.EditText) view.findViewById(R.id.et_item_stock)).getText().toString()); }
                     catch (Exception e) { item.stock = -1; }
                     if (selectedShopImagePath != null) item.iconUrl = selectedShopImagePath;
+                    item.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.shopItemDao().update(item);
                     currentShopDialogView = null;
                     selectedShopImagePath = null;
@@ -509,6 +512,7 @@ public class ShopManager {
                                             shop.iconUrl = dst.getAbsolutePath();
                                         }
                                     }
+                                    shop.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                                     db.shopItemDao().insert(shop);
                                     ok++;
                                 } catch (Exception e) {
