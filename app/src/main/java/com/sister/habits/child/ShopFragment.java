@@ -233,7 +233,7 @@ public class ShopFragment extends Fragment {
         final String finalSummary = summary.toString();
         new android.app.AlertDialog.Builder(getContext())
             .setTitle("确认兑换")
-            .setMessage(finalSummary + "\n合计: " + finalTotalCost + " 分\n余额: " + (finalCurrentBalance - finalTotalCost) + " 分")
+            .setMessage(finalSummary + "\n合计: " + finalTotalCost + " 分\n当前余额: " + finalCurrentBalance + " 分\n\n📋 提交后等待家长审批，审批通过才扣币")
             .setPositiveButton("确认提交", (d, w) -> {
                 int newBalance = finalCurrentBalance;
                 for (Map.Entry<String, Integer> e : cart.entrySet()) {
@@ -251,13 +251,7 @@ public class ShopFragment extends Fragment {
                         db.redemptionDao().insert(redemption);
                     }
                 }
-                // 一次性扣款
-                com.sister.habits.data.models.CoinTransaction ct =
-                    new com.sister.habits.data.models.CoinTransaction(
-                        "sister", -finalTotalCost, finalCurrentBalance - finalTotalCost,
-                        "shop_spend", "批量兑换: " + cart.size() + "种商品",
-                        syncManager.getDeviceId());
-                db.coinTransactionDao().insert(ct);
+                // v3.0.61：不再立即扣款，扣款时点移至家长审批通过时（防多设备双花）
                 syncManager.onDataChanged();
                 NotificationHelper.createChannel(requireContext());
                 NotificationHelper.notifyRedemption(requireContext(), "批量兑换(" + cart.size() + "件)", "batch");
@@ -293,12 +287,7 @@ public class ShopFragment extends Fragment {
         redemption.deviceId = syncManager.getDeviceId();
         db.redemptionDao().insert(redemption);
         
-        com.sister.habits.data.models.CoinTransaction ct =
-                new com.sister.habits.data.models.CoinTransaction(
-                        "sister", -item.priceCoins, newBalance,
-                        "shop_spend", "兑换: " + item.name,
-                        syncManager.getDeviceId());
-        db.coinTransactionDao().insert(ct);
+        // v3.0.61：不再立即扣款，扣款时点移至家长审批通过时（防多设备双花）
         syncManager.onDataChanged();
         NotificationHelper.createChannel(requireContext());
         NotificationHelper.notifyRedemption(requireContext(), item.name, redemption.id);
