@@ -365,4 +365,145 @@ public class DataMergerTest {
 
         verify(dao).setConfig(remote);
     }
+
+    // ==================== v3.0.63：状态类仲裁测试（Hub权威收敛） ====================
+
+    @Test
+    public void mergeRedemptions_远端已审批且时间更新时同步状态() {
+        RedemptionDao dao = mock(RedemptionDao.class);
+        Redemption local = newRedemption("red-1");
+        local.processedAt = 0;  // 本地未处理
+        when(dao.getAll()).thenReturn(Collections.singletonList(local));
+
+        Redemption remote = newRedemption("red-1");
+        remote.status = "confirmed";
+        remote.processedAt = 5000;
+        remote.note = "已确认 ✅";
+
+        newMerger(null, null, null, dao).mergeRedemptions(Collections.singletonList(remote));
+
+        verify(dao).process("red-1", "confirmed", 5000L, "已确认 ✅");
+    }
+
+    @Test
+    public void mergeRedemptions_远端pending不覆盖本地已审批() {
+        RedemptionDao dao = mock(RedemptionDao.class);
+        Redemption local = newRedemption("red-1");
+        local.status = "confirmed";
+        local.processedAt = 5000;
+        when(dao.getAll()).thenReturn(Collections.singletonList(local));
+
+        Redemption remote = newRedemption("red-1");
+        remote.status = "pending";
+        remote.processedAt = 0;
+
+        newMerger(null, null, null, dao).mergeRedemptions(Collections.singletonList(remote));
+
+        verify(dao, never()).process(anyString(), anyString(), any(Long.class), anyString());
+    }
+
+    @Test
+    public void mergeRedemptions_远端审批时间更旧不覆盖() {
+        RedemptionDao dao = mock(RedemptionDao.class);
+        Redemption local = newRedemption("red-1");
+        local.status = "confirmed";
+        local.processedAt = 9000;
+        when(dao.getAll()).thenReturn(Collections.singletonList(local));
+
+        Redemption remote = newRedemption("red-1");
+        remote.status = "rejected";
+        remote.processedAt = 3000;
+
+        newMerger(null, null, null, dao).mergeRedemptions(Collections.singletonList(remote));
+
+        verify(dao, never()).process(anyString(), anyString(), any(Long.class), anyString());
+    }
+
+    @Test
+    public void mergeTasks_远端已确认且时间更新时同步() {
+        TaskDao dao = mock(TaskDao.class);
+        Task local = newTask("task-1");
+        local.confirmedAt = 0;
+        when(dao.getAll()).thenReturn(Collections.singletonList(local));
+
+        Task remote = newTask("task-1");
+        remote.status = "confirmed";
+        remote.confirmedAt = 7000;
+
+        newMerger(null, null, dao, null).mergeTasks(Collections.singletonList(remote));
+
+        verify(dao).confirmTask("task-1", 7000L);
+    }
+
+    @Test
+    public void mergeTasks_远端pending不覆盖本地已确认() {
+        TaskDao dao = mock(TaskDao.class);
+        Task local = newTask("task-1");
+        local.status = "confirmed";
+        local.confirmedAt = 7000;
+        when(dao.getAll()).thenReturn(Collections.singletonList(local));
+
+        Task remote = newTask("task-1");
+        remote.status = "pending";
+        remote.confirmedAt = 0;
+
+        newMerger(null, null, dao, null).mergeTasks(Collections.singletonList(remote));
+
+        verify(dao, never()).confirmTask(anyString(), any(Long.class));
+    }
+
+    @Test
+    public void mergeCoinEarnings_本地已确认不被远端pending回滚() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.CoinEarningDao dao = mock(com.sister.habits.data.dao.CoinEarningDao.class);
+        when(appDb.coinEarningDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.CoinEarning local = new com.sister.habits.data.models.CoinEarning();
+        local.id = "earn-1";
+        local.sourceId = "task-1";
+        local.sourceType = "task";
+        local.status = "confirmed";
+        local.confirmedAt = 8000;
+        when(dao.getBySourceIdAndType(eq("sister"), eq("task-1"), eq("task"))).thenReturn(local);
+
+        com.sister.habits.data.models.CoinEarning remote = new com.sister.habits.data.models.CoinEarning();
+        remote.id = "earn-1";
+        remote.sourceId = "task-1";
+        remote.sourceType = "task";
+        remote.status = "pending";
+        remote.requestedAt = 6000;
+
+        merger.mergeCoinEarnings(Collections.singletonList(remote));
+
+        verify(dao, never()).insert(remote);
+    }
+
+    @Test
+    public void mergeCoinEarnings_远端已确认同步到本地pending() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.CoinEarningDao dao = mock(com.sister.habits.data.dao.CoinEarningDao.class);
+        when(appDb.coinEarningDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+
+        com.sister.habits.data.models.CoinEarning local = new com.sister.habits.data.models.CoinEarning();
+        local.id = "earn-2";
+        local.sourceId = "task-2";
+        local.sourceType = "task";
+        local.status = "pending";
+        local.requestedAt = 6000;
+        when(dao.getBySourceIdAndType(eq("sister"), eq("task-2"), eq("task"))).thenReturn(local);
+
+        com.sister.habits.data.models.CoinEarning remote = new com.sister.habits.data.models.CoinEarning();
+        remote.id = "earn-2";
+        remote.sourceId = "task-2";
+        remote.sourceType = "task";
+        remote.status = "confirmed";
+        remote.confirmedAt = 9000;
+        remote.requestedAt = 6000;
+
+        merger.mergeCoinEarnings(Collections.singletonList(remote));
+
+        verify(dao).insert(remote);
+    }
 }
