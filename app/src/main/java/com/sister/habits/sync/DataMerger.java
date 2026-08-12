@@ -183,7 +183,9 @@ public class DataMerger {
 
     /**
      * 合并复习进度——以 wordId 唯一索引 REPLACE 合并
-     * 同一单词：以复习进度较深的记录为准（stage 大者胜）
+     * 同一单词：stage 取更深（进度不回退）+ lastReviewedAt 取更晚（今日已学标记不丢失）
+     * 修复：旧逻辑仅 stage 更深才更新——两设备 stage 相同但 A 今天学过 → B 的"今日已学"
+     * 标记不更新 → 新手机可重复学习突破每日限额
      */
     public void mergeWordReviews(java.util.List<com.sister.habits.data.models.WordReview> remoteList) {
         if (remoteList == null || remoteList.isEmpty()) return;
@@ -195,13 +197,22 @@ public class DataMerger {
                 if (local == null) {
                     dao.insert(r); // REPLACE：wordId 唯一，安全
                     added++;
-                } else if (r.stage > local.stage) {
-                    // 远端进度更深 → 更新本地（保留更深的复习阶段）
-                    local.stage = r.stage;
-                    local.nextReviewAt = r.nextReviewAt;
-                    local.lastReviewedAt = r.lastReviewedAt;
-                    local.correctCount = r.correctCount;
-                    local.wrongCount = r.wrongCount;
+                } else if (r.stage > local.stage || r.lastReviewedAt > local.lastReviewedAt) {
+                    // 远端进度更深 或 远端最近见过（当日已学标记更新）→ 合并更新
+                    if (r.stage > local.stage) {
+                        // 进度取更深，避免回退
+                        local.stage = r.stage;
+                        local.nextReviewAt = r.nextReviewAt;
+                        local.correctCount = r.correctCount;
+                        local.wrongCount = r.wrongCount;
+                    } else if (r.nextReviewAt > local.nextReviewAt) {
+                        // stage 相同但远端 nextReviewAt 更晚 → 跟随远端排期
+                        local.nextReviewAt = r.nextReviewAt;
+                    }
+                    // lastReviewedAt 取更晚（这是"今日已学/已见"的唯一判定依据，绝不能丢）
+                    if (r.lastReviewedAt > local.lastReviewedAt) {
+                        local.lastReviewedAt = r.lastReviewedAt;
+                    }
                     dao.update(local);
                     added++;
                 }
