@@ -3,8 +3,11 @@ package com.sister.habits.sync;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +49,7 @@ public class RedemptionApprovalServiceTest {
         // 扣款流水 -80
         verify(coinDao).insert(any(CoinTransaction.class));
         // 状态 → confirmed
-        verify(redDao).process(r.id, "confirmed", any(Long.class), anyString());
+        verify(redDao).process(eq(r.id), eq("confirmed"), any(Long.class), anyString());
     }
 
     @Test
@@ -63,7 +66,7 @@ public class RedemptionApprovalServiceTest {
         // 不产生任何流水（防双花：不引入负积分）
         verify(coinDao, never()).insert(any(CoinTransaction.class));
         // 状态 → rejected，备注含"余额不足"
-        verify(redDao).process(r.id, "rejected", any(Long.class), org.mockito.ArgumentMatchers.contains("余额不足"));
+        verify(redDao).process(eq(r.id), eq("rejected"), any(Long.class), contains("余额不足"));
     }
 
     @Test
@@ -77,7 +80,7 @@ public class RedemptionApprovalServiceTest {
                 RedemptionApprovalService.approve(coinDao, redDao, r, "dev-A");
 
         assertEquals(RedemptionApprovalService.ApproveResult.APPROVED, result);
-        verify(redDao).process(r.id, "confirmed", any(Long.class), anyString());
+        verify(redDao).process(eq(r.id), eq("confirmed"), any(Long.class), anyString());
     }
 
     @Test
@@ -87,7 +90,7 @@ public class RedemptionApprovalServiceTest {
 
         RedemptionApprovalService.reject(redDao, r);
 
-        verify(redDao).process(r.id, "rejected", any(Long.class), anyString());
+        verify(redDao).process(eq(r.id), eq("rejected"), any(Long.class), anyString());
     }
 
     @Test
@@ -103,10 +106,9 @@ public class RedemptionApprovalServiceTest {
 
         assertEquals(2, refunded);
         // 两笔退款流水（+80 / +50），余额恢复
-        verify(coinDao).insert(any(CoinTransaction.class));
-        org.mockito.Mockito.verify(coinDao, org.mockito.Mockito.times(2)).insert(any(CoinTransaction.class));
+        verify(coinDao, times(2)).insert(any(CoinTransaction.class));
         // pending 状态不变（等待家长按新规则审批）
-        org.mockito.Mockito.verify(redDao, never()).process(anyString(), anyString(), any(Long.class), anyString());
+        verify(redDao, never()).process(anyString(), anyString(), any(Long.class), anyString());
     }
 
     @Test
