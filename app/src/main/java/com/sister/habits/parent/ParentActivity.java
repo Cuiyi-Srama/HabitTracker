@@ -1644,6 +1644,7 @@ public class ParentActivity extends AppCompatActivity {
                 .setPositiveButton("保存", (d,w2)->{
                     fc.maxDailyWords = parseInt(etWords,10);
                     fc.maxDailyReview = parseInt(etReview,20);
+                    fc.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.economyConfigDao().setConfig(fc);
                     Toast.makeText(this,"学习限额已更新",Toast.LENGTH_SHORT).show();
                 })
@@ -1674,6 +1675,7 @@ public class ParentActivity extends AppCompatActivity {
                 .setPositiveButton("保存", (d,w2)->{
                     fc.wordLearnReward = parseInt(etLearn,2);
                     fc.reviewPassReward = parseInt(etPass,2);
+                    fc.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.economyConfigDao().setConfig(fc);
                     Toast.makeText(this,"学习奖励已更新",Toast.LENGTH_SHORT).show();
                 })
@@ -3109,6 +3111,7 @@ private void showProfileSettings() {
                     finalConfig.boostHoliday = parseInt(etHoliday, 50);
                     finalConfig.softLimitWeekday = parseInt(etLimitWeekday, 60);
                     finalConfig.softLimitWeekend = parseInt(etLimitWeekend, 100);
+                    finalConfig.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.economyConfigDao().setConfig(finalConfig);
                     Toast.makeText(this, "加速器设置已保存 ✅", Toast.LENGTH_SHORT).show();
                 })
@@ -3173,6 +3176,7 @@ private void showProfileSettings() {
 
                     finalConfig.softLimitWeekday = parseInt(etSoftWeekday, 60);
                     finalConfig.softLimitWeekend = parseInt(etSoftWeekend, 100);
+                    finalConfig.updatedAt = System.currentTimeMillis();  // LWW时间戳（v3.0.62）
                     db.economyConfigDao().setConfig(finalConfig);
                     Toast.makeText(this, "参数已更新 ✅", Toast.LENGTH_SHORT).show();
                 })
