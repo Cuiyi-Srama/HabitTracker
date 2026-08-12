@@ -254,14 +254,33 @@ public class DataMerger {
 
     public void mergeShopItems(List<com.sister.habits.data.models.ShopItem> remoteList) {
         com.sister.habits.data.dao.ShopItemDao dao = appDb.shopItemDao();
-        int added = 0;
+        java.util.Set<String> remoteIds = new java.util.HashSet<>();
+        int added = 0, updated = 0, removed = 0;
         for (com.sister.habits.data.models.ShopItem s : remoteList) {
             try {
+                remoteIds.add(s.id);
                 com.sister.habits.data.models.ShopItem existing = dao.getById(s.id);
-                if (existing == null) { dao.insert(s); added++; }
+                if (existing == null) {
+                    dao.insert(s);
+                    added++;
+                } else if (s.updatedAt > existing.updatedAt) {
+                    // LWW：远端修改时间更新 → 覆盖本地（家长端最后修改者胜）
+                    dao.insert(s);  // REPLACE 策略整体覆盖
+                    updated++;
+                    Log.d(TAG, "🔄 商品LWW更新: " + s.name + " (remote=" + s.updatedAt + " > local=" + existing.updatedAt + ")");
+                }
             } catch (Exception e) { Log.d(TAG, "跳过重复商品"); }
         }
-        Log.d(TAG, "合并商品完成: 新增 " + added);
+        // 远端不存在的商品 = 家长在 Hub 已删除 → 本地改为下架（不物理删除，防误删）
+        java.util.List<com.sister.habits.data.models.ShopItem> localAll = dao.getAll();
+        for (com.sister.habits.data.models.ShopItem local : localAll) {
+            if (!remoteIds.contains(local.id) && local.active) {
+                dao.setActive(local.id, false);
+                removed++;
+                Log.d(TAG, "⬇ 商品远端已删→本地下架: " + local.name);
+            }
+        }
+        Log.d(TAG, "合并商品完成: 新增 " + added + " 更新 " + updated + " 下架 " + removed);
     }
 
     public void mergeWishlistItems(List<com.sister.habits.data.models.WishlistItem> remoteList) {
@@ -290,7 +309,15 @@ public class DataMerger {
         com.sister.habits.data.dao.EconomyConfigDao dao = appDb.economyConfigDao();
         try {
             com.sister.habits.data.models.EconomyConfig local = dao.getConfig();
-            if (local == null) { dao.setConfig(remote); }
+            if (local == null) {
+                // 本地无配置 → 直接采用远端（含旧版本升级场景）
+                dao.setConfig(remote);
+                Log.d(TAG, "经济配置初始化: 采用远端 updatedAt=" + remote.updatedAt);
+            } else if (remote.updatedAt > local.updatedAt) {
+                // LWW：远端修改时间更新 → 覆盖本地（家长端最后修改者胜）
+                dao.setConfig(remote);
+                Log.d(TAG, "🔄 经济配置LWW更新: remote=" + remote.updatedAt + " > local=" + local.updatedAt);
+            }
         } catch (Exception e) {
             Log.d(TAG, "合并经济配置失败");
         }
