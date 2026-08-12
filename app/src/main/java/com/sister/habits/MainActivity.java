@@ -42,6 +42,24 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
+        // v3.0.61：一次性数据迁移 —— 旧版（≤v3.0.60）兑换申请提交时已立即扣款，
+        // 本次改为审批通过时才扣款，故对存量 pending 申请执行退款，保证新旧语义一致
+        // （副作用：顺带修复旧版多设备双花导致的负余额）
+        if (!prefs.getBoolean("v3061_migration_done", false)) {
+            try {
+                com.sister.habits.data.AppDatabase db = com.sister.habits.data.AppDatabase.getInstance(this);
+                String deviceId = com.sister.habits.sync.SyncManager.getInstance(this).getDeviceId();
+                int refunded = com.sister.habits.sync.RedemptionApprovalService.migratePendingRefunds(
+                        db.coinTransactionDao(), db.redemptionDao(), deviceId);
+                if (refunded > 0) {
+                    android.util.Log.i("MainActivity", "v3.0.61迁移: 已退回 " + refunded + " 笔旧兑换扣款");
+                }
+            } catch (Exception e) {
+                android.util.Log.w("MainActivity", "v3.0.61迁移失败", e);
+            }
+            prefs.edit().putBoolean("v3061_migration_done", true).apply();
+        }
+
         // 检查是否从儿童模式强制跳转到家长模式
         boolean forceParent = getIntent().getBooleanExtra("force_parent_mode", false);
         if (forceParent) {
