@@ -32,6 +32,7 @@ import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 import com.sister.habits.sync.SyncManager;
 import com.sister.habits.sync.EarningService;
+import com.sister.habits.sync.RedemptionApprovalService;
 import com.sister.habits.data.models.CoinEarning;
 import com.sister.habits.utils.SoundHelper;
 import com.sister.habits.utils.BindKeyManager;
@@ -931,26 +932,26 @@ public class ParentActivity extends AppCompatActivity {
     }
 
     private void processApproval(Redemption redemption, boolean approved) {
-        String status = approved ? "confirmed" : "rejected";
-        db.redemptionDao().process(redemption.id, status, System.currentTimeMillis(),
-                approved ? "已确认 ✅" : "已拒绝 ❌");
-
-        if (!approved) {
-            // 拒绝时退还金币
-            Integer balance = db.coinTransactionDao().getBalance("sister");
-            int newBalance = (balance != null ? balance : 0) + redemption.coinsCost;
-            com.sister.habits.data.models.CoinTransaction ct =
-                    new com.sister.habits.data.models.CoinTransaction(
-                            "sister", redemption.coinsCost, newBalance,
-                            "parent_adjust", "兑换退回: " + redemption.itemName,
-                            syncManager.getDeviceId());
-            db.coinTransactionDao().insert(ct);
+        if (approved) {
+            // v3.0.61：审批通过 → 权威余额校验 + 扣款（防多设备双花）
+            RedemptionApprovalService.ApproveResult result =
+                    RedemptionApprovalService.approve(db.coinTransactionDao(), db.redemptionDao(),
+                            redemption, syncManager.getDeviceId());
+            syncManager.onDataChanged();
+            refreshAll();
+            if (result == RedemptionApprovalService.ApproveResult.APPROVED) {
+                Toast.makeText(this, "✅ 已确认 " + redemption.itemName, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "❌ 余额不足，已自动拒绝「" + redemption.itemName + "」",
+                        Toast.LENGTH_LONG).show();
+            }
+        } else {
+            // v3.0.61：拒绝不再退款（孩子端提交时已不扣款，扣款在审批通过时）
+            RedemptionApprovalService.reject(db.redemptionDao(), redemption);
+            syncManager.onDataChanged();
+            refreshAll();
+            Toast.makeText(this, "❌ 已拒绝 " + redemption.itemName, Toast.LENGTH_SHORT).show();
         }
-
-        syncManager.onDataChanged();
-        refreshAll();
-        Toast.makeText(this, (approved ? "✅ 已确认" : "❌ 已拒绝") + " " + redemption.itemName,
-                Toast.LENGTH_SHORT).show();
     }
 
     // ===== 任务审批 =====
