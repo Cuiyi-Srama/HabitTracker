@@ -119,6 +119,68 @@ public class DataMergerTest {
         merger.mergeCoinTransactions(Arrays.asList(a, b));
         verify(dao, times(2)).insert(any(CoinTransaction.class));
     }
+    // ==================== WordReview ====================
+    @Test
+    public void mergeWordReviews_stage相同但远端今日已学_更新lastReviewedAt() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.WordReviewDao dao = mock(com.sister.habits.data.dao.WordReviewDao.class);
+        when(appDb.wordReviewDao()).thenReturn(dao);
+        long yesterday = 1000L, today = 2000L;
+        // 本地：stage=1，最后学习=昨天（今日已学标记为空）
+        com.sister.habits.data.models.WordReview local = new com.sister.habits.data.models.WordReview();
+        local.wordId = "w1"; local.bankId = "b1";
+        local.stage = 1;
+        local.lastReviewedAt = yesterday;
+        when(dao.getByWordId("w1", "b1")).thenReturn(local);
+        // 远端：stage=1（相同，旧逻辑会跳过！），但今天学过 → 必须更新今日已学标记
+        com.sister.habits.data.models.WordReview remote = new com.sister.habits.data.models.WordReview();
+        remote.wordId = "w1"; remote.bankId = "b1";
+        remote.stage = 1;
+        remote.lastReviewedAt = today;
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+        merger.mergeWordReviews(java.util.Collections.singletonList(remote));
+        verify(dao, times(1)).update(local);
+        assertTrue("lastReviewedAt 应更新为远端（今日已学标记不丢）", local.lastReviewedAt == today);
+    }
+
+    @Test
+    public void mergeWordReviews_远端stage更深_更新进度() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.WordReviewDao dao = mock(com.sister.habits.data.dao.WordReviewDao.class);
+        when(appDb.wordReviewDao()).thenReturn(dao);
+        com.sister.habits.data.models.WordReview local = new com.sister.habits.data.models.WordReview();
+        local.wordId = "w2"; local.bankId = "b1";
+        local.stage = 1; local.lastReviewedAt = 500L;
+        when(dao.getByWordId("w2", "b1")).thenReturn(local);
+        com.sister.habits.data.models.WordReview remote = new com.sister.habits.data.models.WordReview();
+        remote.wordId = "w2"; remote.bankId = "b1";
+        remote.stage = 3; remote.lastReviewedAt = 600L;
+        remote.nextReviewAt = 9000L; remote.correctCount = 3; remote.wrongCount = 1;
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+        merger.mergeWordReviews(java.util.Collections.singletonList(remote));
+        verify(dao, times(1)).update(local);
+        assertTrue("stage 应取更深", local.stage == 3);
+        assertTrue("lastReviewedAt 应取更晚", local.lastReviewedAt == 600L);
+    }
+
+    @Test
+    public void mergeWordReviews_远端更旧_不更新() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.WordReviewDao dao = mock(com.sister.habits.data.dao.WordReviewDao.class);
+        when(appDb.wordReviewDao()).thenReturn(dao);
+        com.sister.habits.data.models.WordReview local = new com.sister.habits.data.models.WordReview();
+        local.wordId = "w3"; local.bankId = "b1";
+        local.stage = 2; local.lastReviewedAt = 2000L;
+        when(dao.getByWordId("w3", "b1")).thenReturn(local);
+        // 远端 stage 更浅且 lastReviewedAt 更旧 → 不应更新
+        com.sister.habits.data.models.WordReview remote = new com.sister.habits.data.models.WordReview();
+        remote.wordId = "w3"; remote.bankId = "b1";
+        remote.stage = 1; remote.lastReviewedAt = 1000L;
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+        merger.mergeWordReviews(java.util.Collections.singletonList(remote));
+        verify(dao, never()).update(any(com.sister.habits.data.models.WordReview.class));
+    }
+
     private CoinTransaction newCoinTx(String type, int amount, long createdAt, String deviceId) {
         CoinTransaction t = new CoinTransaction();
         t.userId = "sister";
