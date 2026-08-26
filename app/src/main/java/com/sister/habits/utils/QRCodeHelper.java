@@ -35,14 +35,18 @@ public class QRCodeHelper {
     // ==================== 同步配置二维码（v3.0.66：家人扫码零配置） ====================
     private static final String SYNC_QR_PREFIX = "HABITSYNC:";
 
-    /** 生成同步配置QR码内容：HABITSYNC:<服务器URL>#<同步模式> */
+    /** 生成同步配置QR码内容：HABITSYNC:<服务器URL>#<同步模式>#<家庭Token>（v3.0.67 带Token） */
     public static String buildSyncConfigQrContent(Context context) {
         try {
             com.sister.habits.sync.SyncManager sm = com.sister.habits.sync.SyncManager.getInstance(context);
             String url = sm.getHubSync().getServerUrl();
             if (url == null || url.isEmpty()) return null;
             int mode = sm.getSyncMode();
-            return SYNC_QR_PREFIX + url + "#" + mode;
+            String token = sm.getHubSync().getServerToken();
+            if (token == null || token.isEmpty()) {
+                return SYNC_QR_PREFIX + url + "#" + mode;
+            }
+            return SYNC_QR_PREFIX + url + "#" + mode + "#" + token;
         } catch (Exception e) {
             return null;
         }
@@ -58,15 +62,28 @@ public class QRCodeHelper {
         int hash = body.indexOf('#');
         return hash > 0 ? body.substring(0, hash) : body;
     }
-    /** 解析同步模式（默认2=自动） */
+    /** 解析同步模式（默认2=自动）——格式：url#mode[#token] */
     public static int parseSyncConfigMode(String content) {
         if (!isSyncConfigQr(content)) return 2;
         String body = content.substring(SYNC_QR_PREFIX.length());
         int hash = body.indexOf('#');
         if (hash > 0) {
-            try { return Integer.parseInt(body.substring(hash + 1)); } catch (Exception ignored) {}
+            String modePart = body.substring(hash + 1);
+            int hash2 = modePart.indexOf('#');
+            if (hash2 > 0) modePart = modePart.substring(0, hash2);
+            try { return Integer.parseInt(modePart); } catch (Exception ignored) {}
         }
         return 2;
+    }
+    /** 解析家庭Token（可选，第三个字段） */
+    public static String parseSyncConfigToken(String content) {
+        if (!isSyncConfigQr(content)) return "";
+        String body = content.substring(SYNC_QR_PREFIX.length());
+        int hash1 = body.indexOf('#');
+        if (hash1 < 0) return "";
+        String rest = body.substring(hash1 + 1);
+        int hash2 = rest.indexOf('#');
+        return hash2 >= 0 ? rest.substring(hash2 + 1) : "";
     }
 
     /** 生成QR码Bitmap */
