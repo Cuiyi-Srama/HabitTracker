@@ -219,6 +219,22 @@ public class ParentActivity extends AppCompatActivity {
             registerForActivityResult(new ScanContract(), result -> {
                 if (result != null && result.getContents() != null) {
                     String qrContent = result.getContents();
+                    // v3.0.66：同步配置二维码（家人扫码零配置）—— 最高优先级识别
+                    if (com.sister.habits.utils.QRCodeHelper.isSyncConfigQr(qrContent)) {
+                        String serverUrl = com.sister.habits.utils.QRCodeHelper.parseSyncConfigUrl(qrContent);
+                        int mode = com.sister.habits.utils.QRCodeHelper.parseSyncConfigMode(qrContent);
+                        if (serverUrl != null) {
+                            syncManager.getHubSync().setServerConfig(serverUrl, "");
+                            syncManager.setSyncMode(mode);
+                            Toast.makeText(this, "✅ 已自动配置同步服务器\n" + serverUrl + "\n模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
+                            // 立即同步
+                            new Thread(() -> {
+                                boolean ok = syncManager.getHubSync().syncToServer();
+                                runOnUiThread(() -> Toast.makeText(this, ok ? "✅ 服务器同步成功，数据已合并" : "❌ 服务器暂不可达（电脑需开机）", Toast.LENGTH_LONG).show());
+                            }).start();
+                        }
+                        return;
+                    }
                     String deviceKey = com.sister.habits.utils.QRCodeHelper.parseDeviceKey(qrContent);
                     String deviceName = com.sister.habits.utils.QRCodeHelper.parseDeviceName(qrContent);
                     if (deviceKey != null) {
@@ -4147,6 +4163,33 @@ private void showProfileSettings() {
         layout.addView(etUser);
         layout.addView(etPass);
         layout.addView(etSyncPass);
+        // v3.0.66：生成配置二维码（家人扫码零配置）
+        final Button btnSyncQr = new Button(this);
+        btnSyncQr.setText("📲 生成配置二维码（家人扫码自动配置）");
+        btnSyncQr.setTextSize(13);
+        btnSyncQr.setAllCaps(false);
+        btnSyncQr.setOnClickListener(v -> {
+            String qrContent = com.sister.habits.utils.QRCodeHelper.buildSyncConfigQrContent(this);
+            if (qrContent == null) {
+                Toast.makeText(this, "❌ 请先填写并保存服务器地址，再生成二维码", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
+            if (qrBitmap != null) {
+                android.widget.ImageView iv = new android.widget.ImageView(this);
+                iv.setImageBitmap(qrBitmap);
+                iv.setPadding(32, 32, 32, 32);
+                new AlertDialog.Builder(this)
+                        .setTitle("📲 同步配置二维码")
+                        .setMessage("家人设备扫码后自动配置同步（无需手动输入）\n\n服务器: " + syncManager.getHubSync().getServerUrl() + "\n模式: " + syncManager.getSyncModeText())
+                        .setView(iv)
+                        .setPositiveButton("关闭", null)
+                        .show();
+            } else {
+                Toast.makeText(this, "❌ 二维码生成失败", Toast.LENGTH_SHORT).show();
+            }
+        });
+        layout.addView(btnSyncQr);
         new AlertDialog.Builder(this)
                 .setTitle("🔄 同步中心")
                 .setMessage("同步模式三档可选：\n📡 局域网P2P：家庭内设备直连（默认）\n☁️ 中心服务器：对接自建服务器（如电脑23458）\n🔄 自动：按 服务器→局域网→WebDAV 顺序尝试\n\n💡 服务器模式适用于不同网络（学校/外出）也能同步")
