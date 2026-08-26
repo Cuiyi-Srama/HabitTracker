@@ -1455,7 +1455,6 @@ public class ParentActivity extends AppCompatActivity {
     private void showAddShopItemDialog() { shopManager.showAddShopItemDialog(); }
     private void showManageShopDialog() { shopManager.showManageShopDialog(); }
     private void showEditShopItemDialog(ShopItem item) { shopManager.showEditShopItemDialog(item); }
-    private void showAiImportDialog() { shopManager.showAiImportDialog(); }
 
 
     /** ❤️ 打赏支持（低调入口：家长端界面底部小字，点击展示收款码） */
@@ -3751,114 +3750,8 @@ private void showProfileSettings() {
         is.close();
         return baos.toByteArray();
     }
-        /** 🔗 解析商品链接（淘宝/京东/拼多多） */
-    public java.util.Map<String, String> parseProductLink(String link) throws Exception {
-        java.util.Map<String, String> result = new java.util.HashMap<>();
-        String url = link;
-        if (!url.startsWith("http")) url = "https://" + url;
-        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
-        conn.setInstanceFollowRedirects(true);
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36");
-        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml");
-        conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
-        conn.getResponseCode();
-        java.io.InputStream is = conn.getInputStream();
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        byte[] buf = new byte[8192];
-        int n;
-        while ((n = is.read(buf)) > 0) baos.write(buf, 0, n);
-        is.close();
-        String html = new String(baos.toByteArray(), "UTF-8");
-        conn.disconnect();
-
-        // 提取标题：og:title > <title>
-        String title = null;
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:title[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
-        if (m.find()) title = android.text.Html.fromHtml(m.group(1)).toString().trim();
-        if (title == null || title.isEmpty()) {
-            m = java.util.regex.Pattern.compile("<title>([^<]+)</title>").matcher(html);
-            if (m.find()) title = m.group(1).trim();
-        }
-        if (title != null) {
-            title = title.replaceAll("(?i)(-淘宝网|-京东|【.*?】)\\s*$", "").trim();
-        }
-        result.put("title", title != null ? title : "");
-
-        // 提取价格（人民币符号后数字）
-        double price = 0;
-        java.util.regex.Matcher pm2 = java.util.regex.Pattern.compile("(?:¥|\\uFFE5|\\u00a5)([0-9]+(?:\\.[0-9]{1,2})?)").matcher(html);
-        if (pm2.find()) {
-            try { price = Double.parseDouble(pm2.group(1)); } catch (Exception ignored) {}
-        }
-        // 京东常见 JSON 格式 "p":"xx.xx"
-        if (price <= 0) {
-            java.util.regex.Matcher jm = java.util.regex.Pattern.compile("\\\"p\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
-            if (jm.find()) { try { price = Double.parseDouble(jm.group(1)); } catch (Exception ignored) {} }
-        }
-        // 拼多多 JSON: "price": xx.xx
-        if (price <= 0) {
-            java.util.regex.Matcher gm = java.util.regex.Pattern.compile("\\\"price\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
-            if (gm.find()) { try { price = Double.parseDouble(gm.group(1)); } catch (Exception ignored) {} }
-        }
-        result.put("price", String.valueOf(price));
-
-        // 提取图片：og:image
-        String img = null;
-        java.util.regex.Matcher im = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:image[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
-        if (im.find()) img = im.group(1).trim();
-        if (img == null || img.isEmpty()) {
-            im = java.util.regex.Pattern.compile("<meta[^>]*name=[\"']twitter:image[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
-            if (im.find()) img = im.group(1).trim();
-        }
-        if (img != null && img.startsWith("//")) img = "https:" + img;
-        result.put("image", img != null ? img : "");
-        return result;
-    }
-    /** 下载商品图片到App内部存储 */
-    public String downloadShopImage(String imgUrl) throws Exception {
-        String url = imgUrl.startsWith("http") ? imgUrl : "https:" + imgUrl;
-        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36");
-        conn.setRequestProperty("Referer", "https://item.jd.com/");
-        java.io.InputStream is = conn.getInputStream();
-        // 先读尺寸，再按采样率解码，防止超大图OOM
-        android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
-        opts.inJustDecodeBounds = true;
-        android.graphics.BitmapFactory.decodeStream(is, null, opts);
-        is.close();
-        int sample = 1;
-        int maxDim = 1280;
-        while (opts.outWidth / sample > maxDim || opts.outHeight / sample > maxDim) {
-            sample *= 2;
-        }
-        opts.inJustDecodeBounds = false;
-        opts.inSampleSize = sample;
-        java.io.InputStream is2 = conn.getInputStream();
-        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is2, null, opts);
-        is2.close();
-        conn.disconnect();
-        if (bmp == null) return null;
-        String fileName = "shop_link_" + System.currentTimeMillis() + ".jpg";
-        java.io.File dir = new java.io.File(getFilesDir(), "shop_images");
-        dir.mkdirs();
-        java.io.File outFile = new java.io.File(dir, fileName);
-        int w = bmp.getWidth(), h = bmp.getHeight();
-        float scale = Math.max((float) w / maxDim, (float) h / maxDim);
-        if (scale > 1) {
-            android.graphics.Bitmap scaled = android.graphics.Bitmap.createScaledBitmap(bmp, (int)(w/scale), (int)(h/scale), true);
-            if (scaled != bmp) bmp.recycle();
-            bmp = scaled;
-        }
-        java.io.OutputStream os = new java.io.FileOutputStream(outFile);
-        bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 75, os);
-        os.close();
-        bmp.recycle();
-        return outFile.getAbsolutePath();
-    }
+        
+    
 
         private void showBackupListDialog(java.io.File[] backups) {
         String[] names = new String[backups.length];
