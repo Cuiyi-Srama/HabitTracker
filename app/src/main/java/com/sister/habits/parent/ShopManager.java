@@ -413,7 +413,8 @@ public class ShopManager {
                                 java.io.File f = new java.io.File(it.iconUrl);
                                 if (f.exists()) f.delete();
                             }
-                            db.shopItemDao().delete(it);
+                            // v3.0.69：改为标记删除（tombstone）——物理删除会因"不在远端列表"误伤其他设备全部商品下架
+                            db.shopItemDao().markDeleted(it.id, System.currentTimeMillis());
                             ok++;
                         } catch (Exception ignored) {}
                     }
