@@ -1678,8 +1678,6 @@ public class ParentActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("← 返回上级",(d,w2)->showLearningMenu()).show();
     }
-
-    }
     /** 二级菜单：🏪 商城管理 */
 
 
