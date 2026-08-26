@@ -417,7 +417,7 @@ public class HubSync {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_SERVER_URL, null);
     }
-    private String getServerToken() {
+    public String getServerToken() {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_SERVER_TOKEN, "");
     }
