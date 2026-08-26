@@ -224,7 +224,8 @@ public class ParentActivity extends AppCompatActivity {
                         String serverUrl = com.sister.habits.utils.QRCodeHelper.parseSyncConfigUrl(qrContent);
                         int mode = com.sister.habits.utils.QRCodeHelper.parseSyncConfigMode(qrContent);
                         if (serverUrl != null) {
-                            syncManager.getHubSync().setServerConfig(serverUrl, "");
+                            String qrToken = com.sister.habits.utils.QRCodeHelper.parseSyncConfigToken(qrContent);
+                            syncManager.getHubSync().setServerConfig(serverUrl, qrToken);
                             syncManager.setSyncMode(mode);
                             Toast.makeText(this, "✅ 已自动配置同步服务器\n" + serverUrl + "\n模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
                             // 立即同步
@@ -4065,17 +4066,24 @@ private void showProfileSettings() {
                 .show();
     }
     /** 🔐 安全防护管理 */
-    /** ☁️ 远程同步 (WebDAV) 配置与执行 */
+        /** 同步中心：模式/中心服务器/局域网Hub/WebDAV 统一配置（v3.0.67 重构：ScrollView+精简emoji） */
     private void showRemoteSyncDialog() {
         final com.sister.habits.sync.RemoteSync remote = syncManager.getRemoteSync();
-        // ===== 同步模式三档选择（v3.0.64） =====
+        final com.sister.habits.sync.HubSync hub = syncManager.getHubSync();
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(32, 8, 32, 8);
+
+        // ===== 1. 同步模式 =====
+        layout.addView(sectionTitle("同步模式"));
         final android.widget.RadioGroup rgMode = new android.widget.RadioGroup(this);
         final android.widget.RadioButton rbP2p = new android.widget.RadioButton(this);
-        rbP2p.setText("📡 仅局域网P2P（默认，家庭内直连）");
+        rbP2p.setText("仅局域网P2P（默认，家庭内直连）");
         final android.widget.RadioButton rbServer = new android.widget.RadioButton(this);
-        rbServer.setText("☁️ 仅中心服务器（自建 habit-sync-server）");
+        rbServer.setText("仅中心服务器（自建服务器）");
         final android.widget.RadioButton rbAuto = new android.widget.RadioButton(this);
-        rbAuto.setText("🔄 自动（服务器→局域网→WebDAV）");
+        rbAuto.setText("自动（服务器 → 局域网 → WebDAV）");
         int curMode = syncManager.getSyncMode();
         if (curMode == com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY) rbServer.setChecked(true);
         else if (curMode == com.sister.habits.sync.SyncManager.MODE_AUTO) rbAuto.setChecked(true);
@@ -4083,95 +4091,78 @@ private void showProfileSettings() {
         rgMode.addView(rbP2p);
         rgMode.addView(rbServer);
         rgMode.addView(rbAuto);
-        final TextView tvModeHint = new TextView(this);
-        tvModeHint.setTextSize(12);
-        tvModeHint.setTextColor(0xFF666666);
-        tvModeHint.setPadding(4, 0, 4, 6);
-        tvModeHint.setText("当前模式：" + syncManager.getSyncModeText());
+        layout.addView(rgMode);
+        layout.addView(hintText("当前：" + syncManager.getSyncModeText()));
 
-        // ===== 中心服务器配置（v3.0.64） =====
-        final com.sister.habits.sync.HubSync hub = syncManager.getHubSync();
+        // ===== 2. 中心服务器 =====
+        layout.addView(sectionTitle("中心服务器（跨网络同步）"));
         final TextView tvServerStatus = new TextView(this);
         tvServerStatus.setText(hub.getServerStatusText());
-        tvServerStatus.setTextSize(13);
+        tvServerStatus.setTextSize(12);
         tvServerStatus.setTextColor(0xFF1976D2);
-        tvServerStatus.setPadding(4, 8, 4, 4);
+        tvServerStatus.setPadding(4, 2, 4, 4);
+        layout.addView(tvServerStatus);
         final android.widget.EditText etServerUrl = new android.widget.EditText(this);
-        etServerUrl.setHint("服务器地址，如 http://dsh-home-cuiyi.dns.army:23458");
+        etServerUrl.setHint("地址，如 http://100.65.13.111:23458/habit/cuiyi");
         etServerUrl.setSingleLine(true);
         etServerUrl.setTextSize(13);
         String existingUrl = hub.getServerUrl();
         if (existingUrl != null) etServerUrl.setText(existingUrl);
+        layout.addView(etServerUrl);
         final android.widget.EditText etServerToken = new android.widget.EditText(this);
-        etServerToken.setHint("Token（可选，服务器未启用鉴权可留空）");
+        etServerToken.setHint("家庭Token（二维码自动携带，留空则不鉴权）");
         etServerToken.setSingleLine(true);
         etServerToken.setTextSize(13);
         etServerToken.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(etServerToken);
 
-        // ===== 局域网 Hub 配置（v3.0.65 从"启动模式"移入） =====
-        final TextView tvHubTitle = new TextView(this);
-        tvHubTitle.setText("🏠 局域网 Hub（家庭内设备直连）");
-        tvHubTitle.setTextSize(14);
-        tvHubTitle.setTextColor(0xFF333333);
-        tvHubTitle.setPadding(4, 10, 4, 4);
+        // ===== 3. 局域网 Hub =====
+        layout.addView(sectionTitle("局域网 Hub（家庭内直连）"));
         final android.widget.CheckBox cbHubMode = new android.widget.CheckBox(this);
-        cbHubMode.setText("本设备作为 Hub 中枢（其他设备直连本机）");
+        cbHubMode.setText("本设备作为 Hub 中枢");
         cbHubMode.setTextSize(13);
         cbHubMode.setChecked(syncManager.isHubModeEnabled());
+        layout.addView(cbHubMode);
         final android.widget.EditText etHubIp = new android.widget.EditText(this);
-        etHubIp.setHint("手动指定 Hub IP（可选，如192.168.1.100）");
+        etHubIp.setHint("指定 Hub IP（可选）");
         etHubIp.setSingleLine(true);
         etHubIp.setTextSize(13);
+        layout.addView(etHubIp);
 
-        // ===== WebDAV 配置（原功能保留） =====
+        // ===== 4. WebDAV =====
+        layout.addView(sectionTitle("WebDAV 云盘（备用通道）"));
         final android.widget.EditText etUrl = new android.widget.EditText(this);
-        etUrl.setHint("WebDAV服务器地址，如 https://dav.jianguoyun.com/dav/");
+        etUrl.setHint("服务器地址，如 https://dav.jianguoyun.com/dav/");
         etUrl.setSingleLine(true);
         etUrl.setTextSize(13);
+        layout.addView(etUrl);
         final android.widget.EditText etUser = new android.widget.EditText(this);
         etUser.setHint("账号（坚果云/Nextcloud用户名）");
         etUser.setSingleLine(true);
         etUser.setTextSize(13);
+        layout.addView(etUser);
         final android.widget.EditText etPass = new android.widget.EditText(this);
         etPass.setHint("应用密码（非登录密码）");
         etPass.setSingleLine(true);
         etPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         etPass.setTextSize(13);
+        layout.addView(etPass);
         final android.widget.EditText etSyncPass = new android.widget.EditText(this);
-        etSyncPass.setHint("数据加密密码（默认0903，两设备必须一致）");
+        etSyncPass.setHint("数据加密密码（默认0903）");
         etSyncPass.setSingleLine(true);
         etSyncPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         etSyncPass.setTextSize(13);
-        final TextView tvStatus = new TextView(this);
-        tvStatus.setText("☁️ " + remote.getStatusText());
-        tvStatus.setTextSize(13);
-        tvStatus.setTextColor(0xFF1976D2);
-        tvStatus.setPadding(4, 8, 4, 8);
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(32, 8, 32, 8);
-        layout.addView(tvModeHint);
-        layout.addView(rgMode);
-        layout.addView(tvServerStatus);
-        layout.addView(etServerUrl);
-        layout.addView(etServerToken);
-        layout.addView(tvHubTitle);
-        layout.addView(cbHubMode);
-        layout.addView(etHubIp);
-        layout.addView(tvStatus);
-        layout.addView(etUrl);
-        layout.addView(etUser);
-        layout.addView(etPass);
         layout.addView(etSyncPass);
-        // v3.0.66：生成配置二维码（家人扫码零配置）
+
+        // ===== 5. 操作按钮 =====
         final Button btnSyncQr = new Button(this);
-        btnSyncQr.setText("📲 生成配置二维码（家人扫码自动配置）");
+        btnSyncQr.setText("生成配置二维码（家人扫码自动配置）");
         btnSyncQr.setTextSize(13);
         btnSyncQr.setAllCaps(false);
         btnSyncQr.setOnClickListener(v -> {
             String qrContent = com.sister.habits.utils.QRCodeHelper.buildSyncConfigQrContent(this);
             if (qrContent == null) {
-                Toast.makeText(this, "❌ 请先填写并保存服务器地址，再生成二维码", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "请先保存服务器地址，再生成二维码", Toast.LENGTH_SHORT).show();
                 return;
             }
             android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
@@ -4180,53 +4171,79 @@ private void showProfileSettings() {
                 iv.setImageBitmap(qrBitmap);
                 iv.setPadding(32, 32, 32, 32);
                 new AlertDialog.Builder(this)
-                        .setTitle("📲 同步配置二维码")
-                        .setMessage("家人设备扫码后自动配置同步（无需手动输入）\n\n服务器: " + syncManager.getHubSync().getServerUrl() + "\n模式: " + syncManager.getSyncModeText())
+                        .setTitle("同步配置二维码")
+                        .setMessage("家人设备扫码后自动配置（无需手动输入）
+
+服务器: " + syncManager.getHubSync().getServerUrl())
                         .setView(iv)
                         .setPositiveButton("关闭", null)
                         .show();
             } else {
-                Toast.makeText(this, "❌ 二维码生成失败", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "二维码生成失败", Toast.LENGTH_SHORT).show();
             }
         });
         layout.addView(btnSyncQr);
+        final Button btnSyncNow = new Button(this);
+        btnSyncNow.setText("立即同步");
+        btnSyncNow.setTextSize(13);
+        btnSyncNow.setAllCaps(false);
+        btnSyncNow.setOnClickListener(v -> {
+            Toast.makeText(this, "同步中...", Toast.LENGTH_SHORT).show();
+            syncManager.triggerFullSync();
+            Toast.makeText(this, "已触发全同步（服务器/局域网/WebDAV）", Toast.LENGTH_LONG).show();
+        });
+        layout.addView(btnSyncNow);
+
+        scrollView.addView(layout);
         new AlertDialog.Builder(this)
-                .setTitle("🔄 同步中心")
-                .setMessage("同步模式三档可选：\n📡 局域网P2P：家庭内设备直连（默认）\n☁️ 中心服务器：对接自建服务器（如电脑23458）\n🔄 自动：按 服务器→局域网→WebDAV 顺序尝试\n\n💡 服务器模式适用于不同网络（学校/外出）也能同步")
-                .setView(layout)
-                .setPositiveButton("⚡ 保存并立即同步", (d, w) -> {
-                    // 保存同步模式
+                .setTitle("同步中心")
+                .setView(scrollView)
+                .setPositiveButton("保存", (d, w) -> {
                     if (rbServer.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY);
                     else if (rbAuto.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_AUTO);
                     else syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_P2P_ONLY);
-                    // 保存服务器配置
                     String serverUrl = etServerUrl.getText().toString().trim();
                     if (!serverUrl.isEmpty()) {
                         hub.setServerConfig(serverUrl, etServerToken.getText().toString().trim());
                     }
-                    // 保存WebDAV配置
                     String url = etUrl.getText().toString().trim();
                     if (!url.isEmpty()) {
                         remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
                                 etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
                     }
-                    // 保存局域网 Hub 配置（v3.0.65）
                     syncManager.setHubModeEnabled(cbHubMode.isChecked());
                     String hubIp = etHubIp.getText().toString().trim();
                     if (!hubIp.isEmpty()) {
                         syncManager.getHubSync().setManualHubIp(hubIp);
                     }
-                    Toast.makeText(this, "🔄 同步中...请稍候", Toast.LENGTH_SHORT).show();
-                    syncManager.triggerFullSync();
-                    Toast.makeText(this, "✅ 同步设置已保存，模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "已保存，模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
                 })
-                .setNeutralButton("🧹 清除配置", (d, w) -> {
+                .setNeutralButton("清除配置", (d, w) -> {
                     hub.clearServerConfig();
                     remote.clearConfig();
                     Toast.makeText(this, "已清除服务器与WebDAV配置", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("关闭", null)
                 .show();
+    }
+
+    /** 同步中心分区标题（统一风格，不带花哨emoji） */
+    private TextView sectionTitle(String text) {
+        TextView tv = new TextView(this);
+        tv.setText("— " + text + " —");
+        tv.setTextSize(13);
+        tv.setTextColor(0xFF1976D2);
+        tv.setPadding(4, 12, 4, 4);
+        return tv;
+    }
+    /** 灰色提示文字 */
+    private TextView hintText(String text) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(12);
+        tv.setTextColor(0xFF666666);
+        tv.setPadding(4, 0, 4, 4);
+        return tv;
     }
 
     private void showPinManageDialog() {
