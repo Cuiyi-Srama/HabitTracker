@@ -2659,7 +2659,7 @@ public class ParentActivity extends AppCompatActivity {
                 "💰 积分审批（待审积分确认）",
                 "🔑 绑定管理（家长/孩子Key）",
                 "🔐 数据导出备份",
-                "📡 设备同步 & QR配对",
+                "🔄 同步中心",
                 "🔄 检查更新",
                 "🔐 安全防护"
         };
@@ -2676,7 +2676,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 6: showEarningApprovals(); break;
                         case 7: showBindKeyDialog(); break;
                         case 8: showBackupRestoreDialog(); break;
-                        case 9: showSyncDashboardDialog(); break;
+                        case 9: showSyncCenterDialog(); break;
                         case 10: checkForUpdate(); break;
                         case 11: showPinManageDialog(); break;
                     }
@@ -3805,8 +3805,10 @@ private void showProfileSettings() {
                 .show();
     }
 
-    // ==================== 设备同步 & QR配对 ====================
-    private void showSyncDashboardDialog() {
+        // ==================== 同步中心（v3.0.68 重构：单入口一屏三区） ====================
+    private void showSyncCenterDialog() {
+        final com.sister.habits.sync.HubSync hub = syncManager.getHubSync();
+        final com.sister.habits.sync.RemoteSync remote = syncManager.getRemoteSync();
         String deviceKey = com.sister.habits.utils.DeviceIdentity.getDeviceKey(this);
         String shortKey = deviceKey != null && deviceKey.length() >= 19 ? deviceKey.substring(0, 19) : deviceKey;
         String nickname = profile.getNickname();
@@ -3816,274 +3818,85 @@ private void showProfileSettings() {
         scrollView.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                 android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
-        scrollView.setFillViewport(false);
-
-        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
-        container.setOrientation(android.widget.LinearLayout.VERTICAL);
-        container.setPadding(24, 16, 24, 16);
-
-        // ========== 设备信息 ==========
-        TextView tvDeviceInfo = new TextView(this);
-        tvDeviceInfo.setText("👤 " + nickname + " (" + model + ")\n🆔 " + (shortKey != null ? shortKey : "未知"));
-        tvDeviceInfo.setTextSize(14);
-        tvDeviceInfo.setTextColor(0xFF666666);
-        tvDeviceInfo.setPadding(0, 0, 0, 8);
-        container.addView(tvDeviceInfo);
-
-        // ========== 实时状态显示 ==========
-        TextView tvStatus = new TextView(this);
-        tvStatus.setId(android.view.View.generateViewId());
-        tvStatus.setText("⏳ 准备就绪");
-        tvStatus.setTextSize(14);
-        tvStatus.setTextColor(0xFF1976D2);
-        tvStatus.setPadding(8, 8, 8, 8);
-        android.graphics.drawable.GradientDrawable statusBg = new android.graphics.drawable.GradientDrawable();
-        statusBg.setCornerRadius(8);
-        statusBg.setColor(0xFFE3F2FD);
-        tvStatus.setBackground(statusBg);
-        android.widget.LinearLayout.LayoutParams statusLp = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-        statusLp.setMargins(0, 0, 0, 12);
-        tvStatus.setLayoutParams(statusLp);
-        container.addView(tvStatus);
-
-        // ========== 设备列表区 ==========
-        TextView tvSectionLabel = new TextView(this);
-        tvSectionLabel.setId(android.view.View.generateViewId());
-        tvSectionLabel.setText("📱 发现的设备");
-        tvSectionLabel.setTextSize(13);
-        tvSectionLabel.setTextColor(0xFF999999);
-        tvSectionLabel.setPadding(0, 0, 0, 4);
-        container.addView(tvSectionLabel);
-
-        android.widget.LinearLayout deviceListContainer = new android.widget.LinearLayout(this);
-        deviceListContainer.setId(android.view.View.generateViewId());
-        deviceListContainer.setOrientation(android.widget.LinearLayout.VERTICAL);
-        deviceListContainer.setPadding(0, 0, 0, 12);
-        container.addView(deviceListContainer);
-
-        // 初始提示
-        TextView tvEmpty = new TextView(this);
-        tvEmpty.setId(android.view.View.generateViewId());
-        tvEmpty.setText("尚未扫描网络，点击下方「扫描网络」按钮");
-        tvEmpty.setTextSize(13);
-        tvEmpty.setTextColor(0xFFBBBBBB);
-        tvEmpty.setPadding(8, 4, 8, 4);
-        deviceListContainer.addView(tvEmpty);
-
-        // 分隔线
-        View divider = new View(this);
-        divider.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        divider.setBackgroundColor(0xFFE0E0E0);
-        container.addView(divider);
-
-        // ========== 操作按钮（6个） ==========
-        String[] labels = {
-            "📷 扫描设备QR码配对",
-            "📱 展示本机QR码",
-            "🔍 扫描网络设备",
-            "🏠 Hub中枢状态",
-            "🔄 开始同步",
-            "🔄 同步中心设置",
-            "🧹 清除发现缓存"
-        };
-        for (int i = 0; i < labels.length; i++) {
-            final int idx = i;
-            Button btn = new Button(this);
-            // 标签动态更新（Hub状态）
-            String btnText = labels[i];
-            if (i == 3) {
-                boolean hubOn = syncManager.isHubModeEnabled();
-                btnText = "🏠 Hub中枢: " + (hubOn ? "🟢开启" : "🔴关闭") + " (" + syncManager.getHubSync().getServerStatus() + ")";
-            }
-            btn.setText(btnText);
-            btn.setTextSize(14);
-            btn.setAllCaps(false);
-            btn.setTextColor(0xFFFFFFFF);
-            android.graphics.drawable.GradientDrawable btnBg = new android.graphics.drawable.GradientDrawable();
-            btnBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
-            btnBg.setCornerRadius(8);
-            btnBg.setColor(i == 4 ? 0xFF43A047 : 0xFF1976D2);
-            btn.setBackground(btnBg);
-            int dp24 = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
-            int dp48 = (int) (48 * getResources().getDisplayMetrics().density + 0.5f);
-            btn.setPadding(dp24, 0, dp24, 0);
-            btn.setMinHeight(dp48);
-            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            if (i > 0) lp.topMargin = 8;
-            btn.setLayoutParams(lp);
-
-            final Button finalBtn = btn;
-            btn.setOnClickListener(v -> {
-                switch (idx) {
-                    case 0: { // QR扫描配对
-                        com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
-                        options.setDesiredBarcodeFormats(com.journeyapps.barcodescanner.ScanOptions.QR_CODE);
-                        options.setPrompt("扫描对方设备的配对码");
-                        options.setBeepEnabled(true);
-                        options.setOrientationLocked(true);
-                        qrScanLauncher.launch(options);
-                        break;
-                    }
-                    case 1: { // 展示本机QR码
-                        String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(ParentActivity.this);
-                        android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
-                        if (qrBitmap != null) {
-                            android.widget.ImageView iv = new android.widget.ImageView(ParentActivity.this);
-                            iv.setImageBitmap(qrBitmap);
-                            iv.setPadding(32, 32, 32, 32);
-                            new AlertDialog.Builder(ParentActivity.this)
-                                    .setTitle("📱 本机配对码")
-                                    .setMessage("让对方扫描此码进行配对\n昵称: " + nickname + " | 设备: " + model)
-                                    .setView(iv)
-                                    .setPositiveButton("关闭", null)
-                                    .show();
-                        } else {
-                            Toast.makeText(ParentActivity.this, "❌ QR码生成失败", Toast.LENGTH_SHORT).show();
-                        }
-                        break;
-                    }
-                    case 2: { // 扫描网络
-                        tvStatus.setText("🔍 正在扫描局域网...");
-                        tvStatus.setTextColor(0xFF1976D2);
-                        deviceListContainer.removeAllViews();
-                        syncManager.getHubSync().clearDiscoveredHubs();
-                        syncManager.getHubSync().scanNetwork(150, new com.sister.habits.sync.SyncCallback() {
-                            @Override
-                            public void onStatusUpdate(String status) {
-                                runOnUiThread(() -> tvStatus.setText(status));
-                            }
-                            @Override
-                            public void onHubFound(String ip, String deviceId) {
-                                runOnUiThread(() -> {
-                                    // 移除空提示
-                                    if (tvEmpty.getParent() != null) deviceListContainer.removeView(tvEmpty);
-                                    String showId = deviceId != null && deviceId.length() > 8 ? deviceId.substring(0, 8) + "..." : "未知";
-                                    TextView tvHub = new TextView(ParentActivity.this);
-                                    tvHub.setText("🟢 " + ip + " (设备: " + showId + ")");
-                                    tvHub.setTextSize(13);
-                                    tvHub.setTextColor(0xFF333333);
-                                    tvHub.setPadding(8, 4, 8, 4);
-                                    deviceListContainer.addView(tvHub);
-                                });
-                            }
-                            @Override
-                            public void onSyncComplete(boolean success, String message) {
-                                runOnUiThread(() -> {
-                                    tvStatus.setText((success ? "✅ " : "❌ ") + message);
-                                    tvStatus.setTextColor(success ? 0xFF43A047 : 0xFFE53935);
-                                });
-                            }
-                            @Override
-                            public void onScanProgress(int scanned, int total) {
-                                runOnUiThread(() -> tvStatus.setText("🔍 扫描中... " + scanned + "/" + total));
-                            }
-                        });
-                        break;
-                    }
-                    case 3: { // 查看Hub中枢状态（开关移至「同步中心」）
-                        boolean hubOn = syncManager.isHubModeEnabled();
-                        String modeText = syncManager.getSyncModeText();
-                        String serverUrl = syncManager.getHubSync().getServerUrl();
-                        new AlertDialog.Builder(ParentActivity.this)
-                                .setTitle("🏠 同步状态总览")
-                                .setMessage("本机 Hub 中枢: " + (hubOn ? "🟢 开启" : "🔴 关闭") +
-                                        "\n同步模式: " + modeText +
-                                        "\n中心服务器: " + (serverUrl != null ? serverUrl : "未配置") +
-                                        "\n\n💡 修改请到「🔄 同步中心设置」")
-                                .setPositiveButton("知道了", null)
-                                .show();
-                        break;
-                    }
-                    case 4: { // 开始同步
-                        tvStatus.setText("🔄 正在同步...");
-                        tvStatus.setTextColor(0xFF1976D2);
-                        syncManager.getHubSync().syncToHub(new com.sister.habits.sync.SyncCallback() {
-                            @Override
-                            public void onStatusUpdate(String status) {
-                                runOnUiThread(() -> tvStatus.setText(status));
-                            }
-                            @Override
-                            public void onHubFound(String ip, String deviceId) {}
-                            @Override
-                            public void onSyncComplete(boolean success, String message) {
-                                runOnUiThread(() -> {
-                                    if (success) {
-                                        tvStatus.setText("✅ " + message);
-                                        tvStatus.setTextColor(0xFF43A047);
-                                        // 同时尝试局域网P2P同步
-                                        syncManager.triggerLanSync();
-                                    } else {
-                                        tvStatus.setText("❌ " + message);
-                                        tvStatus.setTextColor(0xFFE53935);
-                                        // 降级到局域网P2P
-                                        tvStatus.setText(tvStatus.getText() + "\n📡 尝试局域网P2P同步...");
-                                        syncManager.triggerLanSync();
-                                    }
-                                });
-                            }
-                            @Override
-                            public void onScanProgress(int scanned, int total) {}
-                        });
-                        break;
-                    }
-                    case 5: { // 同步中心设置（模式/服务器/Hub/WebDAV）
-                        showRemoteSyncDialog();
-                        break;
-                    }
-                    case 6: { // 清除发现缓存
-                        syncManager.getHubSync().clearDiscoveredHubs();
-                        deviceListContainer.removeAllViews();
-                        deviceListContainer.addView(tvEmpty);
-                        tvStatus.setText("🧹 已清除缓存，下次将重新扫描");
-                        tvStatus.setTextColor(0xFF666666);
-                        break;
-                    }
-                }
-            });
-            container.addView(btn);
-        }
-
-        // ========== 上次同步信息 ==========
-        TextView tvLastSync = new TextView(this);
-        tvLastSync.setId(android.view.View.generateViewId());
-        tvLastSync.setText("📋 " + syncManager.getHubSync().getLastSyncInfo());
-        tvLastSync.setTextSize(12);
-        tvLastSync.setTextColor(0xFF999999);
-        tvLastSync.setPadding(0, 12, 0, 0);
-        container.addView(tvLastSync);
-
-        scrollView.addView(container);
-
-        new AlertDialog.Builder(this)
-                .setTitle("📡 设备同步中心")
-                .setView(scrollView)
-                .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu())
-                .show();
-    }
-    /** 🔐 安全防护管理 */
-        /** 同步中心：模式/中心服务器/局域网Hub/WebDAV 统一配置（v3.0.67 重构：ScrollView+精简emoji） */
-    private void showRemoteSyncDialog() {
-        final com.sister.habits.sync.RemoteSync remote = syncManager.getRemoteSync();
-        final com.sister.habits.sync.HubSync hub = syncManager.getHubSync();
-        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(32, 8, 32, 8);
 
-        // ===== 1. 同步模式 =====
-        layout.addView(sectionTitle("同步模式"));
+        // ===== 区1：状态总览（只读） =====
+        layout.addView(sectionTitle("状态总览"));
+        String serverUrl = hub.getServerUrl();
+        String serverLine = (serverUrl != null && !serverUrl.isEmpty()) ? serverUrl : "未配置";
+        TextView tvOverview = new TextView(this);
+        tvOverview.setText("同步模式: " + syncManager.getSyncModeText() +
+                "\n中心服务器: " + serverLine +
+                "\n上次同步: " + hub.getLastSyncInfo());
+        tvOverview.setTextSize(13);
+        tvOverview.setTextColor(0xFF333333);
+        tvOverview.setPadding(12, 10, 12, 10);
+        android.graphics.drawable.GradientDrawable ovBg = new android.graphics.drawable.GradientDrawable();
+        ovBg.setCornerRadius(8);
+        ovBg.setColor(0xFFF5F5F5);
+        tvOverview.setBackground(ovBg);
+        android.widget.LinearLayout.LayoutParams ovLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        ovLp.setMargins(0, 0, 0, 2);
+        tvOverview.setLayoutParams(ovLp);
+        layout.addView(tvOverview);
+        TextView tvDevice = new TextView(this);
+        tvDevice.setText("本机: " + nickname + " (" + model + ")" + (shortKey != null ? "  ID " + shortKey : ""));
+        tvDevice.setTextSize(11);
+        tvDevice.setTextColor(0xFF999999);
+        tvDevice.setPadding(4, 0, 4, 10);
+        layout.addView(tvDevice);
+
+        // ===== 区2：家人入网（核心操作） =====
+        layout.addView(sectionTitle("家人入网"));
+        final Button btnFamilyQr = new Button(this);
+        btnFamilyQr.setText("生成配置二维码（家人扫码自动入网）");
+        btnFamilyQr.setTextSize(14);
+        btnFamilyQr.setAllCaps(false);
+        btnFamilyQr.setTextColor(0xFFFFFFFF);
+        android.graphics.drawable.GradientDrawable qrBg = new android.graphics.drawable.GradientDrawable();
+        qrBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        qrBg.setCornerRadius(8);
+        qrBg.setColor(0xFF43A047);
+        btnFamilyQr.setBackground(qrBg);
+        int dp24 = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
+        int dp48 = (int) (48 * getResources().getDisplayMetrics().density + 0.5f);
+        btnFamilyQr.setPadding(dp24, 0, dp24, 0);
+        btnFamilyQr.setMinHeight(dp48);
+        btnFamilyQr.setOnClickListener(v -> showFamilyQrDialog(hub));
+        layout.addView(btnFamilyQr);
+        // 次操作行：展示本机配对码 | 扫码配对
+        android.widget.LinearLayout rowOps = new android.widget.LinearLayout(this);
+        rowOps.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        android.widget.LinearLayout.LayoutParams rowLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        rowLp.topMargin = 8;
+        rowOps.setLayoutParams(rowLp);
+        Button btnMyQr = makeSyncButton("展示本机配对码", 0xFF1976D2);
+        Button btnScanQr = makeSyncButton("扫码配对", 0xFF1976D2);
+        btnMyQr.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnScanQr.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnMyQr.setOnClickListener(v -> showMyQrDialog(nickname, model));
+        btnScanQr.setOnClickListener(v -> launchQrScan());
+        rowOps.addView(btnMyQr);
+        rowOps.addView(btnScanQr);
+        layout.addView(rowOps);
+
+        // ===== 区3：同步配置 =====
+        layout.addView(sectionTitle("同步配置"));
         final android.widget.RadioGroup rgMode = new android.widget.RadioGroup(this);
         final android.widget.RadioButton rbP2p = new android.widget.RadioButton(this);
-        rbP2p.setText("仅局域网P2P（默认，家庭内直连）");
+        rbP2p.setText("仅局域网（家庭内直连）");
         final android.widget.RadioButton rbServer = new android.widget.RadioButton(this);
-        rbServer.setText("仅中心服务器（自建服务器）");
+        rbServer.setText("仅中心服务器（跨网络）");
         final android.widget.RadioButton rbAuto = new android.widget.RadioButton(this);
-        rbAuto.setText("自动（服务器 → 局域网 → WebDAV）");
+        rbAuto.setText("自动（推荐，服务器→局域网）");
         int curMode = syncManager.getSyncMode();
         if (curMode == com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY) rbServer.setChecked(true);
         else if (curMode == com.sister.habits.sync.SyncManager.MODE_AUTO) rbAuto.setChecked(true);
@@ -4092,18 +3905,14 @@ private void showProfileSettings() {
         rgMode.addView(rbServer);
         rgMode.addView(rbAuto);
         layout.addView(rgMode);
-        layout.addView(hintText("当前：" + syncManager.getSyncModeText()));
-
-        // ===== 2. 中心服务器 =====
-        layout.addView(sectionTitle("中心服务器（跨网络同步）"));
         final TextView tvServerStatus = new TextView(this);
         tvServerStatus.setText(hub.getServerStatusText());
         tvServerStatus.setTextSize(12);
         tvServerStatus.setTextColor(0xFF1976D2);
-        tvServerStatus.setPadding(4, 2, 4, 4);
+        tvServerStatus.setPadding(4, 4, 4, 2);
         layout.addView(tvServerStatus);
         final android.widget.EditText etServerUrl = new android.widget.EditText(this);
-        etServerUrl.setHint("地址，如 http://100.65.13.111:23458/habit/cuiyi");
+        etServerUrl.setHint("服务器地址，如 http://100.65.13.111:23458/habit/cuiyi");
         etServerUrl.setSingleLine(true);
         etServerUrl.setTextSize(13);
         String existingUrl = hub.getServerUrl();
@@ -4116,75 +3925,133 @@ private void showProfileSettings() {
         etServerToken.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         layout.addView(etServerToken);
 
-        // ===== 3. 局域网 Hub =====
-        layout.addView(sectionTitle("局域网 Hub（家庭内直连）"));
+        // ▸ 高级选项（默认折叠）
+        final boolean[] advancedOpen = {false};
+        final Button btnAdvanced = new Button(this);
+        btnAdvanced.setText("▸ 高级选项（局域网直连 / WebDAV）");
+        btnAdvanced.setTextSize(13);
+        btnAdvanced.setAllCaps(false);
+        btnAdvanced.setTextColor(0xFF666666);
+        btnAdvanced.setBackgroundColor(0x00000000);
+        btnAdvanced.setPadding(4, 12, 4, 4);
+        final android.widget.LinearLayout advLayout = new android.widget.LinearLayout(this);
+        advLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        advLayout.setVisibility(android.view.View.GONE);
+        btnAdvanced.setOnClickListener(v -> {
+            advancedOpen[0] = !advancedOpen[0];
+            advLayout.setVisibility(advancedOpen[0] ? android.view.View.VISIBLE : android.view.View.GONE);
+            btnAdvanced.setText(advancedOpen[0] ? "▾ 高级选项（点击收起）" : "▸ 高级选项（局域网直连 / WebDAV）");
+        });
+        layout.addView(btnAdvanced);
         final android.widget.CheckBox cbHubMode = new android.widget.CheckBox(this);
-        cbHubMode.setText("本设备作为 Hub 中枢");
+        cbHubMode.setText("本设备作为局域网直连中枢");
         cbHubMode.setTextSize(13);
         cbHubMode.setChecked(syncManager.isHubModeEnabled());
-        layout.addView(cbHubMode);
+        advLayout.addView(cbHubMode);
         final android.widget.EditText etHubIp = new android.widget.EditText(this);
-        etHubIp.setHint("指定 Hub IP（可选）");
+        etHubIp.setHint("指定局域网直连 IP（可选）");
         etHubIp.setSingleLine(true);
         etHubIp.setTextSize(13);
-        layout.addView(etHubIp);
-
-        // ===== 4. WebDAV =====
-        layout.addView(sectionTitle("WebDAV 云盘（备用通道）"));
+        advLayout.addView(etHubIp);
+        advLayout.addView(hintText("WebDAV 备用通道（非必填）"));
         final android.widget.EditText etUrl = new android.widget.EditText(this);
-        etUrl.setHint("服务器地址，如 https://dav.jianguoyun.com/dav/");
+        etUrl.setHint("WebDAV地址，如 https://dav.jianguoyun.com/dav/");
         etUrl.setSingleLine(true);
         etUrl.setTextSize(13);
-        layout.addView(etUrl);
+        advLayout.addView(etUrl);
         final android.widget.EditText etUser = new android.widget.EditText(this);
         etUser.setHint("账号（坚果云/Nextcloud用户名）");
         etUser.setSingleLine(true);
         etUser.setTextSize(13);
-        layout.addView(etUser);
+        advLayout.addView(etUser);
         final android.widget.EditText etPass = new android.widget.EditText(this);
         etPass.setHint("应用密码（非登录密码）");
         etPass.setSingleLine(true);
         etPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         etPass.setTextSize(13);
-        layout.addView(etPass);
+        advLayout.addView(etPass);
         final android.widget.EditText etSyncPass = new android.widget.EditText(this);
         etSyncPass.setHint("数据加密密码（默认0903）");
         etSyncPass.setSingleLine(true);
         etSyncPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         etSyncPass.setTextSize(13);
-        layout.addView(etSyncPass);
-
-        // ===== 5. 操作按钮 =====
-        final Button btnSyncQr = new Button(this);
-        btnSyncQr.setText("生成配置二维码（家人扫码自动配置）");
-        btnSyncQr.setTextSize(13);
-        btnSyncQr.setAllCaps(false);
-        btnSyncQr.setOnClickListener(v -> {
-            String qrContent = com.sister.habits.utils.QRCodeHelper.buildSyncConfigQrContent(this);
-            if (qrContent == null) {
-                Toast.makeText(this, "请先保存服务器地址，再生成二维码", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
-            if (qrBitmap != null) {
-                android.widget.ImageView iv = new android.widget.ImageView(this);
-                iv.setImageBitmap(qrBitmap);
-                iv.setPadding(32, 32, 32, 32);
-                new AlertDialog.Builder(this)
-                        .setTitle("同步配置二维码")
-                        .setMessage("家人设备扫码后自动配置（无需手动输入）\n\n服务器: " + syncManager.getHubSync().getServerUrl())
-                        .setView(iv)
-                        .setPositiveButton("关闭", null)
-                        .show();
-            } else {
-                Toast.makeText(this, "二维码生成失败", Toast.LENGTH_SHORT).show();
-            }
+        advLayout.addView(etSyncPass);
+        android.widget.LinearLayout rowTools = new android.widget.LinearLayout(this);
+        rowTools.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        android.widget.LinearLayout.LayoutParams rowToolsLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        rowToolsLp.topMargin = 8;
+        rowTools.setLayoutParams(rowToolsLp);
+        Button btnScanNet = makeSyncButton("扫描局域网设备", 0xFF78909C);
+        Button btnClearCache = makeSyncButton("清除发现缓存", 0xFF78909C);
+        btnScanNet.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnClearCache.setLayoutParams(new android.widget.LinearLayout.LayoutParams(0,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnScanNet.setOnClickListener(v -> {
+            tvServerStatus.setText("正在扫描局域网...");
+            tvServerStatus.setTextColor(0xFF1976D2);
+            hub.clearDiscoveredHubs();
+            hub.scanNetwork(150, new com.sister.habits.sync.SyncCallback() {
+                @Override
+                public void onStatusUpdate(String status) {
+                    runOnUiThread(() -> tvServerStatus.setText(status));
+                }
+                @Override
+                public void onHubFound(String ip, String deviceId) {
+                    runOnUiThread(() -> tvServerStatus.setText("发现设备: " + ip));
+                }
+                @Override
+                public void onSyncComplete(boolean success, String message) {
+                    runOnUiThread(() -> tvServerStatus.setText((success ? "完成: " : "失败: ") + message));
+                }
+                @Override
+                public void onScanProgress(int scanned, int total) {
+                    runOnUiThread(() -> tvServerStatus.setText("扫描中 " + scanned + "/" + total));
+                }
+            });
         });
-        layout.addView(btnSyncQr);
+        btnClearCache.setOnClickListener(v -> {
+            hub.clearDiscoveredHubs();
+            tvServerStatus.setText("已清除发现缓存");
+            tvServerStatus.setTextColor(0xFF666666);
+        });
+        rowTools.addView(btnScanNet);
+        rowTools.addView(btnClearCache);
+        advLayout.addView(rowTools);
+        Button btnClearAll = new Button(this);
+        btnClearAll.setText("清除服务器与WebDAV配置");
+        btnClearAll.setTextSize(12);
+        btnClearAll.setAllCaps(false);
+        btnClearAll.setTextColor(0xFFE53935);
+        btnClearAll.setBackgroundColor(0x00000000);
+        btnClearAll.setOnClickListener(v -> {
+            hub.clearServerConfig();
+            remote.clearConfig();
+            Toast.makeText(this, "已清除服务器与WebDAV配置", Toast.LENGTH_SHORT).show();
+        });
+        advLayout.addView(btnClearAll);
+        layout.addView(advLayout);
+
+        // ===== 立即同步 =====
         final Button btnSyncNow = new Button(this);
         btnSyncNow.setText("立即同步");
-        btnSyncNow.setTextSize(13);
+        btnSyncNow.setTextSize(14);
         btnSyncNow.setAllCaps(false);
+        btnSyncNow.setTextColor(0xFFFFFFFF);
+        android.graphics.drawable.GradientDrawable syncBg = new android.graphics.drawable.GradientDrawable();
+        syncBg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        syncBg.setCornerRadius(8);
+        syncBg.setColor(0xFF1976D2);
+        btnSyncNow.setBackground(syncBg);
+        btnSyncNow.setPadding(dp24, 0, dp24, 0);
+        btnSyncNow.setMinHeight(dp48);
+        android.widget.LinearLayout.LayoutParams syncLp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        syncLp.topMargin = 12;
+        btnSyncNow.setLayoutParams(syncLp);
         btnSyncNow.setOnClickListener(v -> {
             Toast.makeText(this, "同步中...", Toast.LENGTH_SHORT).show();
             syncManager.triggerFullSync();
@@ -4194,35 +4061,101 @@ private void showProfileSettings() {
 
         scrollView.addView(layout);
         new AlertDialog.Builder(this)
-                .setTitle("同步中心")
+                .setTitle("🔄 同步中心")
                 .setView(scrollView)
                 .setPositiveButton("保存", (d, w) -> {
                     if (rbServer.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY);
                     else if (rbAuto.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_AUTO);
                     else syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_P2P_ONLY);
-                    String serverUrl = etServerUrl.getText().toString().trim();
-                    if (!serverUrl.isEmpty()) {
-                        hub.setServerConfig(serverUrl, etServerToken.getText().toString().trim());
+                    String urlSaved = etServerUrl.getText().toString().trim();
+                    if (!urlSaved.isEmpty()) {
+                        hub.setServerConfig(urlSaved, etServerToken.getText().toString().trim());
                     }
-                    String url = etUrl.getText().toString().trim();
-                    if (!url.isEmpty()) {
-                        remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
+                    String webdavUrl = etUrl.getText().toString().trim();
+                    if (!webdavUrl.isEmpty()) {
+                        remote.setConfig(webdavUrl, etUser.getText().toString(), etPass.getText().toString(),
                                 etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
                     }
                     syncManager.setHubModeEnabled(cbHubMode.isChecked());
                     String hubIp = etHubIp.getText().toString().trim();
                     if (!hubIp.isEmpty()) {
-                        syncManager.getHubSync().setManualHubIp(hubIp);
+                        hub.setManualHubIp(hubIp);
                     }
                     Toast.makeText(this, "已保存，模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
                 })
-                .setNeutralButton("清除配置", (d, w) -> {
-                    hub.clearServerConfig();
-                    remote.clearConfig();
-                    Toast.makeText(this, "已清除服务器与WebDAV配置", Toast.LENGTH_SHORT).show();
-                })
                 .setNegativeButton("关闭", null)
                 .show();
+    }
+
+    /** 同步中心统一样式按钮 */
+    private Button makeSyncButton(String text, int color) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextSize(13);
+        btn.setAllCaps(false);
+        btn.setTextColor(0xFFFFFFFF);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(8);
+        bg.setColor(color);
+        btn.setBackground(bg);
+        int dp16 = (int) (16 * getResources().getDisplayMetrics().density + 0.5f);
+        int dp44 = (int) (44 * getResources().getDisplayMetrics().density + 0.5f);
+        btn.setPadding(dp16, 0, dp16, 0);
+        btn.setMinHeight(dp44);
+        return btn;
+    }
+
+    /** 生成配置二维码（家人扫码自动入网） */
+    private void showFamilyQrDialog(final com.sister.habits.sync.HubSync hub) {
+        String qrContent = com.sister.habits.utils.QRCodeHelper.buildSyncConfigQrContent(this);
+        if (qrContent == null) {
+            Toast.makeText(this, "请先保存服务器地址，再生成二维码", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
+        if (qrBitmap != null) {
+            android.widget.ImageView iv = new android.widget.ImageView(this);
+            iv.setImageBitmap(qrBitmap);
+            iv.setPadding(32, 32, 32, 32);
+            new AlertDialog.Builder(this)
+                    .setTitle("同步配置二维码")
+                    .setMessage("家人设备扫码后自动配置（无需手动输入）\n\n服务器: " + hub.getServerUrl())
+                    .setView(iv)
+                    .setPositiveButton("关闭", null)
+                    .show();
+        } else {
+            Toast.makeText(this, "二维码生成失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** 展示本机配对码 */
+    private void showMyQrDialog(String nickname, String model) {
+        String qrContent = com.sister.habits.utils.QRCodeHelper.buildDeviceQrContent(this);
+        android.graphics.Bitmap qrBitmap = com.sister.habits.utils.QRCodeHelper.generateQrBitmap(qrContent);
+        if (qrBitmap != null) {
+            android.widget.ImageView iv = new android.widget.ImageView(this);
+            iv.setImageBitmap(qrBitmap);
+            iv.setPadding(32, 32, 32, 32);
+            new AlertDialog.Builder(this)
+                    .setTitle("本机配对码")
+                    .setMessage("让对方扫描此码进行配对\n昵称: " + nickname + " | 设备: " + model)
+                    .setView(iv)
+                    .setPositiveButton("关闭", null)
+                    .show();
+        } else {
+            Toast.makeText(this, "二维码生成失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** 启动扫码配对 */
+    private void launchQrScan() {
+        com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
+        options.setDesiredBarcodeFormats(com.journeyapps.barcodescanner.ScanOptions.QR_CODE);
+        options.setPrompt("扫描对方设备的配对码");
+        options.setBeepEnabled(true);
+        options.setOrientationLocked(true);
+        qrScanLauncher.launch(options);
     }
 
     /** 同步中心分区标题（统一风格，不带花哨emoji） */
