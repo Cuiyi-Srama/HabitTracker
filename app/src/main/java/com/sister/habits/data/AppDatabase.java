@@ -30,7 +30,7 @@ import com.sister.habits.data.models.*;
         LotteryRecord.class,
         SchoolReward.class
     },
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -330,6 +330,13 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_16_17 = new Migration(16, 17) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // v3.0.69：商品删除标记（tombstone）——删除改为标记删除，同步传播下架
+            database.execSQL("ALTER TABLE shop_items ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0");
+        }
+    };
     /**
      * 获取单例
      */
@@ -341,7 +348,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             "habit_tracker.db")
                             .allowMainThreadQueries()
                             .fallbackToDestructiveMigration()
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
                     .build();
                 }
             }
