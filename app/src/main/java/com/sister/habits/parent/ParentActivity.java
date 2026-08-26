@@ -1455,6 +1455,9 @@ public class ParentActivity extends AppCompatActivity {
     private void showAddShopItemDialog() { shopManager.showAddShopItemDialog(); }
     private void showManageShopDialog() { shopManager.showManageShopDialog(); }
     private void showEditShopItemDialog(ShopItem item) { shopManager.showEditShopItemDialog(item); }
+    private void showAiImportDialog() { shopManager.showAiImportDialog(); }
+
+
     /** ❤️ 打赏支持（低调入口：家长端界面底部小字，点击展示收款码） */
     private void showDonateDialog() {
         soundHelper.playClickSound();
@@ -1677,6 +1680,22 @@ public class ParentActivity extends AppCompatActivity {
                     Toast.makeText(this,"学习奖励已更新",Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("← 返回上级",(d,w2)->showLearningMenu()).show();
+    }
+
+    /** 📥 AI批量导入（读取AI生成的 items.json + 图片） */
+
+    /** 递归删除（清理导入目录） */
+
+
+    /** 读取文件为UTF-8字符串（兼容API24） */
+    private String readFileAsString(java.io.File f) throws Exception {
+        java.io.FileInputStream fis = new java.io.FileInputStream(f);
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = fis.read(buf)) > 0) bos.write(buf, 0, n);
+        fis.close();
+        return new String(bos.toByteArray(), "UTF-8");
     }
     /** 二级菜单：🏪 商城管理 */
 
@@ -3732,6 +3751,115 @@ private void showProfileSettings() {
         is.close();
         return baos.toByteArray();
     }
+        /** 🔗 解析商品链接（淘宝/京东/拼多多） */
+    public java.util.Map<String, String> parseProductLink(String link) throws Exception {
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        String url = link;
+        if (!url.startsWith("http")) url = "https://" + url;
+        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        conn.setInstanceFollowRedirects(true);
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36");
+        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml");
+        conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9");
+        conn.getResponseCode();
+        java.io.InputStream is = conn.getInputStream();
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        int n;
+        while ((n = is.read(buf)) > 0) baos.write(buf, 0, n);
+        is.close();
+        String html = new String(baos.toByteArray(), "UTF-8");
+        conn.disconnect();
+
+        // 提取标题：og:title > <title>
+        String title = null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:title[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
+        if (m.find()) title = android.text.Html.fromHtml(m.group(1)).toString().trim();
+        if (title == null || title.isEmpty()) {
+            m = java.util.regex.Pattern.compile("<title>([^<]+)</title>").matcher(html);
+            if (m.find()) title = m.group(1).trim();
+        }
+        if (title != null) {
+            title = title.replaceAll("(?i)(-淘宝网|-京东|【.*?】)\\s*$", "").trim();
+        }
+        result.put("title", title != null ? title : "");
+
+        // 提取价格（人民币符号后数字）
+        double price = 0;
+        java.util.regex.Matcher pm2 = java.util.regex.Pattern.compile("(?:¥|\\uFFE5|\\u00a5)([0-9]+(?:\\.[0-9]{1,2})?)").matcher(html);
+        if (pm2.find()) {
+            try { price = Double.parseDouble(pm2.group(1)); } catch (Exception ignored) {}
+        }
+        // 京东常见 JSON 格式 "p":"xx.xx"
+        if (price <= 0) {
+            java.util.regex.Matcher jm = java.util.regex.Pattern.compile("\\\"p\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
+            if (jm.find()) { try { price = Double.parseDouble(jm.group(1)); } catch (Exception ignored) {} }
+        }
+        // 拼多多 JSON: "price": xx.xx
+        if (price <= 0) {
+            java.util.regex.Matcher gm = java.util.regex.Pattern.compile("\\\"price\\\"\\s*[:=]\\s*\\\"?([0-9]+(?:\\.[0-9]{1,2})?)\\\"?").matcher(html);
+            if (gm.find()) { try { price = Double.parseDouble(gm.group(1)); } catch (Exception ignored) {} }
+        }
+        result.put("price", String.valueOf(price));
+
+        // 提取图片：og:image
+        String img = null;
+        java.util.regex.Matcher im = java.util.regex.Pattern.compile("<meta[^>]*property=[\"']og:image[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
+        if (im.find()) img = im.group(1).trim();
+        if (img == null || img.isEmpty()) {
+            im = java.util.regex.Pattern.compile("<meta[^>]*name=[\"']twitter:image[\"'][^>]*content=[\"']([^\"']+)").matcher(html);
+            if (im.find()) img = im.group(1).trim();
+        }
+        if (img != null && img.startsWith("//")) img = "https:" + img;
+        result.put("image", img != null ? img : "");
+        return result;
+    }
+    /** 下载商品图片到App内部存储 */
+    public String downloadShopImage(String imgUrl) throws Exception {
+        String url = imgUrl.startsWith("http") ? imgUrl : "https:" + imgUrl;
+        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36");
+        conn.setRequestProperty("Referer", "https://item.jd.com/");
+        java.io.InputStream is = conn.getInputStream();
+        // 先读尺寸，再按采样率解码，防止超大图OOM
+        android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        android.graphics.BitmapFactory.decodeStream(is, null, opts);
+        is.close();
+        int sample = 1;
+        int maxDim = 1280;
+        while (opts.outWidth / sample > maxDim || opts.outHeight / sample > maxDim) {
+            sample *= 2;
+        }
+        opts.inJustDecodeBounds = false;
+        opts.inSampleSize = sample;
+        java.io.InputStream is2 = conn.getInputStream();
+        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is2, null, opts);
+        is2.close();
+        conn.disconnect();
+        if (bmp == null) return null;
+        String fileName = "shop_link_" + System.currentTimeMillis() + ".jpg";
+        java.io.File dir = new java.io.File(getFilesDir(), "shop_images");
+        dir.mkdirs();
+        java.io.File outFile = new java.io.File(dir, fileName);
+        int w = bmp.getWidth(), h = bmp.getHeight();
+        float scale = Math.max((float) w / maxDim, (float) h / maxDim);
+        if (scale > 1) {
+            android.graphics.Bitmap scaled = android.graphics.Bitmap.createScaledBitmap(bmp, (int)(w/scale), (int)(h/scale), true);
+            if (scaled != bmp) bmp.recycle();
+            bmp = scaled;
+        }
+        java.io.OutputStream os = new java.io.FileOutputStream(outFile);
+        bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 75, os);
+        os.close();
+        bmp.recycle();
+        return outFile.getAbsolutePath();
+    }
+
         private void showBackupListDialog(java.io.File[] backups) {
         String[] names = new String[backups.length];
         for (int i = 0; i < backups.length; i++) {
@@ -4049,6 +4177,47 @@ private void showProfileSettings() {
     /** ☁️ 远程同步 (WebDAV) 配置与执行 */
     private void showRemoteSyncDialog() {
         final com.sister.habits.sync.RemoteSync remote = syncManager.getRemoteSync();
+        // ===== 同步模式三档选择（v3.0.64） =====
+        final android.widget.RadioGroup rgMode = new android.widget.RadioGroup(this);
+        final android.widget.RadioButton rbP2p = new android.widget.RadioButton(this);
+        rbP2p.setText("📡 仅局域网P2P（默认，家庭内直连）");
+        final android.widget.RadioButton rbServer = new android.widget.RadioButton(this);
+        rbServer.setText("☁️ 仅中心服务器（自建 habit-sync-server）");
+        final android.widget.RadioButton rbAuto = new android.widget.RadioButton(this);
+        rbAuto.setText("🔄 自动（服务器→局域网→WebDAV）");
+        int curMode = syncManager.getSyncMode();
+        if (curMode == com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY) rbServer.setChecked(true);
+        else if (curMode == com.sister.habits.sync.SyncManager.MODE_AUTO) rbAuto.setChecked(true);
+        else rbP2p.setChecked(true);
+        rgMode.addView(rbP2p);
+        rgMode.addView(rbServer);
+        rgMode.addView(rbAuto);
+        final TextView tvModeHint = new TextView(this);
+        tvModeHint.setTextSize(12);
+        tvModeHint.setTextColor(0xFF666666);
+        tvModeHint.setPadding(4, 0, 4, 6);
+        tvModeHint.setText("当前模式：" + syncManager.getSyncModeText());
+
+        // ===== 中心服务器配置（v3.0.64） =====
+        final com.sister.habits.sync.HubSync hub = syncManager.getHubSync();
+        final TextView tvServerStatus = new TextView(this);
+        tvServerStatus.setText(hub.getServerStatusText());
+        tvServerStatus.setTextSize(13);
+        tvServerStatus.setTextColor(0xFF1976D2);
+        tvServerStatus.setPadding(4, 8, 4, 4);
+        final android.widget.EditText etServerUrl = new android.widget.EditText(this);
+        etServerUrl.setHint("服务器地址，如 http://dsh-home-cuiyi.dns.army:23458");
+        etServerUrl.setSingleLine(true);
+        etServerUrl.setTextSize(13);
+        String existingUrl = hub.getServerUrl();
+        if (existingUrl != null) etServerUrl.setText(existingUrl);
+        final android.widget.EditText etServerToken = new android.widget.EditText(this);
+        etServerToken.setHint("Token（可选，服务器未启用鉴权可留空）");
+        etServerToken.setSingleLine(true);
+        etServerToken.setTextSize(13);
+        etServerToken.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+        // ===== WebDAV 配置（原功能保留） =====
         final android.widget.EditText etUrl = new android.widget.EditText(this);
         etUrl.setHint("WebDAV服务器地址，如 https://dav.jianguoyun.com/dav/");
         etUrl.setSingleLine(true);
@@ -4067,59 +4236,52 @@ private void showProfileSettings() {
         etSyncPass.setSingleLine(true);
         etSyncPass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         etSyncPass.setTextSize(13);
-
         final TextView tvStatus = new TextView(this);
         tvStatus.setText("☁️ " + remote.getStatusText());
         tvStatus.setTextSize(13);
         tvStatus.setTextColor(0xFF1976D2);
         tvStatus.setPadding(4, 8, 4, 8);
-
         android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(32, 8, 32, 8);
+        layout.addView(tvModeHint);
+        layout.addView(rgMode);
+        layout.addView(tvServerStatus);
+        layout.addView(etServerUrl);
+        layout.addView(etServerToken);
         layout.addView(tvStatus);
         layout.addView(etUrl);
         layout.addView(etUser);
         layout.addView(etPass);
         layout.addView(etSyncPass);
-
         new AlertDialog.Builder(this)
-                .setTitle("☁️ 远程同步 (WebDAV)")
-                .setMessage("通过WebDAV云盘（坚果云免费版即可）加密同步全部数据\n\n💡 获取方式：坚果云→账户信息→安全选项→添加应用密码\n\n🔐 同步内容：全部数据+家长Key绑定（新设备同步后自动恢复）")
+                .setTitle("🔄 远程同步设置")
+                .setMessage("同步模式三档可选：\n📡 局域网P2P：家庭内设备直连（默认）\n☁️ 中心服务器：对接自建服务器（如电脑23458）\n🔄 自动：按 服务器→局域网→WebDAV 顺序尝试\n\n💡 服务器模式适用于不同网络（学校/外出）也能同步")
                 .setView(layout)
                 .setPositiveButton("⚡ 保存并立即同步", (d, w) -> {
-                    String url = etUrl.getText().toString().trim();
-                    if (url.isEmpty()) {
-                        Toast.makeText(this, "❌ 请输入服务器地址", Toast.LENGTH_SHORT).show();
-                        return;
+                    // 保存同步模式
+                    if (rbServer.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_SERVER_ONLY);
+                    else if (rbAuto.isChecked()) syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_AUTO);
+                    else syncManager.setSyncMode(com.sister.habits.sync.SyncManager.MODE_P2P_ONLY);
+                    // 保存服务器配置
+                    String serverUrl = etServerUrl.getText().toString().trim();
+                    if (!serverUrl.isEmpty()) {
+                        hub.setServerConfig(serverUrl, etServerToken.getText().toString().trim());
                     }
-                    remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
-                            etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
-                    Toast.makeText(this, "☁️ 同步中...请稍候", Toast.LENGTH_SHORT).show();
-                    remote.syncAll(new com.sister.habits.sync.SyncCallback() {
-                        @Override
-                        public void onStatusUpdate(String status) {
-                            runOnUiThread(() -> Toast.makeText(ParentActivity.this, status, Toast.LENGTH_LONG).show());
-                        }
-                        @Override
-                        public void onHubFound(String ip, String deviceId) {}
-                        @Override
-                        public void onSyncComplete(boolean success, String message) {
-                            runOnUiThread(() -> {
-                                if (success) {
-                                    Toast.makeText(ParentActivity.this, "✅ " + message, Toast.LENGTH_LONG).show();
-                                } else {
-                                    Toast.makeText(ParentActivity.this, "❌ " + message, Toast.LENGTH_LONG).show();
-                                }
-                            });
-                        }
-                        @Override
-                        public void onScanProgress(int scanned, int total) {}
-                    });
+                    // 保存WebDAV配置
+                    String url = etUrl.getText().toString().trim();
+                    if (!url.isEmpty()) {
+                        remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
+                                etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
+                    }
+                    Toast.makeText(this, "🔄 同步中...请稍候", Toast.LENGTH_SHORT).show();
+                    syncManager.triggerFullSync();
+                    Toast.makeText(this, "✅ 同步设置已保存，模式: " + syncManager.getSyncModeText(), Toast.LENGTH_LONG).show();
                 })
                 .setNeutralButton("🧹 清除配置", (d, w) -> {
+                    hub.clearServerConfig();
                     remote.clearConfig();
-                    Toast.makeText(this, "已清除WebDAV配置", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "已清除服务器与WebDAV配置", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("关闭", null)
                 .show();
