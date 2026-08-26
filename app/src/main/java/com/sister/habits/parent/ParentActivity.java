@@ -2759,12 +2759,13 @@ public class ParentActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 // v3.0.68修复：动态读取当前版本（此前硬编码 v1.5.0 导致永远提示更新）
-                final String currentVer;
+                String verTmp = "v1.5.0";
                 try {
-                    currentVer = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                    verTmp = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-                    currentVer = "v1.5.0";
+                    // 保留默认值
                 }
+                final String currentVer = verTmp;
                 java.net.URL url = new java.net.URL("https://api.github.com/repos/Cuiyi-Srama/HabitTracker/releases/latest");
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(10000);
