@@ -2758,11 +2758,18 @@ public class ParentActivity extends AppCompatActivity {
     private void checkForUpdate() {
         new Thread(() -> {
             try {
+                // v3.0.68修复：动态读取当前版本（此前硬编码 v1.5.0 导致永远提示更新）
+                String currentVer;
+                try {
+                    currentVer = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+                    currentVer = "v1.5.0";
+                }
                 java.net.URL url = new java.net.URL("https://api.github.com/repos/Cuiyi-Srama/HabitTracker/releases/latest");
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(10000);
-                conn.setRequestProperty("User-Agent", "HabitTracker/1.5.0");
+                conn.setRequestProperty("User-Agent", "HabitTracker/" + currentVer);
                 conn.setInstanceFollowRedirects(true);
                 java.io.InputStream is = conn.getInputStream();
                 java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
@@ -2772,7 +2779,6 @@ public class ParentActivity extends AppCompatActivity {
                 @SuppressWarnings("unchecked")
                 java.util.Map<String, Object> release = (java.util.Map<String, Object>) gson.fromJson(json, java.util.Map.class);
                 String latestTag = (String) release.get("tag_name");
-                String currentVer = "v1.5.0";
                 java.util.List<Object> assets = (java.util.List<Object>) release.get("assets");
                 String apkUrl = null;
                 if (assets != null) {
