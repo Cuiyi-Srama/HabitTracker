@@ -2759,7 +2759,7 @@ public class ParentActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 // v3.0.68修复：动态读取当前版本（此前硬编码 v1.5.0 导致永远提示更新）
-                String currentVer;
+                final String currentVer;
                 try {
                     currentVer = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (android.content.pm.PackageManager.NameNotFoundException e) {
