@@ -296,20 +296,35 @@ public class DataMergerTest {
     }
 
     @Test
-    public void mergeShopItems_远端已删除商品本地下架() {
+    public void mergeShopItems_远端删除标记商品本地下架() {
         com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
         com.sister.habits.data.dao.ShopItemDao dao = mock(com.sister.habits.data.dao.ShopItemDao.class);
         when(appDb.shopItemDao()).thenReturn(dao);
         DataMerger merger = new DataMerger(appDb, null, null, null, null);
-
         com.sister.habits.data.models.ShopItem local = new com.sister.habits.data.models.ShopItem();
         local.active = true;
-        when(dao.getAll()).thenReturn(java.util.Collections.singletonList(local));
-
-        // 远端列表不含该商品
-        merger.mergeShopItems(java.util.Collections.<com.sister.habits.data.models.ShopItem>emptyList());
-
+        local.deleted = 0;
+        when(dao.getById(local.id)).thenReturn(local);
+        // 远端带 tombstone（deleted=1）→ 本地下架
+        com.sister.habits.data.models.ShopItem remote = new com.sister.habits.data.models.ShopItem();
+        remote.id = local.id;
+        remote.deleted = 1;
+        remote.updatedAt = 9999;
+        merger.mergeShopItems(java.util.Collections.singletonList(remote));
         verify(dao).setActive(local.id, false);
+    }
+
+    @Test
+    public void mergeShopItems_远端空列表不下架本地商品() {
+        com.sister.habits.data.AppDatabase appDb = mock(com.sister.habits.data.AppDatabase.class);
+        com.sister.habits.data.dao.ShopItemDao dao = mock(com.sister.habits.data.dao.ShopItemDao.class);
+        when(appDb.shopItemDao()).thenReturn(dao);
+        DataMerger merger = new DataMerger(appDb, null, null, null, null);
+        com.sister.habits.data.models.ShopItem local = new com.sister.habits.data.models.ShopItem();
+        local.active = true;
+        // 远端空列表（服务器首同步/部分数据）→ 绝不误下架
+        merger.mergeShopItems(java.util.Collections.<com.sister.habits.data.models.ShopItem>emptyList());
+        verify(dao, never()).setActive(local.id, false);
     }
 
     @Test
