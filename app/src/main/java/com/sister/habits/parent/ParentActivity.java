@@ -4172,9 +4172,7 @@ private void showProfileSettings() {
                 iv.setPadding(32, 32, 32, 32);
                 new AlertDialog.Builder(this)
                         .setTitle("同步配置二维码")
-                        .setMessage("家人设备扫码后自动配置（无需手动输入）
-
-服务器: " + syncManager.getHubSync().getServerUrl())
+                        .setMessage("家人设备扫码后自动配置（无需手动输入）\n\n服务器: " + syncManager.getHubSync().getServerUrl())
                         .setView(iv)
                         .setPositiveButton("关闭", null)
                         .show();
