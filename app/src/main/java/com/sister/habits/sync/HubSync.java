@@ -25,10 +25,12 @@ import fi.iki.elonen.NanoHTTPD.Response;
  * 家庭中枢（Hub）同步模块
  */
 public class HubSync {
-
     private static final String TAG = "HubSync";
     private static final int HUB_PORT = 18081;
-
+    // ==================== 中心服务器模式配置（v3.0.64） ====================
+    private static final String PREFS = "hub_sync_prefs";
+    private static final String KEY_SERVER_URL = "server_url";
+    private static final String KEY_SERVER_TOKEN = "server_token";
     private final Context context;
     private final AppDatabase db;
     private final DataMerger merger;
@@ -304,16 +306,31 @@ public class HubSync {
     public boolean syncToHub() {
         String hubIp = discoverHub();
         if (hubIp == null) return false;
+        boolean ok = doHubSync("http://" + hubIp + ":" + HUB_PORT, null);
+        if (ok) {
+            Log.d(TAG, "✅ Hub同步成功: " + hubIp);
+        } else {
+            cachedHubIp = null;
+        }
+        return ok;
+    }
 
+    /**
+     * Hub/服务器共用同步核心（v3.0.64 抽取）：
+     * POST {baseUrl}/hub/sync → 解析响应 → 合并到本地 → 标记已同步
+     */
+    private boolean doHubSync(String baseUrl, String token) {
         try {
-            // 上传本地未同步数据
-            URL syncUrl = new URL("http://" + hubIp + ":" + HUB_PORT + "/hub/sync");
+            String syncUrlStr = baseUrl.endsWith("/") ? baseUrl + "hub/sync" : baseUrl + "/hub/sync";
+            URL syncUrl = new URL(syncUrlStr);
             HttpURLConnection conn = (HttpURLConnection) syncUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
             conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-
+            conn.setReadTimeout(15000);
+            if (token != null && !token.isEmpty()) {
+                conn.setRequestProperty("X-Hub-Token", token);
+            }
             String localData = buildSyncPayload();
             // 同 LanSync：显式 Content-Type + Content-Length，规避 NanoHTTPD 解析坑
             byte[] postBytes = localData.getBytes("UTF-8");
@@ -323,7 +340,6 @@ public class HubSync {
             os.write(postBytes);
             os.flush();
             os.close();
-
             // 读取Hub返回的数据并合并
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             StringBuilder response = new StringBuilder();
@@ -331,12 +347,11 @@ public class HubSync {
             while ((line = reader.readLine()) != null) response.append(line);
             reader.close();
             conn.disconnect();
-
             // 解析并合并Hub的数据
             SyncPayload hubData = gson.fromJson(response.toString(), SyncPayload.class);
             if (hubData != null) {
                 if (hubData.shopImages != null && !hubData.shopImages.isEmpty())
-                    handleShopImages(hubData.shopImages, hubIp);
+                    handleShopImages(hubData.shopImages, extractHost(baseUrl));
                 if (hubData.wordReviews != null) merger.mergeWordReviews(hubData.wordReviews);
                 if (hubData.checkIns != null) merger.mergeCheckIns(hubData.checkIns);
                 if (hubData.coins != null) merger.mergeCoinTransactions(hubData.coins);
@@ -350,28 +365,86 @@ public class HubSync {
                 if (hubData.economyConfig != null) merger.mergeEconomyConfig(hubData.economyConfig);
                 if (hubData.gateConfig != null) merger.mergeGateConfig(hubData.gateConfig);
                 if (hubData.dailyGates != null) merger.mergeDailyGates(hubData.dailyGates);
-
                 // 标记这些数据为已同步
                 if (hubData.checkIns != null)
                     for (CheckIn c : hubData.checkIns) db.checkInDao().markSynced(c.id);
                 if (hubData.coins != null)
                     for (CoinTransaction t : hubData.coins) db.coinTransactionDao().markSynced(t.id);
             }
-
-            Log.d(TAG, "✅ Hub同步成功: " + hubIp);
             lastSyncTime = System.currentTimeMillis();
             lastSyncSuccess = true;
-            lastSyncMessage = "来自 " + hubIp;
+            lastSyncMessage = "来自 " + baseUrl;
             return true;
-
         } catch (Exception e) {
             Log.d(TAG, "Hub同步失败: " + e.getMessage());
-            cachedHubIp = null;
             lastSyncTime = System.currentTimeMillis();
             lastSyncSuccess = false;
             lastSyncMessage = e.getMessage();
             return false;
         }
+    }
+
+    /** 从 URL 提取 host:port（用于图片流式拉取的来源地址，必须保留端口） */
+    private String extractHost(String url) {
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            int port = uri.getPort();
+            return port > 0 ? uri.getHost() + ":" + port : uri.getHost();
+        } catch (Exception e) {
+            return url;
+        }
+    }
+    // ==================== 中心服务器模式（v3.0.64） ====================
+    /** 配置中心服务器（协议与 HubSync 100% 兼容，如自建 habit-sync-server :23458） */
+    public void setServerConfig(String url, String token) {
+        if (url != null && !url.isEmpty()) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                    .putString(KEY_SERVER_URL, url.trim())
+                    .putString(KEY_SERVER_TOKEN, token != null ? token.trim() : "")
+                    .apply();
+        }
+    }
+    public void clearServerConfig() {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .remove(KEY_SERVER_URL).remove(KEY_SERVER_TOKEN).apply();
+    }
+    public boolean isServerConfigured() {
+        String url = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_SERVER_URL, null);
+        return url != null && !url.isEmpty();
+    }
+    public String getServerUrl() {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_SERVER_URL, null);
+    }
+    private String getServerToken() {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_SERVER_TOKEN, "");
+    }
+    public String getServerStatusText() {
+        String url = getServerUrl();
+        return url != null ? "中心服务器: " + url : "中心服务器: 未配置";
+    }
+
+    /**
+     * 与中心服务器同步（协议 = /hub/sync，服务器端已部署 habit-sync-server）
+     * @return true=成功
+     */
+    public boolean syncToServer() {
+        String baseUrl = getServerUrl();
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            Log.d(TAG, "中心服务器未配置，跳过");
+            return false;
+        }
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        String token = getServerToken();
+        boolean ok = doHubSync(baseUrl, token);
+        if (ok) {
+            Log.d(TAG, "✅ 中心服务器同步成功: " + baseUrl);
+        } else {
+            Log.d(TAG, "❌ 中心服务器同步失败: " + baseUrl);
+        }
+        return ok;
     }
 
     /** 手动设置Hub IP（跳过扫描，用户直接输入） */
