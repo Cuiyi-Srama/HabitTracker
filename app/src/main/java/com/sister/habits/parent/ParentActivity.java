@@ -2634,7 +2634,7 @@ public class ParentActivity extends AppCompatActivity {
     private void showSystemMenu() {
         String[] items = {
                 "👤 孩子信息（昵称/头像/标题）",
-                "🏠 启动模式 & Hub中枢",
+                "🏠 默认启动模式",
                 "💰 完整经济参数",
                 "📅 假期与折扣（假期范围/周末开关）",
                 "🚀 加速器管理（双倍积分日/打卡勋章/周月奖励）",
@@ -3188,36 +3188,14 @@ private void showProfileSettings() {
         String currentMode = prefs.getString("default_mode", "child");
         String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
         int checked = "child".equals(currentMode) ? 0 : "parent".equals(currentMode) ? 1 : 2;
-        // 创建Hub中枢对话框（带手动IP输入）
-        android.widget.EditText etHubIp = new android.widget.EditText(this);
-        etHubIp.setHint("手动输入Hub IP（如192.168.1.100）");
-        etHubIp.setTextSize(14);
-        etHubIp.setPadding(16, 12, 16, 12);
-        android.widget.LinearLayout hubLayout = new android.widget.LinearLayout(this);
-        hubLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        hubLayout.setPadding(16, 8, 16, 8);
-        hubLayout.addView(etHubIp);
-
+        // v3.0.65：Hub中枢相关配置已移至「🔄同步中心」，本对话框只保留启动模式
         new AlertDialog.Builder(this)
-                .setTitle("🏠 默认启动模式 + Hub中枢")
+                .setTitle("🏠 默认启动模式")
                 .setSingleChoiceItems(modes, checked, (d, w) -> {
                     String mode = w == 0 ? "child" : w == 1 ? "parent" : "ask";
                     prefs.edit().putString("default_mode", mode).apply();
                 })
-                .setView(hubLayout)
-                .setNeutralButton("Hub模式: " + (syncManager.isHubModeEnabled() ? "🟢开启" : "🔴关闭"), (d, w) -> {
-                    syncManager.setHubModeEnabled(!syncManager.isHubModeEnabled());
-                    Toast.makeText(this, syncManager.isHubModeEnabled() ? "🏠 中枢已开启" : "🏠 中枢已关闭", Toast.LENGTH_SHORT).show();
-                })
-                .setPositiveButton("📌 设置Hub IP", (d, w) -> {
-                    String ip = etHubIp.getText().toString().trim();
-                    if (!ip.isEmpty()) {
-                        syncManager.setManualHubIp(ip);
-                        Toast.makeText(this, "✅ Hub IP已设置为: " + ip + "\n下次同步将直接使用此IP", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "请输入有效的IP地址", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("✅ 确定", null)
                 .setNegativeButton("← 返回上级", (d, w) -> showSystemMenu()).show();
     }
 
@@ -3889,9 +3867,9 @@ private void showProfileSettings() {
             "📷 扫描设备QR码配对",
             "📱 展示本机QR码",
             "🔍 扫描网络设备",
-            "🏠 切换Hub中枢",
+            "🏠 Hub中枢状态",
             "🔄 开始同步",
-            "☁️ 远程同步 (WebDAV)",
+            "🔄 同步中心设置",
             "🧹 清除发现缓存"
         };
         for (int i = 0; i < labels.length; i++) {
@@ -3901,7 +3879,7 @@ private void showProfileSettings() {
             String btnText = labels[i];
             if (i == 3) {
                 boolean hubOn = syncManager.isHubModeEnabled();
-                btnText = "🏠 " + (hubOn ? "关闭" : "开启") + " Hub中枢 (" + syncManager.getHubSync().getServerStatus() + ")";
+                btnText = "🏠 Hub中枢: " + (hubOn ? "🟢开启" : "🔴关闭") + " (" + syncManager.getHubSync().getServerStatus() + ")";
             }
             btn.setText(btnText);
             btn.setTextSize(14);
@@ -3990,14 +3968,18 @@ private void showProfileSettings() {
                         });
                         break;
                     }
-                    case 3: { // 切换Hub中枢
-                        boolean newState = !syncManager.isHubModeEnabled();
-                        syncManager.setHubModeEnabled(newState);
-                        // 更新按钮文字
-                        String serverStatus = syncManager.getHubSync().getServerStatus();
-                        finalBtn.setText("🏠 " + (newState ? "关闭" : "开启") + " Hub中枢 (" + serverStatus + ")");
-                        tvStatus.setText((newState ? "🟢 " : "🔴 ") + "Hub服务器: " + serverStatus);
-                        tvStatus.setTextColor(newState ? 0xFF43A047 : 0xFF666666);
+                    case 3: { // 查看Hub中枢状态（开关移至「同步中心」）
+                        boolean hubOn = syncManager.isHubModeEnabled();
+                        String modeText = syncManager.getSyncModeText();
+                        String serverUrl = syncManager.getHubSync().getServerUrl();
+                        new AlertDialog.Builder(ParentActivity.this)
+                                .setTitle("🏠 同步状态总览")
+                                .setMessage("本机 Hub 中枢: " + (hubOn ? "🟢 开启" : "🔴 关闭") +
+                                        "\n同步模式: " + modeText +
+                                        "\n中心服务器: " + (serverUrl != null ? serverUrl : "未配置") +
+                                        "\n\n💡 修改请到「🔄 同步中心设置」")
+                                .setPositiveButton("知道了", null)
+                                .show();
                         break;
                     }
                     case 4: { // 开始同步
@@ -4032,7 +4014,7 @@ private void showProfileSettings() {
                         });
                         break;
                     }
-                    case 5: { // 远程同步 WebDAV
+                    case 5: { // 同步中心设置（模式/服务器/Hub/WebDAV）
                         showRemoteSyncDialog();
                         break;
                     }
@@ -4110,6 +4092,21 @@ private void showProfileSettings() {
         etServerToken.setTextSize(13);
         etServerToken.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
+        // ===== 局域网 Hub 配置（v3.0.65 从"启动模式"移入） =====
+        final TextView tvHubTitle = new TextView(this);
+        tvHubTitle.setText("🏠 局域网 Hub（家庭内设备直连）");
+        tvHubTitle.setTextSize(14);
+        tvHubTitle.setTextColor(0xFF333333);
+        tvHubTitle.setPadding(4, 10, 4, 4);
+        final android.widget.CheckBox cbHubMode = new android.widget.CheckBox(this);
+        cbHubMode.setText("本设备作为 Hub 中枢（其他设备直连本机）");
+        cbHubMode.setTextSize(13);
+        cbHubMode.setChecked(syncManager.isHubModeEnabled());
+        final android.widget.EditText etHubIp = new android.widget.EditText(this);
+        etHubIp.setHint("手动指定 Hub IP（可选，如192.168.1.100）");
+        etHubIp.setSingleLine(true);
+        etHubIp.setTextSize(13);
+
         // ===== WebDAV 配置（原功能保留） =====
         final android.widget.EditText etUrl = new android.widget.EditText(this);
         etUrl.setHint("WebDAV服务器地址，如 https://dav.jianguoyun.com/dav/");
@@ -4142,13 +4139,16 @@ private void showProfileSettings() {
         layout.addView(tvServerStatus);
         layout.addView(etServerUrl);
         layout.addView(etServerToken);
+        layout.addView(tvHubTitle);
+        layout.addView(cbHubMode);
+        layout.addView(etHubIp);
         layout.addView(tvStatus);
         layout.addView(etUrl);
         layout.addView(etUser);
         layout.addView(etPass);
         layout.addView(etSyncPass);
         new AlertDialog.Builder(this)
-                .setTitle("🔄 远程同步设置")
+                .setTitle("🔄 同步中心")
                 .setMessage("同步模式三档可选：\n📡 局域网P2P：家庭内设备直连（默认）\n☁️ 中心服务器：对接自建服务器（如电脑23458）\n🔄 自动：按 服务器→局域网→WebDAV 顺序尝试\n\n💡 服务器模式适用于不同网络（学校/外出）也能同步")
                 .setView(layout)
                 .setPositiveButton("⚡ 保存并立即同步", (d, w) -> {
@@ -4166,6 +4166,12 @@ private void showProfileSettings() {
                     if (!url.isEmpty()) {
                         remote.setConfig(url, etUser.getText().toString(), etPass.getText().toString(),
                                 etSyncPass.getText().toString().isEmpty() ? "0903" : etSyncPass.getText().toString());
+                    }
+                    // 保存局域网 Hub 配置（v3.0.65）
+                    syncManager.setHubModeEnabled(cbHubMode.isChecked());
+                    String hubIp = etHubIp.getText().toString().trim();
+                    if (!hubIp.isEmpty()) {
+                        syncManager.getHubSync().setManualHubIp(hubIp);
                     }
                     Toast.makeText(this, "🔄 同步中...请稍候", Toast.LENGTH_SHORT).show();
                     syncManager.triggerFullSync();
