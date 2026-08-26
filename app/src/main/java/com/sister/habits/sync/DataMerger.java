@@ -302,16 +302,17 @@ public class DataMerger {
                 }
             } catch (Exception e) { Log.d(TAG, "跳过重复商品"); }
         }
-        // 远端不存在的商品 = 家长在 Hub 已删除 → 本地改为下架（不物理删除，防误删）
-        java.util.List<com.sister.habits.data.models.ShopItem> localAll = dao.getAll();
-        for (com.sister.habits.data.models.ShopItem local : localAll) {
-            if (!remoteIds.contains(local.id) && local.active) {
-                dao.setActive(local.id, false);
-                removed++;
-                Log.d(TAG, "⬇ 商品远端已删→本地下架: " + local.name);
+        // v3.0.69：废除"不在远端列表→下架"规则（远端列表不完整=服务器首同步/部分数据 → 误伤全部商品下架）
+        // 删除只通过 tombstone（deleted=1）显式传播
+        int deletedRemote = 0;
+        for (com.sister.habits.data.models.ShopItem s : remoteList) {
+            if (s.deleted == 1) {
+                dao.setActive(s.id, false);
+                deletedRemote++;
+                Log.d(TAG, "⬇ 远端删除标记→本地下架: " + s.name);
             }
         }
-        Log.d(TAG, "合并商品完成: 新增 " + added + " 更新 " + updated + " 下架 " + removed);
+        Log.d(TAG, "合并商品完成: 新增 " + added + " 更新 " + updated + " 远端删除下架 " + deletedRemote);
     }
 
     public void mergeWishlistItems(List<com.sister.habits.data.models.WishlistItem> remoteList) {
