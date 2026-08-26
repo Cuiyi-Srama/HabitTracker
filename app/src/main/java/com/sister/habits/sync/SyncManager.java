@@ -34,6 +34,12 @@ public class SyncManager {
     private static final String PREFS_NAME = "sync_prefs";
     private static final String KEY_DEVICE_ID = "device_id";
     private static final String KEY_HUB_MODE = "hub_mode_enabled";
+    // ==================== 同步模式（v3.0.64） ====================
+    private static final String KEY_SYNC_MODE = "sync_mode";
+    /** 同步模式：0=仅局域网P2P（默认，兼容旧行为） 1=仅中心服务器 2=自动（服务器→Hub→P2P→WebDAV） */
+    public static final int MODE_P2P_ONLY = 0;
+    public static final int MODE_SERVER_ONLY = 1;
+    public static final int MODE_AUTO = 2;
 
     private static SyncManager instance;
 
@@ -87,14 +93,25 @@ public class SyncManager {
     public boolean isHubModeEnabled() {
         return hubSync.isHubModeEnabled();
     }
-
     public void setHubModeEnabled(boolean enabled) {
         hubSync.setHubModeEnabled(enabled);
+    }
+    // ==================== 同步模式（v3.0.64） ====================
+    public int getSyncMode() {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getInt(KEY_SYNC_MODE, MODE_P2P_ONLY);
+    }
+    public void setSyncMode(int mode) {
+        if (mode < MODE_P2P_ONLY || mode > MODE_AUTO) mode = MODE_P2P_ONLY;
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_HUB_MODE, enabled)
-                .apply();
-        Log.i(TAG, "🏠 Hub模式: " + (enabled ? "开启" : "关闭"));
+                .edit().putInt(KEY_SYNC_MODE, mode).apply();
+    }
+    public String getSyncModeText() {
+        switch (getSyncMode()) {
+            case MODE_SERVER_ONLY: return "仅中心服务器";
+            case MODE_AUTO: return "自动（服务器→局域网→WebDAV）";
+            default: return "仅局域网P2P";
+        }
     }
 
     public HubSync getHubSync() {
@@ -135,26 +152,64 @@ public class SyncManager {
     }
 
     private void doAutoSync() {
+        int mode = getSyncMode();
+        if (mode == MODE_SERVER_ONLY) {
+            // ① 仅中心服务器模式
+            if (isOnline()) {
+                if (hubSync.isServerConfigured() && hubSync.syncToServer()) {
+                    Log.d(TAG, "☁️ 中心服务器同步成功");
+                    return;
+                }
+                Log.d(TAG, "☁️ 中心服务器不可达，等待下次");
+            } else {
+                Log.d(TAG, "📴 离线状态，数据已缓存");
+            }
+            return;
+        }
+        if (mode == MODE_AUTO) {
+            // ① 自动模式：服务器优先（配置了服务器才尝试）
+            if (hubSync.isServerConfigured() && isOnline() && hubSync.syncToServer()) {
+                Log.d(TAG, "☁️ 自动模式: 中心服务器同步成功");
+                return;
+            }
+            // ② 同WiFi → Hub
+            if (isSameWifi() && hubSync.syncToHub()) {
+                Log.d(TAG, "🏠 自动模式: Hub同步成功");
+                return;
+            }
+            // ③ 同WiFi → 局域网P2P
+            if (isSameWifi()) {
+                Log.d(TAG, "📡 局域网P2P同步");
+                lanSync.syncAll();
+                return;
+            }
+            // ④ 有互联网 → WebDAV
+            if (isOnline()) {
+                Log.d(TAG, "☁️ WebDAV同步");
+                remoteSync.syncAll();
+                return;
+            }
+            Log.d(TAG, "📴 离线状态，数据已缓存");
+            return;
+        }
+        // 默认：仅局域网P2P（兼容旧行为）
         // ① 优先尝试 Hub 同步（如果有Hub设备在线）
         if (isSameWifi() && hubSync.syncToHub()) {
             Log.d(TAG, "🏠 Hub同步成功");
             return;
         }
-
         // ② Hub不可用 → 尝试局域网P2P同步
         if (isSameWifi()) {
             Log.d(TAG, "📡 局域网P2P同步");
             lanSync.syncAll();
             return;
         }
-
         // ③ 不同网络但有互联网 → 远程云端同步
         if (isOnline()) {
             Log.d(TAG, "☁️ 远程云端同步");
             remoteSync.syncAll();
             return;
         }
-
         // ④ 完全离线 → 保存到本地，等待下次同步时机或QR码导出兜底
         Log.d(TAG, "📴 离线状态，数据已缓存");
     }
@@ -163,6 +218,25 @@ public class SyncManager {
      * 手动触发全同步（所有方式）
      */
     public void triggerFullSync() {
+        int mode = getSyncMode();
+        if (mode == MODE_SERVER_ONLY) {
+            // 仅中心服务器
+            hubSync.syncToServer();
+            Log.d(TAG, "🔄 全同步完成（服务器模式）");
+            return;
+        }
+        if (mode == MODE_AUTO) {
+            // 自动：服务器 → Hub → P2P → WebDAV 全走一遍（互相补充）
+            if (hubSync.isServerConfigured()) hubSync.syncToServer();
+            if (isSameWifi()) {
+                hubSync.syncToHub();
+                lanSync.syncAll();
+            }
+            remoteSync.syncAll();
+            Log.d(TAG, "🔄 全同步完成（自动模式）");
+            return;
+        }
+        // 默认 P2P only（兼容旧行为）
         // 先尝试Hub
         if (isSameWifi()) {
             if (hubSync.syncToHub()) {
