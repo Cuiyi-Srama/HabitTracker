@@ -18,7 +18,6 @@ import java.util.Hashtable;
 public class QRCodeHelper {
 
     private static final int QR_SIZE = 512;
-
     /** 生成设备配对QR码内容（含本机IP，扫码后可直连同步，不依赖扫描发现） */
     public static String buildDeviceQrContent(Context context) {
         String deviceKey = DeviceIdentity.getDeviceKey(context);
@@ -31,6 +30,43 @@ public class QRCodeHelper {
             if (localIp != null) ip = localIp;
         } catch (Exception ignored) {}
         return "HABITPAIR:" + deviceKey + ":" + nickname + "@" + deviceName + "#" + ip;
+    }
+
+    // ==================== 同步配置二维码（v3.0.66：家人扫码零配置） ====================
+    private static final String SYNC_QR_PREFIX = "HABITSYNC:";
+
+    /** 生成同步配置QR码内容：HABITSYNC:<服务器URL>#<同步模式> */
+    public static String buildSyncConfigQrContent(Context context) {
+        try {
+            com.sister.habits.sync.SyncManager sm = com.sister.habits.sync.SyncManager.getInstance(context);
+            String url = sm.getHubSync().getServerUrl();
+            if (url == null || url.isEmpty()) return null;
+            int mode = sm.getSyncMode();
+            return SYNC_QR_PREFIX + url + "#" + mode;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    /** 判断是否为同步配置二维码 */
+    public static boolean isSyncConfigQr(String content) {
+        return content != null && content.startsWith(SYNC_QR_PREFIX);
+    }
+    /** 解析服务器URL */
+    public static String parseSyncConfigUrl(String content) {
+        if (!isSyncConfigQr(content)) return null;
+        String body = content.substring(SYNC_QR_PREFIX.length());
+        int hash = body.indexOf('#');
+        return hash > 0 ? body.substring(0, hash) : body;
+    }
+    /** 解析同步模式（默认2=自动） */
+    public static int parseSyncConfigMode(String content) {
+        if (!isSyncConfigQr(content)) return 2;
+        String body = content.substring(SYNC_QR_PREFIX.length());
+        int hash = body.indexOf('#');
+        if (hash > 0) {
+            try { return Integer.parseInt(body.substring(hash + 1)); } catch (Exception ignored) {}
+        }
+        return 2;
     }
 
     /** 生成QR码Bitmap */
