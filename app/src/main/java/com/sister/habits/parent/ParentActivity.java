@@ -4065,14 +4065,27 @@ private void showProfileSettings() {
         syncLp.topMargin = 12;
         btnSyncNow.setLayoutParams(syncLp);
         btnSyncNow.setOnClickListener(v -> {
+            // v3.0.73：Android 13+ 通知权限首次授权
+            if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1002);
+                Toast.makeText(this, "请允许通知权限，然后再次点击同步", Toast.LENGTH_LONG).show();
+                return;
+            }
             Toast.makeText(this, "同步中...", Toast.LENGTH_SHORT).show();
-            // v3.0.71 修复：后台线程执行同步（消除主线程ANR），且保留 triggerFullSync 的模式判断
-            // （triggerFullSyncAsync 不走中心服务器 MODE_SERVER_ONLY→syncToServer，故不用它）
+            // v3.0.71 修复：后台线程执行同步（消除主线程ANR），保留 triggerFullSync 的模式判断
+            // v3.0.73 新增：通知栏显示同步进度（开始→完成/失败）
+            final android.content.Context appCtx = this;
             new Thread(() -> {
                 try {
+                    com.sister.habits.sync.SyncNotifier.notifySyncStart(appCtx);
                     syncManager.triggerFullSync();
+                    boolean ok = hub.isLastSyncSuccess();
+                    com.sister.habits.sync.SyncNotifier.notifyDone(appCtx, ok, hub.getLastSyncMessage());
                 } catch (Exception e) {
                     android.util.Log.e("SyncNow", "触发同步异常", e);
+                    com.sister.habits.sync.SyncNotifier.notifyDone(appCtx, false, e.getMessage());
                 }
                 final String info = hub.getLastSyncInfo();
                 runOnUiThread(() -> Toast.makeText(this, info, Toast.LENGTH_LONG).show());
