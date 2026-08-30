@@ -46,6 +46,9 @@ public class HubSync {
     private long lastSyncTime = 0;
     private boolean lastSyncSuccess = false;
     private String lastSyncMessage = "";
+    // v3.0.71 新增：供 UI 读取最近一次同步结果
+    public boolean isLastSyncSuccess() { return lastSyncSuccess; }
+    public String getLastSyncMessage() { return lastSyncMessage == null ? "" : lastSyncMessage; }
     private final java.util.List<String> discoveredHubs = new java.util.ArrayList<>();
     private volatile boolean scanning = false;
 
@@ -376,7 +379,8 @@ public class HubSync {
             lastSyncMessage = "来自 " + baseUrl;
             return true;
         } catch (Exception e) {
-            Log.d(TAG, "Hub同步失败: " + e.getMessage());
+            // v3.0.71 升级为 Log.e 带完整堆栈，确保 release 能拿到真实失败原因
+            android.util.Log.e(TAG, "Hub同步失败详情", e);
             lastSyncTime = System.currentTimeMillis();
             lastSyncSuccess = false;
             lastSyncMessage = e.getMessage();
