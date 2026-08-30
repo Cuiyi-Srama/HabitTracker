@@ -4066,14 +4066,17 @@ private void showProfileSettings() {
         btnSyncNow.setLayoutParams(syncLp);
         btnSyncNow.setOnClickListener(v -> {
             Toast.makeText(this, "同步中...", Toast.LENGTH_SHORT).show();
-            // v3.0.71 修复：改用异步全同步，避免网络请求阻塞主线程导致 ANR/进程被杀
-            syncManager.triggerFullSyncAsync(() -> {
-                boolean ok = hub.isLastSyncSuccess();
-                String msg = hub.getLastSyncMessage();
-                runOnUiThread(() -> Toast.makeText(this,
-                        ok ? "✅ 同步完成" : "❌ 同步失败: " + msg,
-                        Toast.LENGTH_LONG).show());
-            });
+            // v3.0.71 修复：后台线程执行同步（消除主线程ANR），且保留 triggerFullSync 的模式判断
+            // （triggerFullSyncAsync 不走中心服务器 MODE_SERVER_ONLY→syncToServer，故不用它）
+            new Thread(() -> {
+                try {
+                    syncManager.triggerFullSync();
+                } catch (Exception e) {
+                    android.util.Log.e("SyncNow", "触发同步异常", e);
+                }
+                final String info = hub.getLastSyncInfo();
+                runOnUiThread(() -> Toast.makeText(this, info, Toast.LENGTH_LONG).show());
+            }).start();
         });
         layout.addView(btnSyncNow);
 
