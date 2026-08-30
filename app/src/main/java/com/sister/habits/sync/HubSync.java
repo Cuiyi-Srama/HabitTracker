@@ -329,14 +329,15 @@ public class HubSync {
             HttpURLConnection conn = (HttpURLConnection) syncUrl.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(15000);
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(120000);
             if (token != null && !token.isEmpty()) {
                 conn.setRequestProperty("X-Hub-Token", token);
             }
             String localData = buildSyncPayload();
             // 同 LanSync：显式 Content-Type + Content-Length，规避 NanoHTTPD 解析坑
             byte[] postBytes = localData.getBytes("UTF-8");
+            android.util.Log.d(TAG, "v3.0.72 上传payload大小: " + postBytes.length + " B");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setFixedLengthStreamingMode(postBytes.length);
             java.io.OutputStream os = conn.getOutputStream();
