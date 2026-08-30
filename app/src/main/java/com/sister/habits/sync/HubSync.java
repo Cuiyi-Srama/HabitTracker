@@ -323,6 +323,8 @@ public class HubSync {
      * POST {baseUrl}/hub/sync → 解析响应 → 合并到本地 → 标记已同步
      */
     private boolean doHubSync(String baseUrl, String token) {
+        // v3.0.74：失败自动重试1次（抗网络瞬断/connection abort）
+        for (int attempt = 1; attempt <= 2; attempt++) {
         try {
             String syncUrlStr = baseUrl.endsWith("/") ? baseUrl + "hub/sync" : baseUrl + "/hub/sync";
             URL syncUrl = new URL(syncUrlStr);
@@ -380,6 +382,10 @@ public class HubSync {
             lastSyncMessage = "来自 " + baseUrl;
             return true;
         } catch (Exception e) {
+            if (attempt < 2) {
+                android.util.Log.w(TAG, "v3.0.74 第" + attempt + "次同步失败，自动重试: " + e.getMessage());
+                continue;
+            }
             // v3.0.71 升级为 Log.e 带完整堆栈，确保 release 能拿到真实失败原因
             android.util.Log.e(TAG, "Hub同步失败详情", e);
             lastSyncTime = System.currentTimeMillis();
@@ -387,6 +393,8 @@ public class HubSync {
             lastSyncMessage = e.getMessage();
             return false;
         }
+        }
+        return false;
     }
 
     /** 从 URL 提取 host:port（用于图片流式拉取的来源地址，必须保留端口） */
