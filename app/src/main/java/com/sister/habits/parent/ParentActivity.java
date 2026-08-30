@@ -3833,9 +3833,11 @@ private void showProfileSettings() {
         layout.addView(sectionTitle("状态总览"));
         String serverUrl = hub.getServerUrl();
         String serverLine = (serverUrl != null && !serverUrl.isEmpty()) ? serverUrl : "未配置";
+        String tokenLine = hub.getServerToken().isEmpty() ? "未配置" : "已配置 ✓";
         TextView tvOverview = new TextView(this);
         tvOverview.setText("同步模式: " + syncManager.getSyncModeText() +
                 "\n中心服务器: " + serverLine +
+                "\n家庭Token: " + tokenLine +
                 "\n上次同步: " + hub.getLastSyncInfo());
         tvOverview.setTextSize(13);
         tvOverview.setTextColor(0xFF333333);
@@ -3930,6 +3932,9 @@ private void showProfileSettings() {
         etServerToken.setSingleLine(true);
         etServerToken.setTextSize(13);
         etServerToken.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        // v3.0.70 修复：回填已保存的 Token（此前不回显导致用户误判"保存消失"并漏填→401同步失败）
+        String existingToken = hub.getServerToken();
+        if (existingToken != null && !existingToken.isEmpty()) etServerToken.setText(existingToken);
         layout.addView(etServerToken);
 
         // ▸ 高级选项（默认折叠）
