@@ -3949,7 +3949,7 @@ private void showProfileSettings() {
         tvServerStatus.setPadding(4, 4, 4, 2);
         layout.addView(tvServerStatus);
         final android.widget.EditText etServerUrl = new android.widget.EditText(this);
-        etServerUrl.setHint("服务器地址，如 http://100.65.13.111:23458/habit/cuiyi");
+        etServerUrl.setHint("服务器地址，如 https://sync.cuiyisrama.top/habit/cuiyi");
         etServerUrl.setSingleLine(true);
         etServerUrl.setTextSize(13);
         String existingUrl = hub.getServerUrl();
