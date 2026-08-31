@@ -31,6 +31,10 @@ public class HubSync {
     private static final String PREFS = "hub_sync_prefs";
     private static final String KEY_SERVER_URL = "server_url";
     private static final String KEY_SERVER_TOKEN = "server_token";
+    // v3.0.75 新增：同步状态持久化键（修复 App 重启后始终显示"尚未同步"）
+    private static final String KEY_LAST_TIME = "last_sync_time";
+    private static final String KEY_LAST_OK = "last_sync_ok";
+    private static final String KEY_LAST_MSG = "last_sync_msg";
     private final Context context;
     private final AppDatabase db;
     private final DataMerger merger;
@@ -47,8 +51,14 @@ public class HubSync {
     private boolean lastSyncSuccess = false;
     private String lastSyncMessage = "";
     // v3.0.71 新增：供 UI 读取最近一次同步结果
-    public boolean isLastSyncSuccess() { return lastSyncSuccess; }
-    public String getLastSyncMessage() { return lastSyncMessage == null ? "" : lastSyncMessage; }
+    // v3.0.75 改为持久化读取（修复 App 重启后内存清零导致始终显示"尚未同步"）
+    public boolean isLastSyncSuccess() {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_LAST_OK, false);
+    }
+    public String getLastSyncMessage() {
+        String m = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_MSG, "");
+        return m == null ? "" : m;
+    }
     private final java.util.List<String> discoveredHubs = new java.util.ArrayList<>();
     private volatile boolean scanning = false;
 
@@ -380,6 +390,7 @@ public class HubSync {
             lastSyncTime = System.currentTimeMillis();
             lastSyncSuccess = true;
             lastSyncMessage = "来自 " + baseUrl;
+            persistLastSyncState(); // v3.0.75
             return true;
         } catch (Exception e) {
             if (attempt < 2) {
@@ -391,6 +402,7 @@ public class HubSync {
             lastSyncTime = System.currentTimeMillis();
             lastSyncSuccess = false;
             lastSyncMessage = e.getMessage();
+            persistLastSyncState(); // v3.0.75
             return false;
         }
         }
@@ -626,11 +638,26 @@ public class HubSync {
         return "🔴 已停止";
     }
     /** 获取上次同步时间 */
+    /** v3.0.75：同步状态持久化（内存字段重启即清零，必须落盘以便重启后仍显示上次结果） */
+    private void persistLastSyncState() {
+        try {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                    .putLong(KEY_LAST_TIME, lastSyncTime)
+                    .putBoolean(KEY_LAST_OK, lastSyncSuccess)
+                    .putString(KEY_LAST_MSG, lastSyncMessage == null ? "" : lastSyncMessage)
+                    .apply();
+        } catch (Exception ignored) {}
+    }
+
     public String getLastSyncInfo() {
-        if (lastSyncTime == 0) return "⏳ 尚未同步";
-        String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-                .format(new java.util.Date(lastSyncTime));
-        return (lastSyncSuccess ? "✅ " : "❌ ") + time + " - " + lastSyncMessage;
+        android.content.SharedPreferences sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        long t = sp.getLong(KEY_LAST_TIME, 0);
+        if (t == 0) return "⏳ 尚未同步";
+        String time = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                .format(new java.util.Date(t));
+        boolean ok = sp.getBoolean(KEY_LAST_OK, false);
+        String msg = sp.getString(KEY_LAST_MSG, "");
+        return (ok ? "✅ " : "❌ ") + time + " - " + (msg == null ? "" : msg);
     }
     /** 获取已发现的Hub设备列表 */
     public java.util.List<String> getDiscoveredHubs() {
