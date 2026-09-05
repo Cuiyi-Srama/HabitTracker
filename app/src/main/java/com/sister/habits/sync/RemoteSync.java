@@ -105,13 +105,13 @@ public class RemoteSync {
                 String syncPass = getSyncPassword();
                 String remoteFile = baseUrl + REMOTE_FILE;
 
-                // ① 下载远端快照
+                // ① 下载远端快照（v3.0.76：合并式，只增不删，绝不覆盖本地数据）
                 byte[] remote = webdavGet(remoteFile, user, pass);
                 if (remote != null) {
                     BackupExportHelper helper = new BackupExportHelper(context);
-                    boolean ok = helper.importBackupBytes(remote, syncPass);
-                    Log.i(TAG, "☁️ 远端快照下载并" + (ok ? "恢复成功" : "恢复失败(密码错误?)"));
-                    if (callback != null) callback.onStatusUpdate(ok ? "☁️ 已合并云端数据" : "☁️ 云端数据解密失败");
+                    boolean ok = helper.mergeBackupBytes(remote, syncPass);
+                    Log.i(TAG, "☁️ 远端快照下载并" + (ok ? "合并成功(只增不删)" : "合并失败(密码错误?)"));
+                    if (callback != null) callback.onStatusUpdate(ok ? "☁️ 已合并云端数据（只增不删）" : "☁️ 云端数据解密失败");
                 } else {
                     Log.d(TAG, "☁️ 云端无快照，仅上传");
                 }
