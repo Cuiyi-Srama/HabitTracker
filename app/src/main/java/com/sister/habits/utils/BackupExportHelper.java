@@ -111,6 +111,103 @@ public class BackupExportHelper {
     }
 
     /**
+     * v3.0.76：合并式恢复（RemoteSync 自动同步专用，与手动全量恢复不同）
+     * 只增不删：按主键 INSERT OR IGNORE，本地已有数据永不丢失；
+     * 不恢复 Preferences（避免覆盖服务器地址/Token 等配置）。
+     */
+    public boolean mergeBackupBytes(byte[] encrypted, String password) throws Exception {
+        byte[] zipData = decrypt(encrypted, password);
+        ByteArrayInputStream bais = new ByteArrayInputStream(zipData);
+        ZipInputStream zis = new ZipInputStream(bais);
+        String dbJson = null;
+        Map<String, byte[]> imageFiles = new HashMap<>();
+        ZipEntry entry;
+        while ((entry = zis.getNextEntry()) != null) {
+            String name = entry.getName();
+            ByteArrayOutputStream entryBaos = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = zis.read(buf)) != -1) entryBaos.write(buf, 0, len);
+            if ("data.json".equals(name)) {
+                dbJson = new String(entryBaos.toByteArray(), "UTF-8");
+            } else if (name.startsWith("images/")) {
+                imageFiles.put(name.substring(7), entryBaos.toByteArray());
+            }
+            zis.closeEntry();
+        }
+        zis.close();
+        int merged = 0;
+        if (dbJson != null) {
+            JSONObject root = new JSONObject(dbJson);
+            JSONObject data = root.optJSONObject("data");
+            if (data != null) {
+                String dbPath = context.getDatabasePath("habit_tracker.db").getAbsolutePath();
+                SQLiteDatabase sqldb = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE);
+                try {
+                    sqldb.beginTransaction();
+                    java.util.Iterator<String> it = data.keys();
+                    while (it.hasNext()) {
+                        String table = it.next();
+                        JSONArray arr = data.optJSONArray(table);
+                        if (arr == null || arr.length() == 0) continue;
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject row = arr.optJSONObject(i);
+                            if (row == null) continue;
+                            StringBuilder cols = new StringBuilder();
+                            StringBuilder vals = new StringBuilder();
+                            List<String> colList = new ArrayList<>();
+                            List<String> valList = new ArrayList<>();
+                            JSONArray names = row.names();
+                            for (int j = 0; names != null && j < names.length(); j++) {
+                                String col = names.getString(j);
+                                colList.add(col);
+                                Object val = row.get(col);
+                                if (val == null || JSONObject.NULL.equals(val)) {
+                                    valList.add(null);
+                                } else if (val instanceof Number) {
+                                    valList.add(val.toString());
+                                } else {
+                                    valList.add("'" + val.toString().replace("'", "''") + "'");
+                                }
+                            }
+                            for (int j = 0; j < colList.size(); j++) {
+                                if (j > 0) { cols.append(","); vals.append(","); }
+                                cols.append("`").append(colList.get(j)).append("`");
+                                vals.append(valList.get(j) != null ? valList.get(j) : "NULL");
+                            }
+                            try {
+                                sqldb.execSQL("INSERT OR IGNORE INTO " + table + " (" + cols + ") VALUES (" + vals + ")");
+                                merged++;
+                            } catch (Exception e) {
+                                Log.w(TAG, "合并跳过行 " + table + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                    sqldb.setTransactionSuccessful();
+                } finally {
+                    sqldb.endTransaction();
+                    if (sqldb.isOpen()) sqldb.close();
+                }
+            }
+        }
+        // 图片：仅当本地不存在时才写入（不替换已有图片）
+        if (!imageFiles.isEmpty()) {
+            File imagesDir = new File(context.getFilesDir(), "backup_images");
+            imagesDir.mkdirs();
+            for (Map.Entry<String, byte[]> img : imageFiles.entrySet()) {
+                File out = new File(imagesDir, img.getKey());
+                if (!out.exists()) {
+                    FileOutputStream fos = new FileOutputStream(out);
+                    fos.write(img.getValue());
+                    fos.close();
+                }
+            }
+        }
+        Log.i(TAG, "备份合并完成(只增不删): " + merged + " 行");
+        return true;
+    }
+
+    /**
      * 自动备份（静默）：每天最多一次，滚动保留最近 MAX_AUTO_BACKUPS 份
      * 达到上限自动删除最早的备份；文件名以 auto_ 开头，使用固定密码 AUTO_PWD
      */
