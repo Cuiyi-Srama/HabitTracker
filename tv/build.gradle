@@ -1,6 +1,22 @@
 plugins {
     id 'com.android.application'
 }
+
+// Release 签名：CI 通过 GitHub Secrets 注入 HABIT_STORE_FILE（相对仓库根或绝对路径）
+// 解析顺序：绝对路径 → <root>/app/<路径> → <root>/<路径>；文件不存在则不启用签名
+def tvStoreFile = null
+def storePathEnv = System.getenv('HABIT_STORE_FILE')
+if (storePathEnv != null && !storePathEnv.isEmpty()) {
+    def f = new File(storePathEnv)
+    if (!f.isAbsolute()) {
+        def cand = new File(rootProject.projectDir, 'app/' + storePathEnv)
+        f = cand.exists() ? cand : new File(rootProject.projectDir, storePathEnv)
+    }
+    if (f.exists()) {
+        tvStoreFile = f
+    }
+}
+
 android {
     namespace 'com.sister.habits.tv'
     compileSdk 34
@@ -13,10 +29,8 @@ android {
     }
     signingConfigs {
         release {
-            // CI 通过 GitHub Secrets 注入（HABIT_*）；本地无环境变量则不启用
-            def storePath = System.getenv('HABIT_STORE_FILE')
-            if (storePath != null && !storePath.isEmpty()) {
-                storeFile file(rootProject.projectDir.absolutePath + '/' + storePath)
+            if (tvStoreFile != null) {
+                storeFile tvStoreFile
                 storePassword System.getenv('HABIT_STORE_PASSWORD')
                 keyAlias System.getenv('HABIT_KEY_ALIAS')
                 keyPassword System.getenv('HABIT_KEY_PASSWORD')
@@ -29,8 +43,7 @@ android {
         }
         release {
             minifyEnabled false
-            def storePath = System.getenv('HABIT_STORE_FILE')
-            if (storePath != null && !storePath.isEmpty()) {
+            if (tvStoreFile != null) {
                 signingConfig signingConfigs.release
             }
         }
@@ -45,7 +58,6 @@ android {
     }
 }
 dependencies {
-    // 播放器
     implementation 'androidx.media3:media3-exoplayer:1.2.1'
     implementation 'androidx.media3:media3-ui:1.2.1'
 }
