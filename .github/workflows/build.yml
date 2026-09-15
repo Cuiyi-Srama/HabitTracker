@@ -22,8 +22,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🔧 设置 Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 🔧 准备 Android SDK（使用 runner 预装）
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          if [ -z "$SDK" ]; then SDK="/usr/local/lib/android/sdk"; fi
+          echo "SDK=$SDK"
+          echo "sdk.dir=$SDK" > local.properties
+          cat local.properties
+          ls "$SDK" | head -20
       - name: 📦 缓存 Gradle
         uses: actions/cache@v5
         with:
@@ -44,7 +50,7 @@ jobs:
       - name: 🔨 编译 Debug + Release APK + 单元测试
         run: |
           chmod +x gradlew
-          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          export ANDROID_HOME="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           # 从GitHub Secrets读取Token，不硬编码在代码中
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           # 签名参数（由 Secrets 注入，本地无则不签名）
