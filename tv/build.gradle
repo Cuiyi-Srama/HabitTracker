@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+android {
+    namespace 'com.sister.habits.tv'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.sister.habits.tv'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+    signingConfigs {
+        release {
+            // CI 通过 GitHub Secrets 注入（HABIT_*）；本地无环境变量则不启用
+            def storePath = System.getenv('HABIT_STORE_FILE')
+            if (storePath != null && !storePath.isEmpty()) {
+                storeFile file(rootProject.projectDir.absolutePath + '/' + storePath)
+                storePassword System.getenv('HABIT_STORE_PASSWORD')
+                keyAlias System.getenv('HABIT_KEY_ALIAS')
+                keyPassword System.getenv('HABIT_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+            def storePath = System.getenv('HABIT_STORE_FILE')
+            if (storePath != null && !storePath.isEmpty()) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+dependencies {
+    // 播放器
+    implementation 'androidx.media3:media3-exoplayer:1.2.1'
+    implementation 'androidx.media3:media3-ui:1.2.1'
+}
