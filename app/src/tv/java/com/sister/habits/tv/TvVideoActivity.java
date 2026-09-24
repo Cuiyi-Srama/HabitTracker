@@ -18,7 +18,7 @@ import com.sister.habits.R;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** TV 看片：首页（积分 / 今日次数 / 今日推荐 3 条），遥控器 OK 键选片 */
+/** TV 看片：首页（积分 / 今日次数 / 今日推荐 3 条），遥控器 OK 键选片；支持局域网自动发现服务器 */
 public class TvVideoActivity extends Activity {
 
     private static final int[] MINUTES = {30, 60, 90};
@@ -28,6 +28,8 @@ public class TvVideoActivity extends Activity {
     private TextView tvSub;
     private LinearLayout list;
     private boolean loading;
+    /** 连接失败后只自动查找一次，避免失败重试死循环 */
+    private boolean autoTried;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +40,7 @@ public class TvVideoActivity extends Activity {
         tvSub = findViewById(R.id.tv_sub);
         list = findViewById(R.id.list);
         findViewById(R.id.btn_refresh).setOnClickListener(v -> load());
+        findViewById(R.id.btn_auto).setOnClickListener(v -> autoFind(false));
         findViewById(R.id.btn_setup).setOnClickListener(v -> showSetup());
         tvSub.setText("服务器：" + prefs.hub());
         load();
@@ -70,6 +73,12 @@ public class TvVideoActivity extends Activity {
             } catch (final Exception e) {
                 runOnUiThread(() -> {
                     loading = false;
+                    // 地址失效（如电脑 IP 变了）→ 自动查找一次
+                    if (!autoTried) {
+                        autoTried = true;
+                        autoFind(true);
+                        return;
+                    }
                     tvStatus.setText("连接失败");
                     tvSub.setText(String.valueOf(e.getMessage()));
                     list.removeAllViews();
@@ -77,6 +86,37 @@ public class TvVideoActivity extends Activity {
                 });
             }
         }).start();
+    }
+
+    /** 自动查找服务器：先扫局域网，再退公网隧道；找到即保存并重新加载 */
+    private void autoFind(final boolean fromFailure) {
+        loading = true;
+        tvStatus.setText("正在查找服务器…");
+        list.removeAllViews();
+        tvSub.setText(fromFailure ? "原地址连不上，正在自动查找…" : "正在扫描局域网…");
+        new Thread(() -> TvDiscovery.discover(prefs.token(), new TvDiscovery.Callback() {
+            @Override
+            public void onFound(final String hubBase, final boolean viaTunnel) {
+                prefs.setHub(hubBase);
+                runOnUiThread(() -> {
+                    loading = false;
+                    tvSub.setText("服务器：" + hubBase + (viaTunnel ? "（公网）" : "（自动发现）"));
+                    Toast.makeText(TvVideoActivity.this, "已找到服务器", Toast.LENGTH_SHORT).show();
+                    load();
+                });
+            }
+
+            @Override
+            public void onNotFound() {
+                runOnUiThread(() -> {
+                    loading = false;
+                    tvStatus.setText("没有找到服务器");
+                    tvSub.setText("当前地址：" + prefs.hub());
+                    list.removeAllViews();
+                    addHint("检查：① 电脑已开机  ② 电视与电脑连同一个 WiFi  ③ 或用「设置服务器地址」手动填写");
+                });
+            }
+        })).start();
     }
 
     private void render(JSONObject status, JSONObject cands) {
