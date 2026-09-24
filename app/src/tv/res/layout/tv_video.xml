@@ -51,6 +51,13 @@
             android:text="刷新" />
 
         <Button
+            android:id="@+id/btn_auto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:text="🔍 自动查找" />
+
+        <Button
             android:id="@+id/btn_setup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
