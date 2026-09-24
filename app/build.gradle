@@ -4,11 +4,9 @@ plugins {
     // 同时需要在 app/ 目录下放 google-services.json
     // id 'com.google.gms.google-services'
 }
-
 android {
     namespace 'com.sister.habits'
     compileSdk 34
-
     defaultConfig {
         applicationId 'com.sister.habits'
         minSdk 24
@@ -18,7 +16,19 @@ android {
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
-
+    // ===== 渠道（flavor）：phone 手机版 / tv 电视版 =====
+    // 两渠道共享全部代码（打卡/任务/单词/商城/同步），TV 仅覆盖 Manifest 与个别布局
+    flavorDimensions 'device'
+    productFlavors {
+        phone {
+            dimension 'device'
+        }
+        tv {
+            dimension 'device'
+            applicationIdSuffix '.tv'
+            versionNameSuffix '-tv'
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -54,22 +64,18 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
     buildFeatures {
         viewBinding true
     }
-
     testOptions {
         // 允许 JVM 单测中 android.jar 的 stub 方法返回默认值（如 Log.d）
         unitTests.returnDefaultValues = true
     }
-
     configurations.all {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
     }
 }
-
 dependencies {
     // AndroidX Core
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -78,40 +84,31 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.3.1'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.viewpager2:viewpager2:1.0.0'
-
     // Activity & Fragment
     implementation 'androidx.activity:activity:1.7.2'
     implementation 'androidx.fragment:fragment:1.6.1'
-
     // Room Database
     implementation 'androidx.room:room-runtime:2.5.2'
     annotationProcessor 'androidx.room:room-compiler:2.5.2'
-
     // Lifecycle
     implementation 'androidx.lifecycle:lifecycle-runtime:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
     implementation 'androidx.lifecycle:lifecycle-common-java8:2.6.2'
-
-    // Firebase (远程同步 - 如果需要，取消注释，并配置 google-services.json)
-    // implementation 'com.google.firebase:firebase-database:20.2.2'
-    // implementation 'com.google.firebase:firebase-auth:22.1.1'
-
     // NanoHTTPD (局域网HTTP Server)
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
-
     // ZXing (QR码生成/扫描)
     implementation 'com.google.zxing:core:3.5.1'
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
-
     // Gson (JSON序列化)
     implementation 'com.google.code.gson:gson:2.10.1'
 
     // AndroidX Biometric (指纹/设备解锁)
     implementation 'androidx.biometric:biometric:1.2.0-alpha05'
-
     // Glide (图片加载)
     implementation 'com.github.bumptech.glide:glide:4.15.1'
-
+    // ===== TV 渠道专属：ExoPlayer 播放（看片功能）=====
+    tvImplementation 'androidx.media3:media3-exoplayer:1.2.1'
+    tvImplementation 'androidx.media3:media3-ui:1.2.1'
     // ===== 单元测试 =====
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:4.11.0'
