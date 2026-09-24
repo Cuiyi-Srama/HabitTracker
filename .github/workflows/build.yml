@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout 代码
         uses: actions/checkout@v5
@@ -21,7 +21,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
       - name: 🔧 准备 Android SDK（使用 runner 预装）
         run: |
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -71,13 +70,7 @@ jobs:
           name: HabitTracker-Release-APK
           path: app/build/outputs/apk/phone/release/*.apk
           if-no-files-found: error
-      - name: 📤 上传 TV版 APK产物
-        uses: actions/upload-artifact@v4
-        with:
-          name: HabitTrackerTV-APK
-          path: tv/build/outputs/apk/**/*.apk
-          if-no-files-found: error
-      - name: 📤 上传 TV版 APK产物（渠道）
+      - name: 📤 上传 TV版 APK产物（tv 渠道）
         uses: actions/upload-artifact@v4
         with:
           name: HabitTrackerTV-Flavor-APK
