@@ -31,13 +31,19 @@
         android:textColor="#7FD1AE"
         android:textSize="20sp" />
 
-    <LinearLayout
-        android:id="@+id/list"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:layout_weight="1"
-        android:orientation="vertical" />
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"
