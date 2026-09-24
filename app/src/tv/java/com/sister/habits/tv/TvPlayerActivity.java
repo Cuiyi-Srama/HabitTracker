@@ -10,13 +10,17 @@ import android.widget.Toast;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.ui.PlayerView;
 
 import com.sister.habits.R;
 
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /** TV 看片：播放页（ExoPlayer + 真实时间倒计时 + 心跳 + 到点退出） */
 public class TvPlayerActivity extends Activity {
@@ -52,7 +56,15 @@ public class TvPlayerActivity extends Activity {
 
         try {
             PlayerView playerView = findViewById(R.id.player_view);
-            player = new ExoPlayer.Builder(this).build();
+            Map<String, String> hdrs = new HashMap<>();
+            hdrs.put("X-Hub-Token", prefs.token());
+            DefaultHttpDataSource.Factory df = new DefaultHttpDataSource.Factory()
+                    .setDefaultRequestProperties(hdrs)
+                    .setConnectTimeoutMs(8000)
+                    .setReadTimeoutMs(20000);
+            player = new ExoPlayer.Builder(this)
+                    .setMediaSourceFactory(new DefaultMediaSourceFactory(df))
+                    .build();
             playerView.setPlayer(player);
             player.setMediaItem(MediaItem.fromUri(mediaUrl == null ? "" : mediaUrl));
             player.setPlayWhenReady(true);
