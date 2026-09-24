@@ -27,8 +27,8 @@ android {
             dimension 'device'
             applicationIdSuffix '.tv'
             // TV 渠道独立版本号（不影响手机版）：用于电视上覆盖安装
-            versionCode 128
-            versionName '3.0.77-tv'
+            versionCode 129
+            versionName '3.0.78-tv'
         }
     }
     signingConfigs {
