@@ -83,12 +83,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="tv-v3.0.77"
-          cp app/build/outputs/apk/tv/release/*.apk /tmp/HabitTrackerTV-3.0.77.apk
-          ls -l /tmp/HabitTrackerTV-3.0.77.apk
+          VER="${TAG#tv-v}"
+          APK="/tmp/HabitTrackerTV-${VER}.apk"
+          cp app/build/outputs/apk/tv/release/*.apk "$APK"
+          ls -l "$APK"
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
             --title "TV 移植版 $TAG" \
             --notes "与手机版同源构建：打卡 / 任务 / 单词 / 商城兑换 + 客厅看片。
           applicationId：com.sister.habits.tv（可直接覆盖旧 TV 版 v1.0.0 / v1.0.1）。
           遥控器方向键 + OK 键可操作全界面。"
-          gh release upload "$TAG" /tmp/HabitTrackerTV-3.0.76.apk --clobber
+          gh release upload "$TAG" "$APK" --clobber
           echo "✅ 发布完成：https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
