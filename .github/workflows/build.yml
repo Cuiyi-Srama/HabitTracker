@@ -82,7 +82,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="tv-v3.0.78"
+          TAG="tv-v3.0.79"
           VER="${TAG#tv-v}"
           APK="/tmp/HabitTrackerTV-${VER}.apk"
           cp app/build/outputs/apk/tv/release/*.apk "$APK"
