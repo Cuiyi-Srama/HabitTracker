@@ -82,9 +82,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="tv-v3.0.76"
-          cp app/build/outputs/apk/tv/release/*.apk /tmp/HabitTrackerTV-3.0.76.apk
-          ls -l /tmp/HabitTrackerTV-3.0.76.apk
+          TAG="tv-v3.0.77"
+          cp app/build/outputs/apk/tv/release/*.apk /tmp/HabitTrackerTV-3.0.77.apk
+          ls -l /tmp/HabitTrackerTV-3.0.77.apk
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
             --title "TV 移植版 $TAG" \
             --notes "与手机版同源构建：打卡 / 任务 / 单词 / 商城兑换 + 客厅看片。
