@@ -25,10 +25,14 @@ android {
         }
         tv {
             dimension 'device'
-            applicationIdSuffix '.tv'
-            // TV 渠道独立版本号（不影响手机版）：用于电视上覆盖安装
-            versionCode 130
-            versionName '3.0.79-tv'
+            // ★ 2026-09-25：去掉 applicationIdSuffix '.tv'。
+            //   原后缀使 TV 版成为独立 App（com.sister.habits.tv），导致：
+            //     - PIN / SharedPreferences / 词库数据 两端不共享，电视上要重设一遍
+            //     - 电视端看不到单词（本地词库为空）
+            //   现两渠道共用 com.sister.habits，真正一个 App。
+            //   代价：同一台设备不能同时装两个渠道（实际不发生：一个装电视一个装手机）。
+            versionCode 131
+            versionName '3.0.80-tv'
         }
     }
     signingConfigs {
