@@ -70,34 +70,102 @@ public class PinHelper {
         prefs(ctx).edit().putBoolean(KEY_USE_APP_PIN, enabled).apply();
     }
 
+    // ==================== 设备模式（手动优先） ====================
+
     /**
-     * 当前是否处于 TV 模式（家长手动开启或运行在电视设备上）。
-     * TV 上「系统锁屏」物理不可用，只能依赖应用 PIN。
+     * 读取家长设置的设备模式。
+     * 向上兼容：若读到旧的 force_tv_mode=true，视为 DEVICE_TV。
      */
+    public static int getDeviceMode(Context ctx) {
+        int m = prefs(ctx).getInt(KEY_DEVICE_MODE, -1);
+        if (m == DEVICE_AUTO || m == DEVICE_TV || m == DEVICE_PHONE) {
+            return m;
+        }
+        // 旧数据迁移：旧版只有 force_tv_mode 布尔值
+        if (prefs(ctx).getBoolean(KEY_FORCE_TV_MODE_LEGACY, false)) {
+            return DEVICE_TV;
+        }
+        return DEVICE_AUTO;
+    }
+
+    /**
+     * 设置设备模式。DEVICE_AUTO / DEVICE_TV / DEVICE_PHONE。
+     *
+     * ★ 设计说明：设备模式决定 TV 行为（焦点适配、字号放大、看片入口）
+     *   与 PIN 策略（TV 下不用系统锁屏，只认应用 PIN）。
+     */
+    public static void setDeviceMode(Context ctx, int mode) {
+        android.content.SharedPreferences.Editor e = prefs(ctx).edit();
+        e.putInt(KEY_DEVICE_MODE, mode);
+        // 同步旧键，避免降级回旧版后设置丢失
+        e.putBoolean(KEY_FORCE_TV_MODE_LEGACY, mode == DEVICE_TV);
+        e.apply();
+    }
+
+    /** 当前设备是否应按 TV 行为运行（手动设置优先） */
     public static boolean isTvMode(Context ctx) {
-        // 2026-09-25 修正：移除 force_tv_mode 持久化开关。
-        // 该开关一旦为 true 会永久污染设备：手机上也会隐藏「系统锁屏」并切到 TV 守卫分支，
-        // 导致手机进不了家长界面。现只依据设备硬件类型。
+        int mode = getDeviceMode(ctx);
+        if (mode == DEVICE_TV) return true;
+        if (mode == DEVICE_PHONE) return false;
+        return isRealTv(ctx);
+    }
+
+    /**
+     * 纯硬件判定：设备本身是否为电视。
+     * 用于：（1）DEVICE_AUTO 下的默认值；（２）设置界面向家长展示「自动判定结果」。
+     * 不受 SharedPreferences 影响，不会被手动设置污染。
+     */
+    public static boolean isRealTv(Context ctx) {
+        // 第一道：UiModeManager
+        boolean tv;
         try {
             android.app.UiModeManager um =
                     (android.app.UiModeManager) ctx.getSystemService(Context.UI_MODE_SERVICE);
-            return um != null
-                    && um.getCurrentModeType() == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
-        } catch (Exception e) {
+            tv = um != null
+                    && um.getCurrentModeType()
+                       == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
+        } catch (Throwable e) {
             return false;
+        }
+        if (!tv) return false;
+        // 第二道：有触摸屏且无 leanback 特征 → 定义为手机（防智慧屏误报）
+        try {
+            android.content.pm.PackageManager pm = ctx.getPackageManager();
+            boolean hasTouch = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN);
+            boolean hasLeanback = pm.hasSystemFeature("android.software.leanback");
+            if (hasTouch && !hasLeanback) return false;
+        } catch (Throwable ignored) {
+        }
+        return true;
+    }
+
+    /** 设备模式的中文名称（供 UI 展示） */
+    public static String deviceModeName(Context ctx) {
+        switch (getDeviceMode(ctx)) {
+            case DEVICE_TV:    return "强制 TV 模式";
+            case DEVICE_PHONE: return "强制手机模式";
+            default:           return "自动判定";
         }
     }
 
-    public static void setForceTvMode(Context ctx, boolean enabled) {
-        // @deprecated 2026-09-25：TV 判定改为纯硬件检测，本方法已无效（no-op）。
-        //   旧版写入的脏标记不再被读取，无需清理。
+    /** 当前实际生效行为的中文描述（供 UI 展示） */
+    public static String deviceModeEffective(Context ctx) {
+        boolean tv = isTvMode(ctx);
+        int mode = getDeviceMode(ctx);
+        if (mode == DEVICE_AUTO) {
+            return tv ? "自动判定 → 电视" : "自动判定 → 手机";
+        }
+        return tv ? "强制 TV 模式" : "强制手机模式";
     }
 
     /**
-     * 是否需要验证。
-     * TV 模式下只看应用 PIN —— 系统锁屏在电视上不存在，若仍按「任一开启」判定，
-     * 会出现「以为有锁、实际裸奔」的致命假象。
+     * @deprecated 使用 {@link #setDeviceMode(Context, int)}。
+     *   保留以免旧调用点编译失败。
      */
+    @Deprecated
+    public static void setForceTvMode(Context ctx, boolean enabled) {
+        setDeviceMode(ctx, enabled ? DEVICE_TV : DEVICE_PHONE);
+    }
     public static boolean isAnyEnabled(Context ctx) {
         if (isTvMode(ctx)) {
             return isAppPinEnabled(ctx) && isPinSet(ctx);
