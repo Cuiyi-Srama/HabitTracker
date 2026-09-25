@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  TV 播放页布局（2026-09-25 v4.0 重做）。
+
+  设计要点：
+   1. 倒计时从「右下角 28sp 粗体亮绿」改为「右上角 18sp 半透明胶囊」，
+      默认不抢视线；仅当剩余 <= 5 分钟时才切到醒目态（见 TvPlayerActivity）。
+   2. 标题同样弱化为半透明小字，避免长期遮挡画面。
+   3. 新增暂停浮层 overlay_timeup：倒计时归零时显示，
+      提供「再兑 N 分钟继续看」按钮，而不是直接退出。
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,27 +20,84 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
+    <!-- 标题：弱化，半透明 -->
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_margin="24dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginRight="160dp"
+        android:alpha="0.55"
+        android:maxLines="1"
+        android:ellipsize="end"
         android:textColor="#E6EDF3"
-        android:textSize="22sp" />
+        android:textSize="16sp" />
 
+    <!--
+      倒计时胶囊（右上角）。
+      默认：小字号 + 低透明度，不干扰观看；
+      剩余 <= 5 分钟：TvPlayerActivity 动态放大、提高透明度并改为暖色。
+    -->
     <TextView
         android:id="@+id/tv_count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="28dp"
-        android:background="#99000000"
-        android:paddingLeft="18dp"
-        android:paddingTop="8dp"
-        android:paddingRight="18dp"
-        android:paddingBottom="8dp"
-        android:textColor="#7FD1AE"
-        android:textSize="28sp"
-        android:textStyle="bold" />
+        android:layout_gravity="top|end"
+        android:layout_marginTop="14dp"
+        android:layout_marginRight="18dp"
+        android:alpha="0.75"
+        android:background="@drawable/tv_count_bg"
+        android:paddingLeft="14dp"
+        android:paddingTop="6dp"
+        android:paddingRight="14dp"
+        android:paddingBottom="6dp"
+        android:textColor="#CFE8DD"
+        android:textSize="18sp" />
+
+    <!-- 时间到浮层：默认隐藏，倒计时归零时显示 -->
+    <LinearLayout
+        android:id="@+id/overlay_timeup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_timeup_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="今天的时间用完啦"
+            android:textColor="#FFFFFF"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_timeup_sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:textColor="#9AA7B4"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_extend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:minWidth="220dp"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/btn_timeup_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:minWidth="220dp"
+            android:text="返回列表"
+            android:textSize="20sp" />
+    </LinearLayout>
 </FrameLayout>
