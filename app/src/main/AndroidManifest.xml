@@ -9,6 +9,15 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- TV 模式：声明 leanback 支持。required=false —— 同一个 APK 手机与电视都能装 -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:href="android.hardware.touchscreen"
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
     <!-- QR码扫描需相机权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 存储备份 -->
@@ -63,6 +72,19 @@
             android:exported="false"
             android:screenOrientation="portrait"
             tools:replace="android:screenOrientation" />
+
+        <!-- 📺 TV 模式（步骤①）：leanback 启动器入口，可从电视首页直接进入 -->
+        <activity
+            android:name=".tv.TvMainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|navigation"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- 局域网同步服务 -->
         <service
