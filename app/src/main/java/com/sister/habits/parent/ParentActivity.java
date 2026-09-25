@@ -4311,9 +4311,19 @@ private void showProfileSettings() {
                 .setPositiveButton("💾 保存", (d, w) -> {
                     boolean newSys = tvMode ? false : cbSysLock.isChecked();
                     boolean newPin = cbAppPin.isChecked();
+                    // ★ 2026-09-25 修正：TV 上不再硬要求必须勾选开关。
+                    //   原逻辑在 TV 下强制 newPin=true，家长只点「设置PIN码」而不碰复选框时，
+                    //   保存被拦截，导致「PIN 设了但开关没开」的死循环。
+                    //   现改为：TV 下只要 PIN 密码已存在，自动开启开关；若密码也没设，才提醒。
                     if (tvMode && !newPin) {
-                        Toast.makeText(this, "电视上无系统锁屏，必须启用应用 PIN", Toast.LENGTH_LONG).show();
-                        return;
+                        if (PinHelper.isPinSet(this)) {
+                            newPin = true; // 密码已存在，静默补上开关
+                        } else {
+                            Toast.makeText(this,
+                                    "请先点下方「设置PIN码」创建密码",
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
                     }
                     if (!newSys && !newPin) {
                         Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
