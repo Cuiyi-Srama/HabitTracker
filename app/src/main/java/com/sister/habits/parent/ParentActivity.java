@@ -4240,11 +4240,16 @@ private void showProfileSettings() {
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         layout.setPadding(40, 20, 40, 20);
 
+        // ★ 2026-09-25：TV 上无系统锁屏，该选项无效且会让用户误以为已受保护。
+        //   故在 TV 模式下隐藏且禁用，强制走应用 PIN。
+        final boolean tvMode = PinHelper.isTvMode(this);
         android.widget.CheckBox cbSysLock = new android.widget.CheckBox(this);
         cbSysLock.setText("🔒 系统锁屏验证");
-        cbSysLock.setChecked(sysOn);
+        cbSysLock.setChecked(tvMode ? false : sysOn);
+        cbSysLock.setEnabled(!tvMode);
         cbSysLock.setTextSize(16);
         cbSysLock.setPadding(0, 8, 0, 8);
+        if (tvMode) cbSysLock.setVisibility(android.view.View.GONE);
         layout.addView(cbSysLock);
 
         android.widget.CheckBox cbAppPin = new android.widget.CheckBox(this);
@@ -4280,8 +4285,12 @@ private void showProfileSettings() {
                 .setTitle("🔐 安全防护管理")
                 .setView(layout)
                 .setPositiveButton("💾 保存", (d, w) -> {
-                    boolean newSys = cbSysLock.isChecked();
+                    boolean newSys = tvMode ? false : cbSysLock.isChecked();
                     boolean newPin = cbAppPin.isChecked();
+                    if (tvMode && !newPin) {
+                        Toast.makeText(this, "电视上无系统锁屏，必须启用应用 PIN", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (!newSys && !newPin) {
                         Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
                         return;
