@@ -58,7 +58,9 @@ public class ChildActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_child);
+        // 2026-09-25 单 APK 化：运行时选择布局。
+        // TV 与手机共用同一份代码，TV 下使用含「TV 看片」入口且适配 D-pad 焦点的布局。
+        setContentView(com.sister.habits.tv.TvLayouts.childLayout(this));
 
                 db = AppDatabase.getInstance(this);
         syncManager = SyncManager.getInstance(this);
