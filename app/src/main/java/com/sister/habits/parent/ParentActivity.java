@@ -4314,7 +4314,7 @@ private void showProfileSettings() {
         });
 
         btnReset.setOnClickListener(v -> {
-            final boolean tvMode = PinHelper.isTvMode(this);
+            // tvMode 已在本方法前部声明（cbSysLock 处），此处直接复用，避免重复定义编译错误
             String msg = tvMode
                     ? "将清除 PIN 码。注意：电视上无系统锁屏，清除后需重新设置，否则家长界面无任何防护。确定？"
                     : "将关闭所有安全防护，只保留系统锁屏。确定？";
