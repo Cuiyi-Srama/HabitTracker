@@ -558,8 +558,14 @@ public class ParentActivity extends AppCompatActivity {
             if (kgm != null && kgm.isKeyguardSecure()) {
                 deviceLockSuccessCallback = () -> {
                     if (db != null) {
-                        if (PinHelper.isAppPinEnabled(this)) showPinVerifyDialog(() -> refreshAll());
-                        refreshAll();
+                        // ★ 2026-09-25 修复：原代码弹 PIN 后紧接着又调 refreshAll()，
+                        //   两者并行执行导致界面状态错乱（PIN 框还在，主界面已刷新）。
+                        //   现改为互斥分支：需验证则只弹验证，通过后再刷新。
+                        if (PinHelper.isAppPinEnabled(this)) {
+                            showPinVerifyDialog(() -> refreshAll());
+                        } else {
+                            refreshAll();
+                        }
                     }
                 };
                 android.content.Intent intent = kgm.createConfirmDeviceCredentialIntent("🔐 家长验证", "请验证身份以进入家长管理");
@@ -4288,16 +4294,33 @@ private void showProfileSettings() {
                 .show();
 
         btnSetPin.setOnClickListener(v -> {
-            showAuthVerifyDialog(() -> showPinSetupDialog());
+            // ★ 2026-09-25 修复：原写法无条件调 showAuthVerifyDialog，
+            //   未设过 PIN 时 verifyPin 永远返回 false，导致「设置 PIN」入口死锁，
+            //   用户永远进不到设置页。已设过才要求先验证旧 PIN。
+            if (PinHelper.isPinSet(this)) {
+                showAuthVerifyDialog(() -> showPinSetupDialog());
+            } else {
+                showPinSetupDialog();
+            }
         });
 
         btnReset.setOnClickListener(v -> {
+            final boolean tvMode = PinHelper.isTvMode(this);
+            String msg = tvMode
+                    ? "将清除 PIN 码。注意：电视上无系统锁屏，清除后需重新设置，否则家长界面无任何防护。确定？"
+                    : "将关闭所有安全防护，只保留系统锁屏。确定？";
             new AlertDialog.Builder(this)
                     .setTitle("确认重置")
-                    .setMessage("将关闭所有安全防护，只保留系统锁屏。确定？")
+                    .setMessage(msg)
                     .setPositiveButton("确定", (dd, ww) -> {
-                        PinHelper.disableAll(this);
-                        Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
+                        if (tvMode) {
+                            // TV 上无系统锁屏，「保留系统锁屏」等于无防护；故只清 PIN。
+                            PinHelper.clearPinOnly(this);
+                            Toast.makeText(this, "已清除 PIN码，请重新设置", Toast.LENGTH_SHORT).show();
+                        } else {
+                            PinHelper.disableAll(this);
+                            Toast.makeText(this, "已重置为系统锁屏验证", Toast.LENGTH_SHORT).show();
+                        }
                     })
                     .setNegativeButton("取消", null)
                     .show();
