@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TV 模式主页布局（步骤①②）
+
+  D-pad 遥控器适配要点（每条都是必填，缺一项遥控器就会「焦点乱跳/点不到」）：
+   1. focusable="true"            —— 否则方向键跳过该控件
+   2. focusableInTouchMode="false" —— TV 上若为 true 会吞掉首次方向键
+   3. nextFocusUp/Down/Left/Right —— 显式声明焦点链，不依赖默认算法
+   4. minHeight >= 56dp           —— 焦点框才够醒目（3 米外可辨）
+   5. textSize >= 20sp            —— 远距离可读，手机端的 14sp 在 TV 上等于瞎
+   6. 禁用一切触摸手势控件（SwipeRefresh/ViewPager/长按菜单）
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0E1116"
+    android:fillViewport="true"
+    android:padding="48dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\ud83d\udcfa HabitTracker TV"
+            android:textColor="#FFFFFF"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#9AA7B4"
+            android:textSize="20sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="28dp"
+            android:background="#2A323C" />
+
+        <!-- 焦点链：mode -> exit -> mode（环形，避免焦点「掉出屏幕」） -->
+        <Button
+            android:id="@+id/btn_tv_mode_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:minHeight="64dp"
+            android:nextFocusDown="@id/btn_tv_exit"
+            android:nextFocusUp="@id/btn_tv_exit"
+            android:text="\u5207\u6362 TV \u6a21\u5f0f\u5f00\u5173"
+            android:textSize="22sp" />
+
+        <Button
+            android:id="@+id/btn_tv_exit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:minHeight="64dp"
+            android:nextFocusDown="@id/btn_tv_mode_switch"
+            android:nextFocusUp="@id/btn_tv_mode_switch"
+            android:text="\u8fd4\u56de\u624b\u673a\u754c\u9762"
+            android:textSize="22sp" />
+
+    </LinearLayout>
+</ScrollView>
