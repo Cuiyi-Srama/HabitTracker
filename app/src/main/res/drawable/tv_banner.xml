@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV 启动器横幅（320x180） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#0E1116"
+        android:pathData="M0,0 h320 v180 h-320 Z" />
+    <path
+        android:fillColor="#1F6FEB"
+        android:pathData="M122,50 h76 a10,10 0 0 1 10,10 v60 a10,10 0 0 1 -10,10 h-76 a10,10 0 0 1 -10,-10 v-60 a10,10 0 0 1 10,-10 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M150,70 L150,110 L184,90 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7FD1AE"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M58,96 L74,112 L104,80" />
+    <path
+        android:fillColor="#7FD1AE"
+        android:pathData="M216,60 h34 v7 h-34 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M216,90 h34 v7 h-34 Z" />
+    <path
+        android:fillColor="#1F6FEB"
+        android:pathData="M216,120 h34 v7 h-34 Z" />
+</vector>
