@@ -32,7 +32,7 @@ public class PinHelper {
 
     private static final String KEY_USE_SYSTEM_LOCK = "use_system_lock";
     private static final String KEY_USE_APP_PIN = "use_app_pin";
-    private static final String KEY_FORCE_TV_MODE = "force_tv_mode";
+    // KEY_FORCE_TV_MODE 已废弃（2026-09-25）
 
     /** PIN 拉伸轮数：10000 轮 HMAC，手机上约 20~60ms，不影响体感 */
     private static final int ITERATIONS = 10000;
@@ -62,7 +62,9 @@ public class PinHelper {
      * TV 上「系统锁屏」物理不可用，只能依赖应用 PIN。
      */
     public static boolean isTvMode(Context ctx) {
-        if (prefs(ctx).getBoolean(KEY_FORCE_TV_MODE, false)) return true;
+        // 2026-09-25 修正：移除 force_tv_mode 持久化开关。
+        // 该开关一旦为 true 会永久污染设备：手机上也会隐藏「系统锁屏」并切到 TV 守卫分支，
+        // 导致手机进不了家长界面。现只依据设备硬件类型。
         try {
             android.app.UiModeManager um =
                     (android.app.UiModeManager) ctx.getSystemService(Context.UI_MODE_SERVICE);
@@ -74,7 +76,8 @@ public class PinHelper {
     }
 
     public static void setForceTvMode(Context ctx, boolean enabled) {
-        prefs(ctx).edit().putBoolean(KEY_FORCE_TV_MODE, enabled).apply();
+        // @deprecated 2026-09-25：TV 判定改为纯硬件检测，本方法已无效（no-op）。
+        //   旧版写入的脏标记不再被读取，无需清理。
     }
 
     /**
