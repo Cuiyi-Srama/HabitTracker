@@ -1,219 +1,215 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  TV 渠道专属：背单词界面（覆盖 src/main 同名布局）
-
-  修复问题：电视上「连单词都看不到」
-  根因：手机版采用「竖向单列 + 单词区 layout_weight=1 + 底部固定高度按钮」，
-        TvCompat 运行时将字号 ×1.3 后，底部按钮文字变大但高度写死，
-        导致布局向下溢出，权重 1 的单词区被挤到高度趋近 0。
-
-  修法：改为横屏双栏（字典式排版）——左栏单词、右栏选项，两栏各占一半宽度，
-        避免与手机版的纵向竞争；同时给所有可焦点元素显式声明 D-pad 焦点链。
--->
+<!-- TV 渠道专属背单词布局（覆盖 src/main 同名）
+     所有元素标记 android:tag="tv_compat_skip"，防 TvCompat 二次放大字号撑爆布局 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
     android:background="#FFF8F0"
-    android:padding="32dp">
+    android:orientation="horizontal"
+    android:padding="24dp">
 
-    <!-- ========== 左栏：单词展示 ========== -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_marginEnd="16dp"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
         android:background="@drawable/card_background"
-        android:padding="24dp"
-        android:layout_marginEnd="20dp">
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/tv_word_stats"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:tag="tv_compat_skip"
             android:text="📖 加载中..."
-            android:textSize="20sp"
             android:textColor="#666666"
-            android:layout_marginBottom="8dp" />
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/tv_streak"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:tag="tv_compat_skip"
             android:text="🔥 "
-            android:textSize="20sp"
             android:textColor="#FF6B35"
-            android:layout_marginBottom="20dp" />
+            android:textSize="18sp" />
 
-        <!-- 单词主体：足够大，3 米外可读；wrap_content 不被截断 -->
         <TextView
             android:id="@+id/tv_word_display"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="apple"
-            android:textSize="64sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
+            android:ellipsize="end"
             android:gravity="center"
             android:maxLines="2"
-            android:ellipsize="end" />
+            android:tag="tv_compat_skip"
+            android:text="apple"
+            android:textColor="#333333"
+            android:textSize="56sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_phonetic"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:tag="tv_compat_skip"
             android:text="/ˈæp.əl/"
-            android:textSize="26sp"
             android:textColor="#999999"
-            android:layout_marginTop="12dp" />
+            android:textSize="22sp" />
 
         <TextView
             android:id="@+id/tv_prompt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:tag="tv_compat_skip"
             android:text="选出正确的中文意思"
-            android:textSize="22sp"
             android:textColor="#666666"
-            android:layout_marginTop="24dp" />
+            android:textSize="20sp" />
 
-        <!-- 朗读：可焦点、足够大 -->
         <TextView
             android:id="@+id/btn_speak"
-            android:layout_width="96dp"
-            android:layout_height="72dp"
-            android:layout_marginTop="20dp"
+            android:layout_width="88dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="16dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:contentDescription="朗读"
             android:focusable="true"
             android:gravity="center"
+            android:tag="tv_compat_skip"
             android:text="🔊"
-            android:textSize="48sp" />
+            android:textSize="40sp" />
 
     </LinearLayout>
 
-    <!-- ========== 右栏：选项+操作 ========== -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:orientation="vertical">
 
         <Button
             android:id="@+id/btn_option_1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginBottom="10dp"
             android:layout_weight="1"
-            android:layout_marginBottom="12dp"
+            android:backgroundTint="#FFFFFF"
             android:focusable="true"
             android:focusableInTouchMode="false"
             android:nextFocusDown="@id/btn_option_2"
-            android:backgroundTint="#F5F5F5"
-            android:minHeight="72dp"
+            android:tag="tv_compat_skip"
             android:textAllCaps="false"
             android:textColor="#333333"
-            android:textSize="24sp" />
+            android:textSize="22sp" />
 
         <Button
             android:id="@+id/btn_option_2"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginBottom="10dp"
             android:layout_weight="1"
-            android:layout_marginBottom="12dp"
+            android:backgroundTint="#FFFFFF"
             android:focusable="true"
             android:focusableInTouchMode="false"
-            android:nextFocusUp="@id/btn_option_1"
             android:nextFocusDown="@id/btn_option_3"
-            android:backgroundTint="#F5F5F5"
-            android:minHeight="72dp"
+            android:nextFocusUp="@id/btn_option_1"
+            android:tag="tv_compat_skip"
             android:textAllCaps="false"
             android:textColor="#333333"
-            android:textSize="24sp" />
+            android:textSize="22sp" />
 
         <Button
             android:id="@+id/btn_option_3"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginBottom="10dp"
             android:layout_weight="1"
-            android:layout_marginBottom="12dp"
+            android:backgroundTint="#FFFFFF"
             android:focusable="true"
             android:focusableInTouchMode="false"
-            android:nextFocusUp="@id/btn_option_2"
             android:nextFocusDown="@id/btn_option_4"
-            android:backgroundTint="#F5F5F5"
-            android:minHeight="72dp"
+            android:nextFocusUp="@id/btn_option_2"
+            android:tag="tv_compat_skip"
             android:textAllCaps="false"
             android:textColor="#333333"
-            android:textSize="24sp" />
+            android:textSize="22sp" />
 
         <Button
             android:id="@+id/btn_option_4"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginBottom="12dp"
             android:layout_weight="1"
-            android:layout_marginBottom="16dp"
+            android:backgroundTint="#FFFFFF"
             android:focusable="true"
             android:focusableInTouchMode="false"
+            android:nextFocusDown="@id/btn_new_words"
             android:nextFocusUp="@id/btn_option_3"
-            android:nextFocusDown="@id/btn_dont_know"
-            android:backgroundTint="#F5F5F5"
-            android:minHeight="72dp"
+            android:tag="tv_compat_skip"
             android:textAllCaps="false"
             android:textColor="#333333"
-            android:textSize="24sp" />
+            android:textSize="22sp" />
 
         <Button
             android:id="@+id/btn_dont_know"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
             android:backgroundTint="#FFF3E0"
             android:focusable="true"
             android:focusableInTouchMode="false"
-            android:minHeight="64dp"
-            android:nextFocusUp="@id/btn_option_4"
+            android:minHeight="56dp"
             android:nextFocusDown="@id/btn_new_words"
+            android:nextFocusUp="@id/btn_option_4"
+            android:tag="tv_compat_skip"
             android:text="😅 我不会"
             android:textAllCaps="false"
             android:textColor="#E65100"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/btn_new_words"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginEnd="8dp"
+                android:layout_weight="1"
                 android:focusable="true"
                 android:focusableInTouchMode="false"
-                android:minHeight="64dp"
-                android:nextFocusUp="@id/btn_dont_know"
+                android:minHeight="56dp"
                 android:nextFocusRight="@id/btn_review"
+                android:nextFocusUp="@id/btn_dont_know"
+                android:tag="tv_compat_skip"
                 android:text="📚 新词"
                 android:textAllCaps="false"
-                android:textSize="22sp" />
+                android:textSize="20sp" />
 
             <Button
                 android:id="@+id/btn_review"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="8dp"
+                android:layout_weight="1"
                 android:focusable="true"
                 android:focusableInTouchMode="false"
-                android:minHeight="64dp"
+                android:minHeight="56dp"
                 android:nextFocusLeft="@id/btn_new_words"
+                android:nextFocusUp="@id/btn_dont_know"
+                android:tag="tv_compat_skip"
                 android:text="🔄 复习"
                 android:textAllCaps="false"
-                android:textSize="22sp" />
+                android:textSize="20sp" />
 
         </LinearLayout>
 
