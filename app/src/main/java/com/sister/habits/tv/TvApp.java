@@ -29,7 +29,7 @@ public class TvApp extends HabitApp {
                 //   以下三件事（PIN 守卫 / 字号放大 / 看片入口）均为 TV 专属，
                 //   若不加判定在手机上执行，会导致手机进不了家长界面、
                 //   字体被意外放大。故先做电视设备硬判定。
-                if (!TvPinGuard.isRealTv(activity)) {
+                if (!TvPinGuard.isTvDevice(activity)) {
                     return;
                 }
                 try {
