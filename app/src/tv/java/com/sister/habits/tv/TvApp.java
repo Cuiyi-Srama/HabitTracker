@@ -25,6 +25,10 @@ public class TvApp extends HabitApp {
             @Override
             public void onActivityResumed(Activity activity) {
                 try {
+                    // 步骤③：家长界面先行 PIN 守卫，未通过则不做其余处理
+                    if (!TvPinGuard.check(activity)) {
+                        return;
+                    }
                     TvCompat.apply(activity);
                     bindTvEntries(activity);
                 } catch (Throwable ignored) {
@@ -36,7 +40,15 @@ public class TvApp extends HabitApp {
             @Override public void onActivityPaused(Activity a) { }
             @Override public void onActivityStopped(Activity a) { }
             @Override public void onActivitySaveInstanceState(Activity a, Bundle b) { }
-            @Override public void onActivityDestroyed(Activity a) { }
+
+            @Override
+            public void onActivityDestroyed(Activity a) {
+                // 离开时清理放行标记：下次进入需重新验证
+                try {
+                    TvPinGuard.forget(a);
+                } catch (Throwable ignored) {
+                }
+            }
         });
     }
 
