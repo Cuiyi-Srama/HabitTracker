@@ -51,15 +51,36 @@ public final class TvPinGuard {
      *   手机上即使家长手动切到 TV 看片模式，也不会被本类拦截。
      */
     public static boolean isRealTv(Activity a) {
+        // 第一道：UiModeManager 必须报告是电视
+        boolean tv;
         try {
             android.app.UiModeManager um =
                     (android.app.UiModeManager) a.getSystemService(Context.UI_MODE_SERVICE);
-            return um != null
+            tv = um != null
                     && um.getCurrentModeType()
                        == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
         } catch (Throwable e) {
             return false;
         }
+        if (!tv) return false;
+
+        // ★ 第二道保险（防御性编程 / 不可逆判据）：
+        //   能取得 KeyguardManager 的设备不会是真电视；真电视上系统锁屏基本不存在且
+        //   设置界面无法设置。若某些定制电视（含 Android内核的智慧屏）报了
+        //   TELEVISION 但实为手机形态，这里仍会把它当电视处理，但至少不会
+        //   对普通手机误拦。
+        try {
+            // 设备是否声明支持触摸：手机为 true，电视通常无触摸屏
+            android.content.pm.PackageManager pm = a.getPackageManager();
+            boolean hasTouch = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN);
+            boolean hasLeanback = pm.hasSystemFeature("android.software.leanback");
+            if (hasTouch && !hasLeanback) {
+                // 有触摸且无 leanback 特征 → 定义为手机，不启用 TV 守卫
+                return false;
+            }
+        } catch (Throwable ignored) {
+        }
+        return true;
     }
 
     /** 需要 PIN 保护的界面（家长管理入口 + 电视设备） */
