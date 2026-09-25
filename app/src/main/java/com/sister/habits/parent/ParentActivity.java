@@ -3212,13 +3212,23 @@ private void showProfileSettings() {
     private void showHubSettings() {
         SharedPreferences prefs = getSharedPreferences("parent_prefs", MODE_PRIVATE);
         String currentMode = prefs.getString("default_mode", "child");
-        String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "❓ 每次询问"};
-        int checked = "child".equals(currentMode) ? 0 : "parent".equals(currentMode) ? 1 : 2;
+        String[] modes = {"👧 默认进入孩子模式", "👨 默认进入家长模式", "📺 默认进入 TV 看片", "❓ 每次询问"};
+        int checked = "child".equals(currentMode) ? 0
+                : "parent".equals(currentMode) ? 1
+                : "tv".equals(currentMode) ? 2 : 3;
         // v3.0.65：Hub中枢相关配置已移至「🔄同步中心」，本对话框只保留启动模式
         new AlertDialog.Builder(this)
                 .setTitle("🏠 默认启动模式")
                 .setSingleChoiceItems(modes, checked, (d, w) -> {
-                    String mode = w == 0 ? "child" : w == 1 ? "parent" : "ask";
+                    String mode = w == 0 ? "child" : w == 1 ? "parent" : w == 2 ? "tv" : "ask";
+                    if ("tv".equals(mode) && !hasTvChannel()) {
+                        Toast.makeText(this, "当前安装包未包含 TV 渠道，请安装 tv 渠道版 APK", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    if ("tv".equals(mode) && !(PinHelper.isAppPinEnabled(this) && PinHelper.isPinSet(this))) {
+                        Toast.makeText(this, "⚠️ 请先设置应用 PIN 码（TV 无指纹/无锁屏）", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     prefs.edit().putString("default_mode", mode).apply();
                 })
                 .setPositiveButton("✅ 确定", null)
