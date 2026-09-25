@@ -24,6 +24,31 @@ public final class TvHubApi {
         this.token = token == null ? "" : token.trim();
     }
 
+    /** 暴露 token，供封面图加载器等直接建连的场景使用 */
+    public String token() {
+        return token;
+    }
+
+    /** 暴露 base，供直接建连的场景使用 */
+    public String base() {
+        return base;
+    }
+
+    /**
+     * 封面图代理地址（2026-09-25 v4.0）。
+     * TV 路由白名单只放行 Hub，无法直连 B 站 CDN，故走 Hub 代理端点。
+     */
+    public String coverUrl(String videoId) {
+        if (base.isEmpty() || videoId == null || videoId.isEmpty()) {
+            return null;
+        }
+        try {
+            return base + "/cover/" + java.net.URLEncoder.encode(videoId, "UTF-8");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public JSONObject get(String path) throws Exception {
         return call("GET", path, null);
     }
