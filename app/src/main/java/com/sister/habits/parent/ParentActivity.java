@@ -4356,25 +4356,57 @@ private void showProfileSettings() {
      *   故用反射按类名加载，两个 flavor 都能编译。
      */
     private void showTvModeDialog() {
-        final boolean hasTvChannel = hasTvChannel();
         final boolean pinSet = PinHelper.isAppPinEnabled(this) && PinHelper.isPinSet(this);
-        StringBuilder sb = new StringBuilder();
-        sb.append(hasTvChannel ? "✅ 当前包含 TV 渠道功能" : "⚠️ 当前安装包为手机版，无 TV 渠道");
-        sb.append("\n应用 PIN：").append(pinSet ? "已设置" : "未设置");
-        sb.append("\n\n电视上无指纹、无系统锁屏，PIN 码是唯一防线，");
-        sb.append("进入家长界面前会强制校验。");
+        final int mode = PinHelper.getDeviceMode(this);
+        final boolean realTv = PinHelper.isRealTv(this);
+        final String effective = PinHelper.deviceModeEffective(this);
 
-        String[] actions = pinSet
-                ? new String[]{"⚙️ 去设置/修改 PIN", "📺 测试进入 TV 看片"}
-                : new String[]{"⚙️ 去设置 PIN（强制）"};
+        StringBuilder sb = new StringBuilder();
+        sb.append("当前生效：").append(effective).append("\n\n");
+        sb.append("设备硬件判定：").append(realTv ? "电视" : "手机（触摸屏，无 leanback）").append("\n");
+        sb.append("应用 PIN：").append(pinSet ? "已设置" : "未设置").append("\n\n");
+        sb.append("【自动判定】按设备硬件识别。\n");
+        sb.append("  手机接大屏 / 智慧屏被误判时，自动判定会失准，\n");
+        sb.append("  此时请改用下面两项手动指定。\n\n");
+        sb.append("【强制 TV】电视行为：不用系统锁屏（只认应用 PIN）、\n");
+        sb.append("  字号放大、遥控器焦点适配、显示看片入口。\n\n");
+        sb.append("【强制手机】手机行为：保留系统锁屏验证，不做字号放大。\n\n");
+        sb.append("⚠️ 切换后立即生效，无需重启。");
+
+        String[] actions = {
+                (mode == PinHelper.DEVICE_AUTO  ? "\u2705 " : "      ") + "自动判定（推荐）",
+                (mode == PinHelper.DEVICE_TV    ? "\u2705 " : "      ") + "强制 TV 模式",
+                (mode == PinHelper.DEVICE_PHONE ? "\u2705 " : "      ") + "强制手机模式",
+                "",
+                "\u2699\ufe0f 去设置/修改 PIN（TV 下必须）",
+                pinSet ? "\ud83d\udcfa 测试进入 TV 看片" : ""
+        };
         new AlertDialog.Builder(this)
-                .setTitle("📺 TV 模式")
+                .setTitle("\ud83d\udcfa 设备模式（TV / 手机）")
                 .setMessage(sb.toString())
                 .setItems(actions, (d, w) -> {
-                    if (!pinSet || w == 0) { showPinManageDialog(); return; }
-                    openTvChannel();
+                    switch (w) {
+                        case 0:
+                        case 1:
+                        case 2:
+                            int newMode = (w == 0) ? PinHelper.DEVICE_AUTO
+                                        : (w == 1) ? PinHelper.DEVICE_TV
+                                                   : PinHelper.DEVICE_PHONE;
+                            PinHelper.setDeviceMode(this, newMode);
+                            Toast.makeText(this,
+                                    "已切换为：" + PinHelper.deviceModeEffective(this),
+                                    Toast.LENGTH_LONG).show();
+                            showTvModeDialog();  // 刷新显示
+                            break;
+                        case 4:
+                            showPinManageDialog();
+                            break;
+                        case 5:
+                            if (pinSet) openTvChannel();
+                            break;
+                    }
                 })
-                .setNegativeButton("← 返回", (d, w) -> showSystemMenu())
+                .setNegativeButton("\u2190 \\u8fd4\\u56de", (d, w) -> showSystemMenu())
                 .show();
     }
 
