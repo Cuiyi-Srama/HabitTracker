@@ -75,6 +75,9 @@ public class MainActivity extends AppCompatActivity {
         } else if ("parent".equals(defaultMode)) {
             enterParentMode();
             return;
+        } else if ("tv".equals(defaultMode)) {
+            launchTvMode();
+            return;
         }
 
         showModeSelection();
@@ -265,6 +268,23 @@ public class MainActivity extends AppCompatActivity {
         });
         builder.setCancelable(false);
         builder.show();
+    }
+
+    /**
+     * 默认启动模式 = TV 看片。
+     *
+     * ★ 反射调用：TV 渠道的类位于 src/tv，phone flavor 编译时不可见，
+     *   直接 import 会导致 phone 构建失败。故按类名加载。
+     */
+    private void launchTvMode() {
+        try {
+            Class<?> cls = Class.forName("com.sister.habits.tv.TvVideoActivity");
+            startActivity(new Intent(this, cls));
+            finish();
+        } catch (Throwable e) {
+            Toast.makeText(this, "当前包未包含 TV 渠道，已回退模式选择", Toast.LENGTH_LONG).show();
+            showModeSelection();
+        }
     }
 
     private void enterParentMode() {
