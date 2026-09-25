@@ -9,6 +9,16 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- ===== ★ TV 兼容声明（2026-09-25 单 APK 化后合并自 src/tv/AndroidManifest.xml） ===== -->
+    <!-- leanback required=false：手机与电视都能装同一个包 -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.vibrate" android:required="false" />
+
     <!-- QR码扫描需相机权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 存储备份 -->
@@ -17,9 +27,10 @@
         android:maxSdkVersion="28" />
 
     <application
-        android:name=".HabitApp"
+        android:name=".tv.TvApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
@@ -35,6 +46,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <!-- ★ 电视主页也能出现图标（手机上该 category 无副作用） -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -63,6 +76,17 @@
             android:exported="false"
             android:screenOrientation="portrait"
             tools:replace="android:screenOrientation" />
+
+        <!-- ===== ★ TV 看片入口（单 APK 化后合并） ===== -->
+        <activity
+            android:name=".tv.TvVideoActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|navigation"
+            android:exported="false" />
+
+        <activity
+            android:name=".tv.TvPlayerActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|navigation"
+            android:exported="false" />
 
         <!-- 局域网同步服务 -->
         <service
