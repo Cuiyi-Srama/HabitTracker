@@ -20,10 +20,16 @@ import com.sister.habits.R;
  */
 public final class TvCompat {
 
-    /** 字号放大倍率 */
-    private static final float TEXT_SCALE = 1.30f;
+    /**
+     * 字号放大倍率。
+     *
+     * ★ 2026-09-25 调整：1.30 → 1.15。
+     *   原 1.30 在「固定高度按钮 + layout_weight 容器」混排的布局上会把容器撑溢出，
+     *   导致权重区被挤到高度趋近 0（实测：TV 背单词页单词区完全空白）。
+     */
+    private static final float TEXT_SCALE = 1.15f;
     /** 放大后的字号上限（sp），避免标题被撑爆 */
-    private static final float TEXT_MAX_SP = 40f;
+    private static final float TEXT_MAX_SP = 34f;
 
     private TvCompat() {
     }
