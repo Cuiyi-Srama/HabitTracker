@@ -4406,7 +4406,7 @@ private void showProfileSettings() {
                             break;
                     }
                 })
-                .setNegativeButton("\u2190 \\u8fd4\\u56de", (d, w) -> showSystemMenu())
+                .setNegativeButton("\u2190 返回", (d, w) -> showSystemMenu())
                 .show();
     }
 
