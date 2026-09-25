@@ -4307,35 +4307,52 @@ private void showProfileSettings() {
     }
 
     /** ================ 📺 TV 模式（步骤①） ================
-     * 最小侵入：仅在此处提供入口，复杂 UI 全部在 com.sister.habits.tv 包内。
-     * TV 上无指纹、无系统锁屏，因此进入前强制要求已设置应用 PIN。
+     * 最小侵入：仅提供入口，复杂 UI 全部在 src/tv 渠道层。
+     *
+     * ★ 关键：本类位于 src/main，而 TV 专属类位于 src/tv。
+     *   phone flavor 编译时看不到 src/tv 的类，若直接引用会导致 phone 构建失败。
+     *   故用反射按类名加载，两个 flavor 都能编译。
      */
     private void showTvModeDialog() {
-        boolean tv = PinHelper.isTvMode(this);
-        boolean pinReady = PinHelper.isAppPinEnabled(this) && PinHelper.isPinSet(this);
-        String msg = "当前：" + (tv ? "TV 模式已开启" : "手机模式")
-                + "\n应用 PIN：" + (pinReady ? "已设置" : "未设置")
-                + "\n\n" + (pinReady
-                        ? "电视上无指纹与系统锁屏，PIN 是唯一防线。"
-                        : "⚠️ 请先在「🔐 安全防护」中设置应用 PIN 码。");
-        String[] actions = pinReady
-                ? new String[]{"📺 进入 TV 界面", "切换 TV 模式开关", "⚙️ 去设置 PIN"}
-                : new String[]{"⚙️ 去设置 PIN"};
+        final boolean hasTvChannel = hasTvChannel();
+        final boolean pinSet = PinHelper.isAppPinEnabled(this) && PinHelper.isPinSet(this);
+        StringBuilder sb = new StringBuilder();
+        sb.append(hasTvChannel ? "✅ 当前包含 TV 渠道功能" : "⚠️ 当前安装包为手机版，无 TV 渠道");
+        sb.append("\n应用 PIN：").append(pinSet ? "已设置" : "未设置");
+        sb.append("\n\n电视上无指纹、无系统锁屏，PIN 码是唯一防线，");
+        sb.append("进入家长界面前会强制校验。");
+
+        String[] actions = pinSet
+                ? new String[]{"⚙️ 去设置/修改 PIN", "📺 测试进入 TV 看片"}
+                : new String[]{"⚙️ 去设置 PIN（强制）"};
         new AlertDialog.Builder(this)
                 .setTitle("📺 TV 模式")
-                .setMessage(msg)
+                .setMessage(sb.toString())
                 .setItems(actions, (d, w) -> {
-                    if (!pinReady) { showPinManageDialog(); return; }
-                    if (w == 0) {
-                        com.sister.habits.tv.TvMode.launch(this);
-                    } else if (w == 1) {
-                        PinHelper.setForceTvMode(this, !PinHelper.isTvMode(this));
-                        Toast.makeText(this, "TV 模式标记已更新", Toast.LENGTH_SHORT).show();
-                    } else {
-                        showPinManageDialog();
-                    }
+                    if (!pinSet || w == 0) { showPinManageDialog(); return; }
+                    openTvChannel();
                 })
                 .setNegativeButton("← 返回", (d, w) -> showSystemMenu())
                 .show();
+    }
+
+    /** 当前安装包是否携带 TV 渠道（反射探测，避免 phone 渠道编译失败） */
+    private boolean hasTvChannel() {
+        try {
+            Class.forName("com.sister.habits.tv.TvVideoActivity");
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /** 打开 TV 看片界面（反射调用，phone 渠道下类不存在则提示） */
+    private void openTvChannel() {
+        try {
+            Class<?> cls = Class.forName("com.sister.habits.tv.TvVideoActivity");
+            startActivity(new Intent(this, cls));
+        } catch (Throwable e) {
+            Toast.makeText(this, "当前安装包未包含 TV 渠道，请安装 tv 渠道版 APK", Toast.LENGTH_LONG).show();
+        }
     }
 }
