@@ -104,8 +104,12 @@ dependencies {
     // Glide (图片加载)
     implementation 'com.github.bumptech.glide:glide:4.15.1'
     // ===== TV 渠道专属：ExoPlayer 播放（看片功能）=====
-    tvImplementation 'androidx.media3:media3-exoplayer:1.2.1'
-    tvImplementation 'androidx.media3:media3-ui:1.2.1'
+    // 2026-09-25 单 APK 化：原为 tvImplementation（仅 tv flavor 可见），
+    // 现已合并 flavor，改为 implementation 供全局使用。
+    // 注：手机上也会打包 media3（+约 1MB），
+    //   但 TvVideoActivity / TvPlayerActivity 在手机上不会被调起，无行为影响。
+    implementation 'androidx.media3:media3-exoplayer:1.2.1'
+    implementation 'androidx.media3:media3-ui:1.2.1'
     // ===== 单元测试 =====
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:4.11.0'
