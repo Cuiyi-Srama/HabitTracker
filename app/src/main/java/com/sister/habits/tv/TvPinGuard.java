@@ -50,42 +50,24 @@ public final class TvPinGuard {
      *   现改为：只有设备本身是电视（UiModeManager）才启用本守卫。
      *   手机上即使家长手动切到 TV 看片模式，也不会被本类拦截。
      */
-    public static boolean isRealTv(Activity a) {
-        // 第一道：UiModeManager 必须报告是电视
-        boolean tv;
+    /**
+     * 是否应按 TV 行为运行（手动设置优先，硬件自动兜底）。
+     *
+     * ★ 2026-09-25 第二版修正：
+     *   第一版直接读硬件，导致「手机接大屏当电视用」无法实现。
+     *   现改为读 PinHelper.isTvMode()：家长在设置里选「强制 TV」则立即生效，
+     *   选「自动」则按设备硬件判定（带触摸+非leanback 防误报）。
+     */
+    public static boolean isTvDevice(Activity a) {
         try {
-            android.app.UiModeManager um =
-                    (android.app.UiModeManager) a.getSystemService(Context.UI_MODE_SERVICE);
-            tv = um != null
-                    && um.getCurrentModeType()
-                       == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
+            return PinHelper.isTvMode(a);
         } catch (Throwable e) {
             return false;
         }
-        if (!tv) return false;
-
-        // ★ 第二道保险（防御性编程 / 不可逆判据）：
-        //   能取得 KeyguardManager 的设备不会是真电视；真电视上系统锁屏基本不存在且
-        //   设置界面无法设置。若某些定制电视（含 Android内核的智慧屏）报了
-        //   TELEVISION 但实为手机形态，这里仍会把它当电视处理，但至少不会
-        //   对普通手机误拦。
-        try {
-            // 设备是否声明支持触摸：手机为 true，电视通常无触摸屏
-            android.content.pm.PackageManager pm = a.getPackageManager();
-            boolean hasTouch = pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN);
-            boolean hasLeanback = pm.hasSystemFeature("android.software.leanback");
-            if (hasTouch && !hasLeanback) {
-                // 有触摸且无 leanback 特征 → 定义为手机，不启用 TV 守卫
-                return false;
-            }
-        } catch (Throwable ignored) {
-        }
-        return true;
     }
-
     /** 需要 PIN 保护的界面（家长管理入口 + 电视设备） */
     public static boolean isProtected(Activity a) {
-        return isRealTv(a) && a instanceof ParentActivity;
+        return isTvDevice(a) && a instanceof ParentActivity;
     }
 
     /**
@@ -95,7 +77,7 @@ public final class TvPinGuard {
      */
     public static boolean check(Activity a) {
         // ★ 保险丝：手机上直接放行，不做任何拦截。
-        if (!isRealTv(a)) return true;
+        if (!isTvDevice(a)) return true;
         if (!isProtected(a)) return true;
         if (PASSED.contains(System.identityHashCode(a))) return true;
 
