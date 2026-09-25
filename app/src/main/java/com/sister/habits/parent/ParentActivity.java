@@ -2661,7 +2661,8 @@ public class ParentActivity extends AppCompatActivity {
                 "🔐 数据导出备份",
                 "🔄 同步中心",
                 "🔄 检查更新",
-                "🔐 安全防护"
+                "🔐 安全防护",
+                "📺 TV 模式"
         };
         new AlertDialog.Builder(this)
                 .setTitle("⚙️ 系统设置")
@@ -2679,6 +2680,7 @@ public class ParentActivity extends AppCompatActivity {
                         case 9: showSyncCenterDialog(); break;
                         case 10: checkForUpdate(); break;
                         case 11: showPinManageDialog(); break;
+                        case 12: showTvModeDialog(); break;
                     }
                 })
                 .setNegativeButton("← 返回上级", (d, w) -> showSettingsDialog())
@@ -4302,5 +4304,38 @@ private void showProfileSettings() {
             }
             tv.setText(sb.toString().trim());
         }
+    }
+
+    /** ================ 📺 TV 模式（步骤①） ================
+     * 最小侵入：仅在此处提供入口，复杂 UI 全部在 com.sister.habits.tv 包内。
+     * TV 上无指纹、无系统锁屏，因此进入前强制要求已设置应用 PIN。
+     */
+    private void showTvModeDialog() {
+        boolean tv = PinHelper.isTvMode(this);
+        boolean pinReady = PinHelper.isAppPinEnabled(this) && PinHelper.isPinSet(this);
+        String msg = "当前：" + (tv ? "TV 模式已开启" : "手机模式")
+                + "\n应用 PIN：" + (pinReady ? "已设置" : "未设置")
+                + "\n\n" + (pinReady
+                        ? "电视上无指纹与系统锁屏，PIN 是唯一防线。"
+                        : "⚠️ 请先在「🔐 安全防护」中设置应用 PIN 码。");
+        String[] actions = pinReady
+                ? new String[]{"📺 进入 TV 界面", "切换 TV 模式开关", "⚙️ 去设置 PIN"}
+                : new String[]{"⚙️ 去设置 PIN"};
+        new AlertDialog.Builder(this)
+                .setTitle("📺 TV 模式")
+                .setMessage(msg)
+                .setItems(actions, (d, w) -> {
+                    if (!pinReady) { showPinManageDialog(); return; }
+                    if (w == 0) {
+                        com.sister.habits.tv.TvMode.launch(this);
+                    } else if (w == 1) {
+                        PinHelper.setForceTvMode(this, !PinHelper.isTvMode(this));
+                        Toast.makeText(this, "TV 模式标记已更新", Toast.LENGTH_SHORT).show();
+                    } else {
+                        showPinManageDialog();
+                    }
+                })
+                .setNegativeButton("← 返回", (d, w) -> showSystemMenu())
+                .show();
     }
 }
