@@ -63,7 +63,11 @@ public final class TvCompat {
         }
 
         // 3) 放大字号（每视图只做一次）
-        if (v instanceof TextView) {
+        //    ★ 2026-09-25 修正：TV 专属布局（src/tv/res/layout/）已按大屏调好字号，
+        //       若再被 ×1.3 会撑破紧凑布局（典型：背单词的 64sp 单词变 83sp 后溢出）。
+        //       故支持 tv_compat_skip 标记，标记后跳过字号放大。
+        boolean skipScale = Boolean.TRUE.equals(v.getTag(R.id.tv_compat_skip));
+        if (v instanceof TextView && !skipScale) {
             TextView tv = (TextView) v;
             if (!Boolean.TRUE.equals(tv.getTag(R.id.tv_compat_flag))) {
                 tv.setTag(R.id.tv_compat_flag, Boolean.TRUE);
