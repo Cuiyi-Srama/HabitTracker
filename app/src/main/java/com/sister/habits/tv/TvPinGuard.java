@@ -40,9 +40,31 @@ public final class TvPinGuard {
 
     private TvPinGuard() {}
 
-    /** 需要 PIN 保护的界面（家长管理入口） */
+    /**
+     * 是否在真电视设备上（硬判定，不受 SharedPreferences 影响）。
+     *
+     * ★ 2026-09-25 关键修正：
+     *   本类原本挂在 TvApp 上，而 TvApp 已迁入 src/main 被手机与电视共用，
+     *   导致手机上进家长界面也被强制要 PIN，未设 PIN 时弹「需要先设置 PIN」
+     *   并直接 finish() 退回孩子端 —— 严重回归。
+     *   现改为：只有设备本身是电视（UiModeManager）才启用本守卫。
+     *   手机上即使家长手动切到 TV 看片模式，也不会被本类拦截。
+     */
+    public static boolean isRealTv(Activity a) {
+        try {
+            android.app.UiModeManager um =
+                    (android.app.UiModeManager) a.getSystemService(Context.UI_MODE_SERVICE);
+            return um != null
+                    && um.getCurrentModeType()
+                       == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /** 需要 PIN 保护的界面（家长管理入口 + 电视设备） */
     public static boolean isProtected(Activity a) {
-        return a instanceof ParentActivity;
+        return isRealTv(a) && a instanceof ParentActivity;
     }
 
     /**
@@ -51,6 +73,8 @@ public final class TvPinGuard {
      * @return true 表示已通过（或无需保护），可正常使用；false 表示已发起验证流程
      */
     public static boolean check(Activity a) {
+        // ★ 保险丝：手机上直接放行，不做任何拦截。
+        if (!isRealTv(a)) return true;
         if (!isProtected(a)) return true;
         if (PASSED.contains(System.identityHashCode(a))) return true;
 
