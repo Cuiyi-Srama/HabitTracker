@@ -4231,6 +4231,23 @@ private void showProfileSettings() {
         return tv;
     }
 
+    /**
+     * 供 TV 端守卫调用的公开入口：直接打开「安全防护管理」对话框。
+     *
+     * ★ 2026-09-25 新增：
+     *   此前 TvPinGuard 发现「未设 PIN」时只能弹提示并 finish()，
+     *   用户被迫去手机设置，而手机上设了后 TV 仍因「未勾选应用 PIN开关」报错，
+     *   形成死循环。现在 TV 上可以直接跳到这里设置。
+     */
+    public void openPinSetupForTv() {
+        try {
+            showPinManageDialog();
+        } catch (Throwable e) {
+            android.widget.Toast.makeText(this,
+                    "打开安全设置失败：" + e.getMessage(),
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
     private void showPinManageDialog() {
         final boolean sysOn = PinHelper.isSystemLockEnabled(this);
         final boolean pinOn = PinHelper.isAppPinEnabled(this);
