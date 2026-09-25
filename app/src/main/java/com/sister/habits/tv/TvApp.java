@@ -24,8 +24,16 @@ public class TvApp extends HabitApp {
         registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
             @Override
             public void onActivityResumed(Activity activity) {
+                // ★ 2026-09-25 关键修正：
+                //   TvApp 已从 src/tv 迁入 src/main，手机与电视共用。
+                //   以下三件事（PIN 守卫 / 字号放大 / 看片入口）均为 TV 专属，
+                //   若不加判定在手机上执行，会导致手机进不了家长界面、
+                //   字体被意外放大。故先做电视设备硬判定。
+                if (!TvPinGuard.isRealTv(activity)) {
+                    return;
+                }
                 try {
-                    // 步骤③：家长界面先行 PIN 守卫，未通过则不做其余处理
+                    // TV 上家长界面先行 PIN 守卫，未通过则不做其余处理
                     if (!TvPinGuard.check(activity)) {
                         return;
                     }
