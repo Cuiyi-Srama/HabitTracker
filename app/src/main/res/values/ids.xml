@@ -8,4 +8,9 @@
          适用于 TV 专属布局中已经调好字号的元素，
          避免被二次放大而撞出屏幕。 -->
     <item name="tv_compat_skip" type="id" />
+    <!-- 2026-09-25 v4.0 新增 -->
+    <!-- 封面图请求归属标记：列表复用 ImageView 时用于校验，防止图片错位 -->
+    <item name="tv_cover_tag" type="id" />
+    <!-- 倒计时胶囊在最后 5 分钟的醒目态标记 -->
+    <item name="tv_count_warn" type="id" />
 </resources>
