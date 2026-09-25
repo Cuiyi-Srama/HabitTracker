@@ -32,7 +32,20 @@ public class PinHelper {
 
     private static final String KEY_USE_SYSTEM_LOCK = "use_system_lock";
     private static final String KEY_USE_APP_PIN = "use_app_pin";
-    // KEY_FORCE_TV_MODE 已废弃（2026-09-25）
+    // ==================== 设备模式（三态，2026-09-25） ====================
+    // 设计原则：「自动判定」只能解决「设备是什么」，解决不了「家长想让它当什么」。
+    //   典型失效场景：手机接大屏当电视用、智慧屏被识别成手机。
+    //   故手动选择优先级最高，自动判定仅作为默认值。
+    /** 自动：按设备硬件判定（默认） */
+    public static final int DEVICE_AUTO = 0;
+    /** 强制 TV：即使是手机也按电视行为（不用系统锁屏、字号放大、遥控器焦点） */
+    public static final int DEVICE_TV = 1;
+    /** 强制手机：即使在电视上也按手机行为（调试场景） */
+    public static final int DEVICE_PHONE = 2;
+
+    private static final String KEY_DEVICE_MODE = "device_mode";
+    /** 旧键（仅读不再写，仅用于向上兼容旧数据） */
+    private static final String KEY_FORCE_TV_MODE_LEGACY = "force_tv_mode";
 
     /** PIN 拉伸轮数：10000 轮 HMAC，手机上约 20~60ms，不影响体感 */
     private static final int ITERATIONS = 10000;
