@@ -513,6 +513,13 @@ public class ParentActivity extends AppCompatActivity {
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
+        // \u2605 2026-09-25 新增：TV 端守卫在「未设 PIN」时跳转过来，自动打开 PIN 设置。
+        if (getIntent() != null && getIntent().getBooleanExtra("open_pin_setup", false)) {
+            getIntent().removeExtra("open_pin_setup"); // 防止重入反复弹
+            try {
+                findViewById(android.R.id.content).postDelayed(this::showPinManageDialog, 400);
+            } catch (Throwable ignored) {}
+        }
         btnSync.setOnClickListener(v -> {
             soundHelper.playClickSound();
             Toast.makeText(this, "🔄 全同步已触发（Hub+局域网+云端）", Toast.LENGTH_SHORT).show();
