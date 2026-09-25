@@ -68,7 +68,10 @@ private AppDatabase db;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_word, container, false);
+        // ★ 2026-09-25 单 APK 化：运行时选择布局——电视用横屏双栏，手机用原竖屏布局。
+        //   旧写法 inflate(R.layout.fragment_word) 靠 flavor 资源覆盖，单 APK 后不再可用。
+        View view = inflater.inflate(
+                com.sister.habits.tv.TvLayouts.wordLayout(requireContext()), container, false);
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
         soundHelper = SoundHelper.getInstance(requireContext());
