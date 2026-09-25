@@ -39,6 +39,29 @@ public final class TvCompat {
         walk(root, root);
     }
 
+    /**
+     * 判断视图是否被标记为「跳过字号放大」。
+     *
+     * ★ 2026-09-25 修复：XML 中的 android:tag="xxx" 写入的是 getTag()（无 id 版），
+     *   而原代码读的是 getTag(int key)（id 索引版）—— 两者是不同的存储槽，
+     *   导致 tv_compat_skip 标记完全未生效，TV 背单词布局仍被 ×1.3 撑爆。
+     *   现同时支持两种存储方式（字符串标记 / id 标记）。
+     */
+    private static boolean isSkipMarked(View v) {
+        try {
+            Object tag = v.getTag();
+            if (tag instanceof String && "tv_compat_skip".equals(((String) tag).trim())) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            return Boolean.TRUE.equals(v.getTag(R.id.tv_compat_skip));
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private static void walk(View v, View root) {
         if (v instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) v;
@@ -66,7 +89,7 @@ public final class TvCompat {
         //    ★ 2026-09-25 修正：TV 专属布局（src/tv/res/layout/）已按大屏调好字号，
         //       若再被 ×1.3 会撑破紧凑布局（典型：背单词的 64sp 单词变 83sp 后溢出）。
         //       故支持 tv_compat_skip 标记，标记后跳过字号放大。
-        boolean skipScale = Boolean.TRUE.equals(v.getTag(R.id.tv_compat_skip));
+        boolean skipScale = isSkipMarked(v);
         if (v instanceof TextView && !skipScale) {
             TextView tv = (TextView) v;
             if (!Boolean.TRUE.equals(tv.getTag(R.id.tv_compat_flag))) {
