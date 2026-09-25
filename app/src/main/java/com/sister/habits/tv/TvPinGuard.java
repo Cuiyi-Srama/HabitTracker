@@ -81,9 +81,25 @@ public final class TvPinGuard {
         if (!isProtected(a)) return true;
         if (PASSED.contains(System.identityHashCode(a))) return true;
 
-        if (!PinHelper.isPinSet(a) || !PinHelper.isAppPinEnabled(a)) {
+        // ★ 2026-09-25 修复（手机设了 PIN、TV 仍报「需要先设置」）：
+        //
+        // 原判定：!isPinSet || !isAppPinEnabled
+        //   问题：「应用PIN码验证」开关默认为 false，家长在手机上点了「设置PIN码」
+        //         并设好了 PIN，但若没勾选那个复选框（或没点「保存」），
+        //         TV 依然判定为「未设置」，形成死循环。
+        //
+        // 新判定：TV 上只要 PIN 密码本身存在，就允许验证。
+        //   理由：能设置 PIN 就说明家长有意愿保护；开关未勾只是 UI 状态，
+        //          不应该阻止家长进入自己的界面。
+        //         并主动开启开关（自愈），保证后续逻辑一致。
+        if (!PinHelper.isPinSet(a)) {
+            // 真的没设过 PIN —— 这才需要引导设置。
             showNeedSetupDialog(a);
             return false;
+        }
+        if (!PinHelper.isAppPinEnabled(a)) {
+            // 密码已存在但开关未开：静默补上，不报错不阻挡。
+            try { PinHelper.setAppPinEnabled(a, true); } catch (Throwable ignore) {}
         }
         showPinDialog(a);
         return false;
@@ -94,13 +110,39 @@ public final class TvPinGuard {
         PASSED.remove(System.identityHashCode(a));
     }
 
+    /**
+     * 在 TV 上直接打开 PIN 设置，无需跑到手机上。
+     *
+     * ★ 2026-09-25 新增：
+     *   原流程要求用户「去手机版设置」，但手机上设了后 TV 仍可能因状态不一致而报错，
+     *   用户无法自救。现在直接在当前 Activity 上打开设置对话框，当场解决。
+     */
+    private static void openPinSetup(Activity a) {
+        if (a instanceof ParentActivity) {
+            ((ParentActivity) a).openPinSetupForTv();
+            return;
+        }
+        // 非 ParentActivity（例如 TvVideoActivity 等）：跳转到 ParentActivity 再打开。
+        try {
+            Intent it = new Intent(a, ParentActivity.class);
+            it.putExtra("open_pin_setup", true);
+            a.startActivity(it);
+            a.finish();
+        } catch (Throwable e) {
+            android.widget.Toast.makeText(a,
+                    "无法打开设置，请在手机版设置 PIN",
+                    android.widget.Toast.LENGTH_LONG).show();
+            a.finish();
+        }
+    }
     private static void showNeedSetupDialog(final Activity a) {
         new AlertDialog.Builder(a)
                 .setTitle("\uD83D\uDD12 \u9700\u8981\u5148\u8bbe\u7f6e PIN \u7801")
                 .setMessage("\u7535\u89c6\u4e0a\u6ca1\u6709\u6307\u7eb9\u4e5f\u6ca1\u6709\u7cfb\u7edf\u9501\u5c4f\uff0c\u5bb6\u957f\u754c\u9762\u5fc5\u987b\u7528 PIN \u7801\u4fdd\u62a4\u3002\n\n"
                         + "\u8bf7\u5148\u5728\u624b\u673a\u7248\u7684\u300c\u2699\ufe0f \u7cfb\u7edf\u8bbe\u7f6e \u2192 \uD83D\uDD10 \u5b89\u5168\u9632\u62a4\u300d\u4e2d\u8bbe\u7f6e PIN \u7801\u3002")
                 .setCancelable(false)
-                .setPositiveButton("\u77e5\u9053\u4e86", (d, w) -> a.finish())
+                .setPositiveButton("\u53bb\u8bbe\u7f6e PIN", (d, w) -> openPinSetup(a))
+                .setNegativeButton("\u8fd4\u56de", (d, w) -> a.finish())
                 .show();
     }
 
