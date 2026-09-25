@@ -11,30 +11,16 @@ android {
         applicationId 'com.sister.habits'
         minSdk 24
         targetSdk 34
-        versionCode 127
-        versionName '3.0.76'
+        versionCode 132
+        versionName '3.0.81'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
-    // ===== 渠道（flavor）：phone 手机版 / tv 电视版 =====
-    // 两渠道共享全部代码（打卡/任务/单词/商城/同步），TV 仅覆盖 Manifest 与个别布局
-    flavorDimensions 'device'
-    productFlavors {
-        phone {
-            dimension 'device'
-        }
-        tv {
-            dimension 'device'
-            // ★ 2026-09-25：去掉 applicationIdSuffix '.tv'。
-            //   原后缀使 TV 版成为独立 App（com.sister.habits.tv），导致：
-            //     - PIN / SharedPreferences / 词库数据 两端不共享，电视上要重设一遍
-            //     - 电视端看不到单词（本地词库为空）
-            //   现两渠道共用 com.sister.habits，真正一个 App。
-            //   代价：同一台设备不能同时装两个渠道（实际不发生：一个装电视一个装手机）。
-            versionCode 131
-            versionName '3.0.80-tv'
-        }
-    }
+    // ===== 2026-09-25：合并为单 APK =====
+    // 原先分 phone / tv 两个 flavor，产出两个 APK。
+    // 现合并：TV 能力直接进入 main 源集（见 app/src/main/），
+    // 一个 APK 同时适配手机与电视，数据/PIN/词库全部共享。
+    // 电视与手机的差异由运行时判断（UiModeManager）处理。
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
