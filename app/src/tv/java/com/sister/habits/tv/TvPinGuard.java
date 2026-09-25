@@ -69,9 +69,9 @@ public final class TvPinGuard {
 
     private static void showNeedSetupDialog(final Activity a) {
         new AlertDialog.Builder(a)
-                .setTitle("\U0001f512 \u9700\u8981\u5148\u8bbe\u7f6e PIN \u7801")
+                .setTitle("\uD83D\uDD12 \u9700\u8981\u5148\u8bbe\u7f6e PIN \u7801")
                 .setMessage("\u7535\u89c6\u4e0a\u6ca1\u6709\u6307\u7eb9\u4e5f\u6ca1\u6709\u7cfb\u7edf\u9501\u5c4f\uff0c\u5bb6\u957f\u754c\u9762\u5fc5\u987b\u7528 PIN \u7801\u4fdd\u62a4\u3002\n\n"
-                        + "\u8bf7\u5148\u5728\u624b\u673a\u7248\u7684\u300c\u2699\ufe0f \u7cfb\u7edf\u8bbe\u7f6e \u2192 \U0001f510 \u5b89\u5168\u9632\u62a4\u300d\u4e2d\u8bbe\u7f6e PIN \u7801\u3002")
+                        + "\u8bf7\u5148\u5728\u624b\u673a\u7248\u7684\u300c\u2699\ufe0f \u7cfb\u7edf\u8bbe\u7f6e \u2192 \uD83D\uDD10 \u5b89\u5168\u9632\u62a4\u300d\u4e2d\u8bbe\u7f6e PIN \u7801\u3002")
                 .setCancelable(false)
                 .setPositiveButton("\u77e5\u9053\u4e86", (d, w) -> a.finish())
                 .show();
@@ -101,7 +101,7 @@ public final class TvPinGuard {
         box.addView(et);
 
         final AlertDialog dlg = new AlertDialog.Builder(a)
-                .setTitle("\U0001f512 \u5bb6\u957f\u9a8c\u8bc1")
+                .setTitle("\uD83D\uDD12 \u5bb6\u957f\u9a8c\u8bc1")
                 .setView(box)
                 .setCancelable(false)
                 .setPositiveButton("\u786e\u5b9a", null)
