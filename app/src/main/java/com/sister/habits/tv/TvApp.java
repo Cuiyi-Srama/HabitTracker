@@ -33,19 +33,24 @@ public class TvApp extends HabitApp {
                     return;
                 }
                 try {
-                    // TV 上家长界面先行 PIN 守卫，未通过则不做其余处理
+                    // ★ v4.0.2：先做 TV 适配与入口绑定，
+                    //   避免守卫弹窗时早退导致家长界面无适配
+                    TvCompat.apply(activity);
+                    bindTvEntries(activity);
+                    // TV 上家长界面 PIN 守卫（统一在此校验）
                     if (!TvPinGuard.check(activity)) {
                         return;
                     }
-                    TvCompat.apply(activity);
-                    bindTvEntries(activity);
                 } catch (Throwable ignored) {
                 }
             }
 
             @Override public void onActivityCreated(Activity a, Bundle b) { }
             @Override public void onActivityStarted(Activity a) { }
-            @Override public void onActivityPaused(Activity a) { }
+            @Override public void onActivityPaused(Activity a) {
+                // ★ v4.0.2：退到后台即清放行标记，避免免验证回到家长界面
+                try { TvPinGuard.forget(a); } catch (Throwable ignored) { }
+            }
             @Override public void onActivityStopped(Activity a) { }
             @Override public void onActivitySaveInstanceState(Activity a, Bundle b) { }
 

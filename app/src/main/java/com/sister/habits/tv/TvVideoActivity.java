@@ -46,6 +46,15 @@ public class TvVideoActivity extends Activity {
     /** 进入时是否已尝试过「恢复活跃会话」检查 */
     private boolean restoreChecked;
 
+    // ★ v4.0.2 配对相关
+    private android.app.AlertDialog pairDialog;
+    private volatile boolean pairPolling = false;
+    private final android.os.Handler pairUi =
+            new android.os.Handler(android.os.Looper.getMainLooper());
+    private android.widget.TextView pairCodeView;
+    private android.widget.TextView pairHintView;
+    private android.widget.ImageView pairQrView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,6 +70,8 @@ public class TvVideoActivity extends Activity {
         });
         findViewById(R.id.btn_auto).setOnClickListener(v -> autoFind(false));
         findViewById(R.id.btn_setup).setOnClickListener(v -> showSetup());
+        // ★ v4.0.2：配对（电视无摄像头 → 显示 6 位码，手机确认）
+        findViewById(R.id.btn_pair).setOnClickListener(v -> showPairDialog());
         tvSub.setText("服务器：" + prefs.hub());
         load();
     }
@@ -436,23 +447,185 @@ public class TvVideoActivity extends Activity {
     }
 
     private void showSetup() {
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(48, 24, 48, 8);
+
+        final android.widget.TextView t1 = new android.widget.TextView(this);
+        t1.setText("服务器地址");
+        t1.setTextSize(13);
+        box.addView(t1);
+
         final EditText et = new EditText(this);
         et.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
         et.setText(prefs.hub());
+        box.addView(et);
+
+        final android.widget.TextView t2 = new android.widget.TextView(this);
+        t2.setText("家庭 Token（配对成功后会自动填写）");
+        t2.setTextSize(13);
+        t2.setPadding(0, 16, 0, 0);
+        box.addView(t2);
+
+        final EditText etTok = new EditText(this);
+        etTok.setSingleLine(true);
+        etTok.setText(prefs.token());
+        box.addView(etTok);
+
         new AlertDialog.Builder(this)
-                .setTitle("服务器地址")
-                .setView(et)
+                .setTitle("服务器与 Token")
+                .setView(box)
                 .setPositiveButton("保存", (d, w) -> {
                     String v = et.getText().toString().trim();
+                    String t = etTok.getText().toString().trim();
                     if (!v.isEmpty()) {
                         prefs.setHub(v);
-                        api = prefs.api();
-                        tvSub.setText("服务器：" + v);
-                        autoTried = false;
-                        load();
                     }
+                    prefs.setToken(t);
+                    api = prefs.api();
+                    tvSub.setText("服务器：" + prefs.hub());
+                    autoTried = false;
+                    load();
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    // ==================== ★ v4.0.2 配对 ====================
+
+    /** 弹窗：显示 6 位配对码 + 二维码，手机确认后自动写入配置 */
+    private void showPairDialog() {
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(56, 28, 56, 16);
+
+        pairCodeView = new android.widget.TextView(this);
+        pairCodeView.setText("— — — — — —");
+        pairCodeView.setTextSize(52);
+        pairCodeView.setTextColor(0xFF2E7D32);
+        pairCodeView.setGravity(android.view.Gravity.CENTER);
+        box.addView(pairCodeView);
+
+        pairQrView = new android.widget.ImageView(this);
+        pairQrView.setPadding(0, 20, 0, 20);
+        box.addView(pairQrView);
+
+        pairHintView = new android.widget.TextView(this);
+        pairHintView.setTextSize(15);
+        pairHintView.setTextColor(0xFF666666);
+        pairHintView.setText("正在向电脑申请配对码…");
+        box.addView(pairHintView);
+
+        pairDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("📺 配对电视")
+                .setView(box)
+                .setPositiveButton("关闭", (d, w) -> stopPairing())
+                .setNegativeButton("重新生成", (d, w) -> startPairing())
+                .setOnCancelListener(d -> stopPairing())
+                .create();
+        pairDialog.show();
+        startPairing();
+    }
+
+    private void stopPairing() {
+        pairPolling = false;
+    }
+
+    /** 申请配对码并轮询（每 2 秒，最长 2 分钟） */
+    private void startPairing() {
+        stopPairing();
+        pairPolling = true;
+        if (pairHintView != null) {
+            pairHintView.setText("正在向电脑申请配对码…");
+        }
+        new Thread(() -> {
+            String device;
+            try {
+                device = android.os.Build.MODEL + " TV";
+            } catch (Throwable e) {
+                device = "TV";
+            }
+            try {
+                final TvHubApi anon = new TvHubApi(prefs.hub(), "");
+                org.json.JSONObject req = new org.json.JSONObject();
+                req.put("device", device);
+                final org.json.JSONObject r = anon.postAnon("/pair/new", req);
+                final String code = r.optString("code", "");
+                final String hub = r.optString("hub", prefs.hub());
+                if (code.isEmpty()) {
+                    pairUi.post(() -> {
+                        if (pairHintView != null) {
+                            pairHintView.setText("❌ 申请配对码失败（服务端返回异常）");
+                        }
+                    });
+                    return;
+                }
+                pairUi.post(() -> {
+                    if (pairCodeView != null) {
+                        pairCodeView.setText(code.substring(0, 3) + " " + code.substring(3));
+                    }
+                    if (pairHintView != null) {
+                        pairHintView.setText("① 手机家长端 → 同步中心 → 📺 配对新电视\n"
+                                + "② 输入上面的 6 位码（或扫这个二维码）\n"
+                                + "③ 电视将自动完成配置");
+                    }
+                    try {
+                        android.graphics.Bitmap bmp =
+                                com.sister.habits.utils.QRCodeHelper.generateQrBitmap(
+                                        com.sister.habits.utils.QRCodeHelper.buildTvPairQrContent(code, hub));
+                        if (pairQrView != null && bmp != null) {
+                            pairQrView.setImageBitmap(bmp);
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                });
+                long deadline = System.currentTimeMillis() + 120000L;
+                while (pairPolling && System.currentTimeMillis() < deadline) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException ie) {
+                        return;
+                    }
+                    if (!pairPolling) {
+                        return;
+                    }
+                    try {
+                        org.json.JSONObject st = anon.getAnon("/pair/status?code=" + code);
+                        if ("ready".equals(st.optString("status"))) {
+                            final String newHub = st.optString("hub", hub);
+                            final String newTok = st.optString("token", "");
+                            prefs.save(newHub, newTok);
+                            api = prefs.api();
+                            pairUi.post(() -> {
+                                if (pairHintView != null) {
+                                    pairHintView.setText("✅ 配对成功！配置已自动写入");
+                                }
+                                stopPairing();
+                                if (pairDialog != null && pairDialog.isShowing()) {
+                                    pairDialog.dismiss();
+                                }
+                                tvSub.setText("服务器：" + prefs.hub());
+                                autoTried = false;
+                                load();
+                            });
+                            return;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+                pairUi.post(() -> {
+                    if (pairHintView != null) {
+                        pairHintView.setText("⌛ 配对码已过期，请点「重新生成」");
+                    }
+                });
+            } catch (final Exception e) {
+                pairUi.post(() -> {
+                    if (pairHintView != null) {
+                        pairHintView.setText("❌ 无法连接电脑：" + e.getMessage()
+                                + "\n请先点「设置服务器地址」确认地址");
+                    }
+                });
+            }
+        }).start();
     }
 }

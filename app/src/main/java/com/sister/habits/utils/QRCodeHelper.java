@@ -86,6 +86,34 @@ public class QRCodeHelper {
         return hash2 >= 0 ? rest.substring(hash2 + 1) : "";
     }
 
+    // ==================== TV 配对二维码（v4.0.2） ====================
+    private static final String TV_PAIR_PREFIX = "HABITTV:";
+
+    /** 生成 TV 配对二维码内容：HABITTV:<6位码>#<Hub地址> */
+    public static String buildTvPairQrContent(String code, String hub) {
+        String h = hub == null ? "" : hub.trim();
+        while (h.endsWith("/")) h = h.substring(0, h.length() - 1);
+        return TV_PAIR_PREFIX + (code == null ? "" : code.trim()) + "#" + h;
+    }
+
+    public static boolean isTvPairQr(String content) {
+        return content != null && content.startsWith(TV_PAIR_PREFIX);
+    }
+
+    public static String parseTvPairCode(String content) {
+        if (!isTvPairQr(content)) return "";
+        String body = content.substring(TV_PAIR_PREFIX.length());
+        int i = body.indexOf('#');
+        return (i >= 0 ? body.substring(0, i) : body).trim();
+    }
+
+    public static String parseTvPairHub(String content) {
+        if (!isTvPairQr(content)) return "";
+        String body = content.substring(TV_PAIR_PREFIX.length());
+        int i = body.indexOf('#');
+        return i >= 0 ? body.substring(i + 1).trim() : "";
+    }
+
     /** 生成QR码Bitmap */
     public static Bitmap generateQrBitmap(String content) {
         try {

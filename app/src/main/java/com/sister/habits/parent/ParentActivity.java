@@ -103,7 +103,7 @@ public class ParentActivity extends AppCompatActivity {
                             deviceLockSuccessCallback = null;
                         }
                     } else {
-                        Toast.makeText(this, "\u274c 设备锁验证失败", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "❌ 设备锁验证失败", Toast.LENGTH_SHORT).show();
                         finish();
                     }
                 });
@@ -219,6 +219,14 @@ public class ParentActivity extends AppCompatActivity {
             registerForActivityResult(new ScanContract(), result -> {
                 if (result != null && result.getContents() != null) {
                     String qrContent = result.getContents();
+                    // ★ v4.0.2：TV 配对二维码（电视屏幕上的码）—— 最高优先级
+                    if (com.sister.habits.utils.QRCodeHelper.isTvPairQr(qrContent)) {
+                        final String tvCode = com.sister.habits.utils.QRCodeHelper.parseTvPairCode(qrContent);
+                        final String tvHub = com.sister.habits.utils.QRCodeHelper.parseTvPairHub(qrContent);
+                        Toast.makeText(this, "📺 正在配对新电视…", Toast.LENGTH_SHORT).show();
+                        tvPairClaim(tvCode, tvHub);
+                        return;
+                    }
                     // v3.0.66：同步配置二维码（家人扫码零配置）—— 最高优先级识别
                     if (com.sister.habits.utils.QRCodeHelper.isSyncConfigQr(qrContent)) {
                         String serverUrl = com.sister.habits.utils.QRCodeHelper.parseSyncConfigUrl(qrContent);
@@ -513,7 +521,7 @@ public class ParentActivity extends AppCompatActivity {
         btnAddTask.setOnClickListener(v -> { soundHelper.playClickSound(); showAddTaskDialog(); });
         btnAddShopItem.setOnClickListener(v -> { soundHelper.playClickSound(); showAddShopItemDialog(); });
         btnSettings.setOnClickListener(v -> { soundHelper.playClickSound(); showSettingsDialog(); });
-        // \u2605 2026-09-25 新增：TV 端守卫在「未设 PIN」时跳转过来，自动打开 PIN 设置。
+        // ★ 2026-09-25 新增：TV 端守卫在「未设 PIN」时跳转过来，自动打开 PIN 设置。
         if (getIntent() != null && getIntent().getBooleanExtra("open_pin_setup", false)) {
             getIntent().removeExtra("open_pin_setup"); // 防止重入反复弹
             try {
@@ -560,7 +568,10 @@ public class ParentActivity extends AppCompatActivity {
             refreshAll();
             return;
         }
-        if (PinHelper.isSystemLockEnabled(this)) {
+        if (PinHelper.isTvMode(this)) {
+            // ★ v4.0.2：TV 端由 TvPinGuard 统一校验，这里不再弹第二个 PIN 框
+            refreshAll();
+        } else if (PinHelper.isSystemLockEnabled(this)) {
             android.app.KeyguardManager kgm = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             if (kgm != null && kgm.isKeyguardSecure()) {
                 deviceLockSuccessCallback = () -> {
@@ -738,16 +749,16 @@ public class ParentActivity extends AppCompatActivity {
 
         String nickname = profile.getNickname();
         tvStats.setText(
-                "\uD83D\uDCCA " + nickname + "\u7684\u4E60\u60EF\u6570\u636E\n" +
-                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
-                "\u4ECA\u65E5\u6253\u5361: " + (checkedInToday ? "\u2705 \u5DF2\u6253\u5361" : "\u2B55 \u672A\u6253\u5361") + "\n" +
-                "\u603B\u6253\u5361: " + totalCheckIns + " \u5929  |  \u6700\u957F\u8FDE\u7EED: " + maxStreak + " \u5929 \uD83C\uDFC6\n" +
-                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
-                "\uD83D\uDCB0 \u91D1\u5E01\u4F59\u989D: " + (balance != null ? balance : 0) + "\n" +
-                "\uD83D\uDDE5 \u4ECA\u65E5\u6536\u5165: +" + todayEarned + "  |  \u4ECA\u65E5\u6D88\u8D39: -" + todaySpent + "\n" +
-                "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n" +
-                "\u5F85\u5BA1\u6279\u5151\u6362: " + pendingCount + " \u9879  |  \u5F85\u786E\u8BA4\u4EFB\u52A1: " + pendingTaskCount + " \u9879\n" +
-                "\uD83D\uDCB0 \u5F85\u5BA1\u79EF\u5206: " + pendingEarningCount + " \u9879"
+                "📊 " + nickname + "的习惯数据\n" +
+                "━━━━━━━━━━━━━━━\n" +
+                "今日打卡: " + (checkedInToday ? "✅ 已打卡" : "⭕ 未打卡") + "\n" +
+                "总打卡: " + totalCheckIns + " 天  |  最长连续: " + maxStreak + " 天 🏆\n" +
+                "━━━━━━━━━━━━━━━\n" +
+                "💰 金币余额: " + (balance != null ? balance : 0) + "\n" +
+                "🗥 今日收入: +" + todayEarned + "  |  今日消费: -" + todaySpent + "\n" +
+                "━━━━━━━━━━━━━━━\n" +
+                "待审批兑换: " + pendingCount + " 项  |  待确认任务: " + pendingTaskCount + " 项\n" +
+                "💰 待审积分: " + pendingEarningCount + " 项"
         );
     }
 
@@ -3491,7 +3502,7 @@ private void showProfileSettings() {
                     } catch (Exception ignored) {}
                     Toast.makeText(this, "词库配置已保存 ✅\n重启App后生效", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("\u2190 返回上级", (d, w) -> showLearningMenu())
+                .setNegativeButton("← 返回上级", (d, w) -> showLearningMenu())
                 .create();
         dialogHolder[0] = dialog;
         dialog.show();
@@ -3949,6 +3960,10 @@ private void showProfileSettings() {
         rowOps.addView(btnMyQr);
         rowOps.addView(btnScanQr);
         layout.addView(rowOps);
+        // ★ v4.0.2：TV 配对（电视无摄像头 → 显示 6 位码，本机确认后下发配置）
+        Button btnTvPair = makeSyncButton("📺 配对新电视", 0xFF6A1B9A);
+        btnTvPair.setOnClickListener(v -> showTvPairDialog());
+        layout.addView(btnTvPair);
 
         // ===== 区3：同步配置 =====
         layout.addView(sectionTitle("同步配置"));
@@ -4329,6 +4344,7 @@ private void showProfileSettings() {
                         Toast.makeText(this, "至少保留一种验证方式", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    if (tvMode) { newSys = false; }  // TV 无系统锁屏，存储值同步为 false
                     PinHelper.setSystemLockEnabled(this, newSys);
                     PinHelper.setAppPinEnabled(this, newPin);
                     Toast.makeText(this, "✅ 安全设置已更新", Toast.LENGTH_SHORT).show();
@@ -4408,15 +4424,15 @@ private void showProfileSettings() {
         sb.append("⚠️ 切换后立即生效，无需重启。");
 
         String[] actions = {
-                (mode == PinHelper.DEVICE_AUTO  ? "\u2705 " : "      ") + "自动判定（推荐）",
-                (mode == PinHelper.DEVICE_TV    ? "\u2705 " : "      ") + "强制 TV 模式",
-                (mode == PinHelper.DEVICE_PHONE ? "\u2705 " : "      ") + "强制手机模式",
+                (mode == PinHelper.DEVICE_AUTO  ? "✅ " : "      ") + "自动判定（推荐）",
+                (mode == PinHelper.DEVICE_TV    ? "✅ " : "      ") + "强制 TV 模式",
+                (mode == PinHelper.DEVICE_PHONE ? "✅ " : "      ") + "强制手机模式",
                 "",
-                "\u2699\ufe0f 去设置/修改 PIN（TV 下必须）",
-                pinSet ? "\ud83d\udcfa 测试进入 TV 看片" : ""
+                "⚙️ 去设置/修改 PIN（TV 下必须）",
+                pinSet ? "📺 测试进入 TV 看片" : ""
         };
         new AlertDialog.Builder(this)
-                .setTitle("\ud83d\udcfa 设备模式（TV / 手机）")
+                .setTitle("📺 设备模式（TV / 手机）")
                 .setMessage(sb.toString())
                 .setItems(actions, (d, w) -> {
                     switch (w) {
@@ -4440,7 +4456,7 @@ private void showProfileSettings() {
                             break;
                     }
                 })
-                .setNegativeButton("\u2190 返回", (d, w) -> showSystemMenu())
+                .setNegativeButton("← 返回", (d, w) -> showSystemMenu())
                 .show();
     }
 
@@ -4451,6 +4467,99 @@ private void showProfileSettings() {
             return true;
         } catch (Throwable e) {
             return false;
+        }
+    }
+
+
+    // ==================== 📺 TV 配对（v4.0.2） ====================
+
+    /** 弹框：输入电视上显示的 6 位配对码 */
+    private void showTvPairDialog() {
+        final android.widget.EditText et = new android.widget.EditText(this);
+        et.setHint("6 位数字码");
+        et.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        new AlertDialog.Builder(this)
+                .setTitle("📺 配对新电视")
+                .setMessage("在电视上打开「TV 看片 → 📺 配对」，"
+                        + "把屏幕上的 6 位码填在这里；\n"
+                        + "也可以点下方「扫码配对」直接扫电视上的二维码。")
+                .setView(et)
+                .setPositiveButton("确认配对", (d, w) -> {
+                    String code = et.getText().toString().trim();
+                    if (code.length() != 6) {
+                        Toast.makeText(this, "⚠️ 请输入 6 位数字码", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    tvPairClaim(code, null);
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /** 向 Hub 认领配对码（带家庭 Token），电视端轮询后自动拉取配置 */
+    private void tvPairClaim(final String code, final String hubFromQr) {
+        new Thread(() -> {
+            try {
+                String base = hubFromQr;
+                if (base == null || base.trim().isEmpty()) {
+                    base = syncManager.getHubSync().getServerUrl();
+                }
+                if (base == null || base.trim().isEmpty()) {
+                    runOnUiThread(() -> Toast.makeText(this,
+                            "请先在「同步中心」保存服务器地址", Toast.LENGTH_LONG).show());
+                    return;
+                }
+                base = base.trim();
+                while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+                String token = syncManager.getHubSync().getServerToken();
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection)
+                        new java.net.URL(base + "/pair/claim").openConnection();
+                c.setRequestMethod("POST");
+                c.setConnectTimeout(8000);
+                c.setReadTimeout(12000);
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                if (token != null && !token.isEmpty()) {
+                    c.setRequestProperty("X-Hub-Token", token);
+                }
+                org.json.JSONObject body = new org.json.JSONObject();
+                body.put("code", code);
+                c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+                int rc = c.getResponseCode();
+                String resp = readHttpStream(rc >= 200 && rc < 300 ? c.getInputStream() : c.getErrorStream());
+                final String msg;
+                if (rc == 200) {
+                    msg = "✅ 配对成功！电视端将自动完成配置";
+                } else if (rc == 404) {
+                    msg = "❌ 配对码不存在（请在电视上重新生成）";
+                } else if (rc == 410) {
+                    msg = "❌ 配对码已过期，请在电视上重新生成";
+                } else if (rc == 401) {
+                    msg = "❌ 家庭 Token 不正确，请到同步中心检查";
+                } else {
+                    msg = "❌ 配对失败（HTTP " + rc + "）";
+                }
+                runOnUiThread(() -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show());
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this,
+                        "❌ 配对失败：" + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    /** 读取 HTTP 响应流为字符串 */
+    private String readHttpStream(java.io.InputStream in) {
+        if (in == null) return "";
+        try {
+            java.io.BufferedReader br = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(in, "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line);
+            br.close();
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

@@ -50,14 +50,23 @@ public final class TvHubApi {
     }
 
     public JSONObject get(String path) throws Exception {
-        return call("GET", path, null);
+        return call("GET", path, null, true);
     }
 
     public JSONObject post(String path, JSONObject body) throws Exception {
-        return call("POST", path, body);
+        return call("POST", path, body, true);
     }
 
-    private JSONObject call(String method, String path, JSONObject body) throws Exception {
+    /** 免 token 调用（配对引导接口专用） */
+    public JSONObject getAnon(String path) throws Exception {
+        return call("GET", path, null, false);
+    }
+
+    public JSONObject postAnon(String path, JSONObject body) throws Exception {
+        return call("POST", path, body, false);
+    }
+
+    private JSONObject call(String method, String path, JSONObject body, boolean withToken) throws Exception {
         if (base.isEmpty()) {
             throw new Exception("服务器地址未设置");
         }
@@ -67,7 +76,9 @@ public final class TvHubApi {
             conn.setRequestMethod(method);
             conn.setConnectTimeout(8000);
             conn.setReadTimeout(20000);
-            conn.setRequestProperty("X-Hub-Token", token);
+            if (withToken) {
+                conn.setRequestProperty("X-Hub-Token", token);
+            }
             conn.setRequestProperty("Accept", "application/json");
             if (body != null) {
                 byte[] raw = body.toString().getBytes(StandardCharsets.UTF_8);

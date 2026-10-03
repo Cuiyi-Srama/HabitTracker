@@ -32,6 +32,18 @@ public final class TvPrefs {
         sp.edit().putString("token", value).apply();
     }
 
+    /** 配对成功后一次性写入地址与 Token */
+    public void save(String hubValue, String tokenValue) {
+        SharedPreferences.Editor e = sp.edit();
+        if (hubValue != null && !hubValue.trim().isEmpty()) {
+            e.putString("hub", hubValue.trim());
+        }
+        if (tokenValue != null && !tokenValue.trim().isEmpty()) {
+            e.putString("token", tokenValue.trim());
+        }
+        e.apply();
+    }
+
     public TvHubApi api() {
         return new TvHubApi(hub(), token());
     }
