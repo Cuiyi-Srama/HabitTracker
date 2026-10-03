@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- v4.1.1：TV 版商城——放大分类按钮（56dp）与购物车栏，适配遥控焦点 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_shop_all"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="#FF9800"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="🏪 全部"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_shop_normal"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="#E0E0E0"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="🔄 常驻"
+            android:textColor="#333333"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_shop_limited"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="#E0E0E0"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="🔥 限量"
+            android:textColor="#333333"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_shop_wishlist"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:backgroundTint="#E0E0E0"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="⭐ 心愿"
+            android:textColor="#333333"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_shop"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 底部购物车栏（常驻商品Tab可见） -->
+    <LinearLayout
+        android:id="@+id/cart_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFF8E1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_cart_info"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🛒 未选择商品"
+            android:textColor="#E65100"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btn_cart_submit"
+            android:layout_width="wrap_content"
+            android:layout_height="52dp"
+            android:backgroundTint="#FF6B35"
+            android:focusableInTouchMode="false"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingLeft="24dp"
+            android:paddingRight="24dp"
+            android:tag="tv_compat_skip"
+            android:text="提交兑换"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp" />
+    </LinearLayout>
+</LinearLayout>

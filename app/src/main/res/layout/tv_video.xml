@@ -6,10 +6,81 @@
     android:orientation="vertical"
     android:padding="36dp">
 
+    <!-- v4.1.1：操作按钮移至最顶部并缩小（原本在列表下方，遥控器需穿越整个列表才能到达） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="刷新"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_auto"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="12dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="🔍 自动查找"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_setup"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="12dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="设置服务器地址"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_pair"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="12dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:focusableInTouchMode="false"
+            android:tag="tv_compat_skip"
+            android:text="📺 配对"
+            android:textSize="14sp" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
         android:text="连接中…"
         android:textColor="#FFFFFF"
         android:textSize="30sp"
@@ -44,37 +115,4 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
     </ScrollView>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btn_refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="刷新" />
-
-        <Button
-            android:id="@+id/btn_auto"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="18dp"
-            android:text="🔍 自动查找" />
-
-        <Button
-            android:id="@+id/btn_setup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="18dp"
-            android:text="设置服务器地址" />
-
-        <Button
-            android:id="@+id/btn_pair"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="18dp"
-            android:text="📺 配对" />
-    </LinearLayout>
 </LinearLayout>

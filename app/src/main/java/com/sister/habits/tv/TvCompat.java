@@ -17,6 +17,9 @@ import com.sister.habits.R;
  * 触摸能用，遥控器 D-pad 直接跳过 → 电视上点不动。
  * 本类在 Activity 显示时遍历视图树，把这类控件补成可聚焦，并顺带放大字号便于远距离观看。
  * 操作幂等：重复调用不会反复放大字号。
+ *
+ * v4.1.1 新增：焦点增强——聚焦时「放大 1.08x + 阴影」，失焦还原；
+ * 并关闭列表类容器的子视图裁剪，避免放大边缘被切。
  */
 public final class TvCompat {
 
@@ -30,6 +33,9 @@ public final class TvCompat {
     private static final float TEXT_SCALE = 1.15f;
     /** 放大后的字号上限（sp），避免标题被撑爆 */
     private static final float TEXT_MAX_SP = 34f;
+
+    /** 已安装焦点增强的视图（防止重复安装；Weak 防泄漏） */
+    private static final java.util.WeakHashMap<View, Boolean> FOCUS_DONE = new java.util.WeakHashMap<View, Boolean>();
 
     private TvCompat() {
     }
@@ -77,6 +83,16 @@ public final class TvCompat {
             } else {
                 group.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
             }
+            // v4.1.1：列表/滚动容器不裁剪子视图，焦点放大不被切边
+            if (v instanceof RecyclerView
+                    || v instanceof android.widget.ScrollView
+                    || v instanceof android.widget.HorizontalScrollView) {
+                try {
+                    group.setClipChildren(false);
+                    group.setClipToPadding(false);
+                } catch (Throwable ignored) {
+                }
+            }
             for (int i = 0; i < group.getChildCount(); i++) {
                 walk(group.getChildAt(i), root);
             }
@@ -90,6 +106,9 @@ public final class TvCompat {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             v.setDefaultFocusHighlightEnabled(true);
         }
+
+        // ★ v4.1.1：焦点增强（聚焦放大 + 阴影；幂等安装）
+        installFocusEffect(v);
 
         // 3) 放大字号（每视图只做一次）
         //    ★ 2026-09-25 修正：TV 专属布局（src/tv/res/layout/）已按大屏调好字号，
@@ -109,5 +128,31 @@ public final class TvCompat {
                 }
             }
         }
+    }
+
+    /** v4.1.1：为可聚焦视图安装「聚焦放大 + 阴影」效果（幂等） */
+    private static void installFocusEffect(final View v) {
+        if (!v.isFocusable() && !v.isClickable()) {
+            return;
+        }
+        if (FOCUS_DONE.containsKey(v)) {
+            return;
+        }
+        FOCUS_DONE.put(v, Boolean.TRUE);
+        v.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                try {
+                    if (hasFocus) {
+                        view.animate().scaleX(1.08f).scaleY(1.08f).setDuration(120).start();
+                        view.setElevation(10f * view.getResources().getDisplayMetrics().density);
+                    } else {
+                        view.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                        view.setElevation(0f);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        });
     }
 }

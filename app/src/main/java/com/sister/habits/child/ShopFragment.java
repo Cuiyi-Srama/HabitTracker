@@ -44,7 +44,7 @@ public class ShopFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_shop, container, false);
+        View view = inflater.inflate(com.sister.habits.tv.TvLayouts.shopLayout(getContext()), container, false);
         db = AppDatabase.getInstance(requireContext());
         syncManager = SyncManager.getInstance(requireContext());
         
@@ -317,7 +317,7 @@ public class ShopFragment extends Fragment {
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_shop, parent, false);
+                    .inflate(com.sister.habits.tv.TvLayouts.shopItemLayout(parent.getContext()), parent, false);
             return new ViewHolder(v);
         }
 
