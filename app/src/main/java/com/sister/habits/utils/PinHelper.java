@@ -2,13 +2,18 @@ package com.sister.habits.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 
 import javax.crypto.Mac;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.json.JSONObject;
 
 /**
  * 家长验证 — 双独立开关: 系统锁屏 | 应用PIN码
@@ -20,6 +25,17 @@ import javax.crypto.spec.SecretKeySpec;
  *
  *   兼容：读取到旧格式（64 位十六进制，无 salt）时仍可校验通过，
  *         并在下一次 setPin() 时自动升级为新格式。
+ *
+ * 2026-10-03 v4.1.0 家庭组升级：
+ *   1) 新增「PIN 快照」（pin_snapshot_v3，JSON）作为唯一权威格式：
+ *      {"kdf","iterations","salt","hash"}（salt/hash 为 Base64），
+ *      KDF 升级为 PBKDF2-HMAC-SHA256 × 200000 轮，抗 GPU 爆破。
+ *   2) 快照可导出/导入，由 FamilySecuritySync 与家庭 Hub 同步：
+ *      全家共用一个 PIN —— 任意设备改一次，其余设备自动生效。
+ *   3) 旧 v2/v1 数据仍可校验；校验通过后自动升级为快照并标记待同步。
+ *
+ * 快照语义：hubVersion = 本机快照对应的 Hub 版本号（未同步为 -1）；
+ *           pendingPush = 本地有未推送的改动（离线修改 / 首次升级）。
  */
 public class PinHelper {
     private static final String PREFS = "pin_security";
@@ -29,6 +45,18 @@ public class PinHelper {
     // 新键（v2 HMAC + salt + 拉伸）
     private static final String KEY_PIN_HASH_V2 = "pin_hash_v2";
     private static final String KEY_PIN_SALT_V2 = "pin_salt_v2";
+
+    // ==================== v4.1.0 家庭同步快照 ====================
+    private static final String KEY_SNAPSHOT = "pin_snapshot_v3";
+    private static final String KEY_HUB_VERSION = "pin_hub_version";
+    private static final String KEY_PENDING_PUSH = "pin_pending_push";
+
+    /** 新快照 KDF：PBKDF2-HMAC-SHA256 */
+    public static final String KDF_PBKDF2 = "pbkdf2-sha256";
+    /** 兼容 KDF：HMAC-SHA256 链式拉伸（历史格式 / 导入用） */
+    public static final String KDF_HMAC = "hmac-sha256";
+    /** 新快照 PBKDF2 轮数 */
+    public static final int PBKDF2_ITERATIONS = 200000;
 
     private static final String KEY_USE_SYSTEM_LOCK = "use_system_lock";
     private static final String KEY_USE_APP_PIN = "use_app_pin";
@@ -47,7 +75,7 @@ public class PinHelper {
     /** 旧键（仅读不再写，仅用于向上兼容旧数据） */
     private static final String KEY_FORCE_TV_MODE_LEGACY = "force_tv_mode";
 
-    /** PIN 拉伸轮数：10000 轮 HMAC，手机上约 20~60ms，不影响体感 */
+    /** 旧 v2 拉伸轮数：仅用于兼容校验历史数据 */
     private static final int ITERATIONS = 10000;
     /** 盐长度（字节） */
     private static final int SALT_BYTES = 16;
@@ -186,7 +214,8 @@ public class PinHelper {
     // ==================== PIN 码操作 ====================
     public static boolean isPinSet(Context ctx) {
         SharedPreferences sp = prefs(ctx);
-        return sp.getString(KEY_PIN_HASH_V2, null) != null
+        return sp.getString(KEY_SNAPSHOT, null) != null
+                || sp.getString(KEY_PIN_HASH_V2, null) != null
                 || sp.getString(KEY_PIN_HASH, null) != null;
     }
 
@@ -197,14 +226,15 @@ public class PinHelper {
         if (p.length() < 4 || p.length() > 6) return false;
         if (!p.matches("\\d+")) return false;
         try {
-            byte[] salt = new byte[SALT_BYTES];
-            new SecureRandom().nextBytes(salt);
-            String hash = stretch(p, salt);
+            String snap = buildSnapshotJson(p);
+            if (snap == null) return false;
             prefs(ctx).edit()
-                    .putString(KEY_PIN_SALT_V2, toHex(salt))
-                    .putString(KEY_PIN_HASH_V2, hash)
-                    .remove(KEY_PIN_HASH)          // 清除旧格式，完成升级
+                    .putString(KEY_SNAPSHOT, snap)
+                    .remove(KEY_PIN_HASH)
+                    .remove(KEY_PIN_HASH_V2)
+                    .remove(KEY_PIN_SALT_V2)
                     .putBoolean(KEY_USE_APP_PIN, true)
+                    .putBoolean(KEY_PENDING_PUSH, true)
                     .apply();
             return true;
         } catch (Exception e) {
@@ -223,6 +253,10 @@ public class PinHelper {
         if (p.isEmpty()) return false;
         SharedPreferences sp = prefs(ctx);
         try {
+            Snap snap = readSnapshot(ctx);
+            if (snap != null) {
+                return verifyFields(snap.kdf, snap.iterations, snap.saltB64, snap.hashB64, p);
+            }
             String saltHex = sp.getString(KEY_PIN_SALT_V2, null);
             String hashV2 = sp.getString(KEY_PIN_HASH_V2, null);
             if (saltHex != null && hashV2 != null) {
@@ -245,11 +279,21 @@ public class PinHelper {
     public static boolean verifyAndUpgrade(Context ctx, String pin) {
         boolean ok = verifyPin(ctx, pin);
         if (!ok) return false;
-        SharedPreferences sp = prefs(ctx);
-        boolean isLegacy = sp.getString(KEY_PIN_HASH_V2, null) == null
-                && sp.getString(KEY_PIN_HASH, null) != null;
-        if (isLegacy) {
-            setPin(ctx, pin);
+        if (!hasSnapshot(ctx)) {
+            // 旧格式校验通过 → 用同一 PIN 生成新快照（新盐），并标记待同步
+            try {
+                String snap = buildSnapshotJson(pin.trim());
+                if (snap != null) {
+                    prefs(ctx).edit()
+                            .putString(KEY_SNAPSHOT, snap)
+                            .remove(KEY_PIN_HASH)
+                            .remove(KEY_PIN_HASH_V2)
+                            .remove(KEY_PIN_SALT_V2)
+                            .putBoolean(KEY_PENDING_PUSH, true)
+                            .apply();
+                }
+            } catch (Exception ignored) {
+            }
         }
         return true;
     }
@@ -260,6 +304,8 @@ public class PinHelper {
                 .remove(KEY_PIN_HASH)
                 .remove(KEY_PIN_HASH_V2)
                 .remove(KEY_PIN_SALT_V2)
+                .remove(KEY_SNAPSHOT)
+                .remove(KEY_PENDING_PUSH)
                 .putBoolean(KEY_USE_SYSTEM_LOCK, true)
                 .putBoolean(KEY_USE_APP_PIN, false)
                 .apply();
@@ -271,8 +317,121 @@ public class PinHelper {
                 .remove(KEY_PIN_HASH)
                 .remove(KEY_PIN_HASH_V2)
                 .remove(KEY_PIN_SALT_V2)
+                .remove(KEY_SNAPSHOT)
+                .remove(KEY_PENDING_PUSH)
                 .putBoolean(KEY_USE_APP_PIN, false)
                 .apply();
+    }
+
+    // ==================== 家庭同步快照（v4.1.0） ====================
+
+    /** PIN 快照（kdf / iterations / saltB64 / hashB64） */
+    public static final class Snap {
+        public final String kdf;
+        public final int iterations;
+        public final String saltB64;
+        public final String hashB64;
+
+        public Snap(String kdf, int iterations, String saltB64, String hashB64) {
+            this.kdf = kdf;
+            this.iterations = iterations;
+            this.saltB64 = saltB64;
+            this.hashB64 = hashB64;
+        }
+    }
+
+    /** 是否存在快照（v4.1.0 格式） */
+    public static boolean hasSnapshot(Context ctx) {
+        return prefs(ctx).getString(KEY_SNAPSHOT, null) != null;
+    }
+
+    /** 读取本机快照；无或损坏返回 null */
+    public static Snap readSnapshot(Context ctx) {
+        try {
+            String s = prefs(ctx).getString(KEY_SNAPSHOT, null);
+            if (s == null || s.trim().isEmpty()) return null;
+            JSONObject o = new JSONObject(s);
+            String kdf = o.optString("kdf", "");
+            int it = o.optInt("iterations", 0);
+            String salt = o.optString("salt", "");
+            String hash = o.optString("hash", "");
+            if (kdf.isEmpty() || it <= 0 || salt.isEmpty() || hash.isEmpty()) return null;
+            return new Snap(kdf, it, salt, hash);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** 写入/覆盖本机快照（导入用；不改变开关状态） */
+    public static boolean importSnapshot(Context ctx, String kdf, int iterations, String saltB64, String hashB64) {
+        try {
+            if (kdf == null || kdf.isEmpty() || iterations <= 0) return false;
+            if (saltB64 == null || saltB64.isEmpty() || hashB64 == null || hashB64.isEmpty()) return false;
+            JSONObject o = new JSONObject();
+            o.put("kdf", kdf);
+            o.put("iterations", iterations);
+            o.put("salt", saltB64);
+            o.put("hash", hashB64);
+            prefs(ctx).edit()
+                    .putString(KEY_SNAPSHOT, o.toString())
+                    .remove(KEY_PIN_HASH)
+                    .remove(KEY_PIN_HASH_V2)
+                    .remove(KEY_PIN_SALT_V2)
+                    .apply();
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** 用 PIN 生成新快照 JSON（PBKDF2 × 200000），供 setPin / 升级使用 */
+    public static String buildSnapshotJson(String pin) throws Exception {
+        byte[] salt = new byte[SALT_BYTES];
+        new SecureRandom().nextBytes(salt);
+        byte[] dk = pbkdf2(pin, salt, PBKDF2_ITERATIONS);
+        JSONObject o = new JSONObject();
+        o.put("kdf", KDF_PBKDF2);
+        o.put("iterations", PBKDF2_ITERATIONS);
+        o.put("salt", b64e(salt));
+        o.put("hash", b64e(dk));
+        return o.toString();
+    }
+
+    /** 校验「给定字段」是否匹配 PIN（供同步层验证远端快照） */
+    public static boolean verifyFields(String kdf, int iterations, String saltB64, String hashB64, String pin) {
+        if (pin == null || kdf == null || saltB64 == null || hashB64 == null) return false;
+        try {
+            byte[] salt = b64d(saltB64);
+            if (KDF_PBKDF2.equals(kdf)) {
+                return constantTimeEquals(hashB64, b64e(pbkdf2(pin, salt, iterations)));
+            }
+            if (KDF_HMAC.equals(kdf)) {
+                return constantTimeEquals(hashB64, b64e(hmacChain(pin, salt, iterations)));
+            }
+            return false;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    // ==================== Hub 版本簿记（家庭同步用） ====================
+
+    /** 本机快照对应的 Hub 版本号；未同步返回 -1 */
+    public static long getHubVersion(Context ctx) {
+        return prefs(ctx).getLong(KEY_HUB_VERSION, -1L);
+    }
+
+    public static void setHubVersion(Context ctx, long version) {
+        prefs(ctx).edit().putLong(KEY_HUB_VERSION, version).apply();
+    }
+
+    /** 本地是否有未推送的改动 */
+    public static boolean isPendingPush(Context ctx) {
+        return prefs(ctx).getBoolean(KEY_PENDING_PUSH, false);
+    }
+
+    public static void setPendingPush(Context ctx, boolean pending) {
+        prefs(ctx).edit().putBoolean(KEY_PENDING_PUSH, pending).apply();
     }
 
     // ==================== 内部实现 ====================
@@ -298,6 +457,38 @@ public class PinHelper {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
         return toHex(hash);
+    }
+
+    /** PBKDF2-HMAC-SHA256 → 32 字节 */
+    private static byte[] pbkdf2(String pin, byte[] salt, int iterations) throws Exception {
+        PBEKeySpec spec = new PBEKeySpec(pin.toCharArray(), salt, iterations, 256);
+        try {
+            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            return skf.generateSecret(spec).getEncoded();
+        } finally {
+            spec.clearPassword();
+        }
+    }
+
+    /** HMAC-SHA256 链式拉伸（字节版，兼容导入的历史格式） */
+    private static byte[] hmacChain(String pin, byte[] salt, int iterations) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        byte[] key = pin.getBytes(StandardCharsets.UTF_8);
+        mac.init(new SecretKeySpec(key, "HmacSHA256"));
+        byte[] out = mac.doFinal(salt);
+        for (int i = 1; i < iterations; i++) {
+            mac.init(new SecretKeySpec(key, "HmacSHA256"));
+            out = mac.doFinal(out);
+        }
+        return out;
+    }
+
+    private static String b64e(byte[] bytes) {
+        return Base64.encodeToString(bytes, Base64.NO_WRAP);
+    }
+
+    private static byte[] b64d(String s) {
+        return Base64.decode(s, Base64.NO_WRAP);
     }
 
     /** 定长时间比较，防时序侧信道 */

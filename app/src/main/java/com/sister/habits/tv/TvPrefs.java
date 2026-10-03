@@ -7,7 +7,7 @@ import android.content.SharedPreferences;
 public final class TvPrefs {
 
     private static final String FILE = "tv_prefs";
-    public static final String DEFAULT_HUB = "http://192.168.1.16:23458/habit/cuiyi/tv";
+    public static final String DEFAULT_HUB = "http://192.168.1.17:23458/habit/cuiyi/tv";
     public static final String DEFAULT_TOKEN = "kDSBygdyGS0gWt0EZbyGei0qRbyAW94O";
 
     private final SharedPreferences sp;

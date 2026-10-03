@@ -12,6 +12,18 @@ import java.nio.charset.StandardCharsets;
 /** TV 看片：Hub 通信层（仅用内置 org.json + HttpURLConnection） */
 public final class TvHubApi {
 
+    /** Hub 返回 ≥400 时的异常：带状态码与响应体，供同步层处理 409 冲突 */
+    public static class HubException extends Exception {
+        public final int code;
+        public final String body;
+
+        public HubException(int code, String body) {
+            super("HTTP " + code + " " + body);
+            this.code = code;
+            this.body = body;
+        }
+    }
+
     private final String base;
     private final String token;
 
@@ -66,6 +78,26 @@ public final class TvHubApi {
         return call("POST", path, body, false);
     }
 
+    /** 家庭统一 PIN：拉取快照（需 token） */
+    public JSONObject fetchFamilySecurity() throws Exception {
+        return get("/family/security");
+    }
+
+    /** 家庭统一 PIN：推送快照（需 token；version 乐观锁，冲突抛 HubException 409） */
+    public JSONObject pushFamilySecurity(int expectedVersion, String kdf, int iterations,
+                                         String saltB64, String hashB64, String clientTag) throws Exception {
+        JSONObject b = new JSONObject();
+        b.put("expectedVersion", expectedVersion);
+        b.put("kdf", kdf);
+        b.put("iterations", iterations);
+        b.put("salt", saltB64);
+        b.put("hash", hashB64);
+        if (clientTag != null && !clientTag.isEmpty()) {
+            b.put("clientTag", clientTag);
+        }
+        return post("/family/security", b);
+    }
+
     private JSONObject call(String method, String path, JSONObject body, boolean withToken) throws Exception {
         if (base.isEmpty()) {
             throw new Exception("服务器地址未设置");
@@ -103,7 +135,7 @@ public final class TvHubApi {
             InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
             String text = is == null ? "" : readAll(is);
             if (code >= 400) {
-                throw new Exception("HTTP " + code + " " + text);
+                throw new HubException(code, text);
             }
             return new JSONObject(text.isEmpty() ? "{}" : text);
         } finally {
