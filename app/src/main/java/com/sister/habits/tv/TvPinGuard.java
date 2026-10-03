@@ -181,7 +181,9 @@ public final class TvPinGuard {
         // 覆盖正向按钮：校验失败不关闭对话框，避免“点一下就进去”的竞态
         dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String pin = et.getText().toString().trim();
-            if (PinHelper.verifyAndUpgrade(a, pin)) {
+            boolean ok = FamilySecuritySync.verifyWithFallback(a, pin);
+            if (ok) {
+                PinHelper.verifyAndUpgrade(a, pin);
                 PASSED.add(System.identityHashCode(a));
                 dlg.dismiss();
             } else {
@@ -192,5 +194,7 @@ public final class TvPinGuard {
         });
 
         et.requestFocus();
+        // v4.1.0：弹窗期间后台预热家庭 PIN（手机改过后电视直接可用新 PIN）
+        new Thread(() -> FamilySecuritySync.syncDown(a)).start();
     }
 }

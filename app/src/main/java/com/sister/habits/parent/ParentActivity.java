@@ -670,6 +670,7 @@ public class ParentActivity extends AppCompatActivity {
                     }
                     if (PinHelper.setPin(this, p1)) {
                         Toast.makeText(this, "✅ PIN码设置成功", Toast.LENGTH_SHORT).show();
+                        pushPinToFamily();
                     } else {
                         Toast.makeText(this, "⚠️ PIN码格式错误（需4~6位数字）", Toast.LENGTH_SHORT).show();
                         showPinSetupDialog();
@@ -702,7 +703,7 @@ public class ParentActivity extends AppCompatActivity {
         dialog.setOnShowListener(di -> {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 String pin = etPin.getText().toString().trim();
-                if (PinHelper.verifyPin(ParentActivity.this, pin)) {
+                if (com.sister.habits.tv.FamilySecuritySync.verifyWithFallback(ParentActivity.this, pin)) {
                     verified[0] = true;
                     dialog.dismiss();
                     if (onSuccess != null) onSuccess.run();
@@ -715,12 +716,50 @@ public class ParentActivity extends AppCompatActivity {
         dialog.setOnDismissListener(di -> {
             if (!verified[0]) finish();
         });
+        // v4.1.0：后台预热家庭 PIN（手机改过后其他设备直接可用新 PIN）
+        new Thread(() -> com.sister.habits.tv.FamilySecuritySync.syncDown(this)).start();
         dialog.show();
     }
 
 
 
 
+
+    /** v4.1.0：把新 PIN 推送到家庭 Hub（后台；冲突/离线给出反馈） */
+    private void pushPinToFamily() {
+        new Thread(() -> {
+            final com.sister.habits.tv.FamilySecuritySync.Outcome o =
+                    com.sister.habits.tv.FamilySecuritySync.pushNow(this);
+            runOnUiThread(() -> {
+                if (o.status == com.sister.habits.tv.FamilySecuritySync.OK) {
+                    Toast.makeText(this, "☁ 已同步到家庭（所有设备通用）", Toast.LENGTH_SHORT).show();
+                } else if (o.status == com.sister.habits.tv.FamilySecuritySync.CONFLICT) {
+                    showFamilyPinConflictDialog(o.currentVersion);
+                } else if (o.status == com.sister.habits.tv.FamilySecuritySync.OFFLINE) {
+                    Toast.makeText(this, "📴 暂未联网：已存本机，联网后自动同步", Toast.LENGTH_LONG).show();
+                }
+            });
+        }).start();
+    }
+
+    /** v4.1.0：家庭 PIN 冲突（另一台设备已改）—— 由用户裁决方向 */
+    private void showFamilyPinConflictDialog(final int currentVersion) {
+        new AlertDialog.Builder(this)
+                .setTitle("🔐 家庭 PIN 冲突")
+                .setMessage("PIN 已在另一台设备上修改：\n\n【用最新】改用另一台设备的 PIN；\n【以本机为准】把刚设置的 PIN 覆盖到全家。")
+                .setCancelable(false)
+                .setPositiveButton("用最新", (d, w) -> new Thread(() -> {
+                    final com.sister.habits.tv.FamilySecuritySync.Outcome o =
+                            com.sister.habits.tv.FamilySecuritySync.adoptRemote(this);
+                    runOnUiThread(() -> Toast.makeText(this, o.message, Toast.LENGTH_LONG).show());
+                }).start())
+                .setNegativeButton("以本机为准", (d, w) -> new Thread(() -> {
+                    final com.sister.habits.tv.FamilySecuritySync.Outcome o =
+                            com.sister.habits.tv.FamilySecuritySync.pushForce(this, currentVersion);
+                    runOnUiThread(() -> Toast.makeText(this, o.message, Toast.LENGTH_LONG).show());
+                }).start())
+                .show();
+    }
 
     private void refreshAll() {
         refreshStats();

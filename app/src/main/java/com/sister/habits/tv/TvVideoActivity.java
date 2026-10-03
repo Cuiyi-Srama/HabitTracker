@@ -596,6 +596,19 @@ public class TvVideoActivity extends Activity {
                             final String newTok = st.optString("token", "");
                             prefs.save(newHub, newTok);
                             api = prefs.api();
+                            // ★ v4.1.0：配对包携带的家庭 PIN 快照直接落盘（新电视零设置）
+                            try {
+                                org.json.JSONObject sec = st.optJSONObject("security");
+                                if (sec != null) {
+                                    com.sister.habits.utils.PinHelper.importSnapshot(TvVideoActivity.this,
+                                            sec.optString("kdf", ""), sec.optInt("iterations", 0),
+                                            sec.optString("salt", ""), sec.optString("hash", ""));
+                                    com.sister.habits.utils.PinHelper.setHubVersion(TvVideoActivity.this,
+                                            sec.optInt("version", 0));
+                                    com.sister.habits.utils.PinHelper.setPendingPush(TvVideoActivity.this, false);
+                                }
+                            } catch (Throwable ignored) {
+                            }
                             pairUi.post(() -> {
                                 if (pairHintView != null) {
                                     pairHintView.setText("✅ 配对成功！配置已自动写入");

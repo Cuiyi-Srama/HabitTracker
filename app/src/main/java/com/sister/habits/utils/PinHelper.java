@@ -459,15 +459,41 @@ public class PinHelper {
         return toHex(hash);
     }
 
-    /** PBKDF2-HMAC-SHA256 → 32 字节 */
+    /** PBKDF2-HMAC-SHA256 → 32 字节（API 26+ 走平台实现） */
     private static byte[] pbkdf2(String pin, byte[] salt, int iterations) throws Exception {
-        PBEKeySpec spec = new PBEKeySpec(pin.toCharArray(), salt, iterations, 256);
         try {
-            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-            return skf.generateSecret(spec).getEncoded();
-        } finally {
-            spec.clearPassword();
+            PBEKeySpec spec = new PBEKeySpec(pin.toCharArray(), salt, iterations, 256);
+            try {
+                SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+                return skf.generateSecret(spec).getEncoded();
+            } finally {
+                spec.clearPassword();
+            }
+        } catch (java.security.NoSuchAlgorithmException nsae) {
+            // API < 26 无内置实现：手工实现（RFC2898，单块 32 字节，输出与平台一致）
+            return pbkdf2Manual(pin, salt, iterations);
         }
+    }
+
+    /** 手工 PBKDF2-HMAC-SHA256（仅取第 1 块，32 字节；用于 API < 26） */
+    private static byte[] pbkdf2Manual(String pin, byte[] salt, int iterations) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(pin.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        byte[] block = new byte[salt.length + 4];
+        System.arraycopy(salt, 0, block, 0, salt.length);
+        block[salt.length] = 0;
+        block[salt.length + 1] = 0;
+        block[salt.length + 2] = 0;
+        block[salt.length + 3] = 1;
+        byte[] u = mac.doFinal(block);
+        byte[] out = u.clone();
+        for (int i = 1; i < iterations; i++) {
+            u = mac.doFinal(u);
+            for (int j = 0; j < out.length; j++) {
+                out[j] ^= u[j];
+            }
+        }
+        return out;
     }
 
     /** HMAC-SHA256 链式拉伸（字节版，兼容导入的历史格式） */
