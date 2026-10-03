@@ -6,7 +6,7 @@
 
 [![构建状态](https://github.com/Cuiyi-Srama/HabitTracker/actions/workflows/build.yml/badge.svg)](https://github.com/Cuiyi-Srama/HabitTracker/actions)
 [![版本](https://img.shields.io/badge/版本-v3.0.34-blue)](https://github.com/Cuiyi-Srama/HabitTracker/releases)
-[![许可](https://img.shields.io/badge/许可-MIT-green)](LICENSE)
+[![许可](https://img.shields.io/badge/许可-GPLv3-blue)](LICENSE)
 
 ---
 
@@ -536,7 +536,7 @@ A: 运行 `scripts/update_wordbank.py` 从 Excel 更新，或将 JSON 放入 `re
 
 ## 许可证
 
-MIT License © 2026 Cuiyi-Srama
+GPL-3.0 License © 2026 Cuiyi-Srama
 
 ---
 
